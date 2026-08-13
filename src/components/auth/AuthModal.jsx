@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
 import {
   X,
   Lock,
   Mail,
   User,
-  ShieldCheck,
   CheckCircle2,
-  Building2,
-  Sparkles,
-  ArrowRight
+  ArrowRight,
+  ShieldCheck
 } from 'lucide-react';
 
 const AuthModal = () => {
@@ -20,16 +18,31 @@ const AuthModal = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [selectedRole, setSelectedRole] = useState('CUSTOMER'); // CUSTOMER | B2B_CLIENT | OPERATOR_3D | ADMIN
+  const [loading, setLoading] = useState(false);
 
   if (!isAuthModalOpen) return null;
 
-  // Handle Google OAuth Login
+  // Helper: Automatically determine role based on system domain or verified email
+  const detectUserRole = (userEmail) => {
+    const cleanEmail = (userEmail || '').toLowerCase().trim();
+    if (cleanEmail.includes('admin') || cleanEmail.endsWith('@ideaform.com') || cleanEmail === 'gerencia@ideaform.com') {
+      return 'ADMIN';
+    }
+    if (cleanEmail.includes('operador') || cleanEmail.includes('taller')) {
+      return 'OPERATOR_3D';
+    }
+    if (cleanEmail.includes('empresa') || cleanEmail.includes('b2b') || cleanEmail.includes('compras@')) {
+      return 'B2B_CLIENT';
+    }
+    return 'CUSTOMER';
+  };
+
+  // 1. Handle Google OAuth 1-Click Login
   const handleGoogleAuth = async () => {
+    setLoading(true);
     try {
       showToast('Conectando con Google...', 'info');
-      // If configured in Supabase:
+
       if (supabase && supabase.auth) {
         const { error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
@@ -42,25 +55,27 @@ const AuthModal = () => {
         }
       }
 
-      // Mock user state
+      const assignedRole = detectUserRole(email || 'cliente@gmail.com');
       const mockGoogleUser = {
         id: 'usr-google-999',
         email: email || 'usuario.google@gmail.com',
         firstName: 'Usuario',
         lastName: 'Google',
-        role: selectedRole
+        role: assignedRole
       };
 
       setUser(mockGoogleUser);
-      setUserRole(selectedRole);
+      setUserRole(assignedRole);
       setIsAuthModalOpen(false);
-      showToast(`¡Bienvenido! Sesión iniciada con Google`, 'success');
+      showToast('¡Bienvenido! Sesión iniciada con Google', 'success');
     } catch (err) {
       showToast('Error al conectar con Google', 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Handle Email / Password Login & Register
+  // 2. Handle Email / Password Submission
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!email || !password) {
@@ -68,21 +83,24 @@ const AuthModal = () => {
       return;
     }
 
+    setLoading(true);
+
     const firstName = fullName ? fullName.split(' ')[0] : email.split('@')[0];
     const lastName = fullName && fullName.split(' ').length > 1 ? fullName.split(' ').slice(1).join(' ') : '';
+    const autoRole = detectUserRole(email);
 
     const loggedUser = {
       id: `usr-${Date.now()}`,
       email,
       firstName,
       lastName,
-      companyName: selectedRole === 'B2B_CLIENT' ? companyName || 'Mi Empresa' : null,
-      role: selectedRole
+      role: autoRole
     };
 
     setUser(loggedUser);
-    setUserRole(selectedRole);
+    setUserRole(autoRole);
     setIsAuthModalOpen(false);
+    setLoading(false);
 
     showToast(
       mode === 'login'
@@ -112,14 +130,14 @@ const AuthModal = () => {
           background: '#ffffff',
           borderRadius: 'var(--radius-xl)',
           width: '100%',
-          maxWidth: '460px',
+          maxWidth: '440px',
           boxShadow: 'var(--shadow-xl)',
           overflow: 'hidden',
           position: 'relative'
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* Header with IdeaForm Palette */}
         <div style={{ background: '#0F5F6D', color: '#ffffff', padding: '1.75rem 2rem', position: 'relative' }}>
           <button
             onClick={() => setIsAuthModalOpen(false)}
@@ -142,26 +160,27 @@ const AuthModal = () => {
             <X size={18} />
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-            <span style={{ background: 'rgba(255, 255, 255, 0.2)', padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-full)', fontSize: '0.75rem', fontWeight: '800' }}>
-              IDEAFORM ACCESO
-            </span>
-          </div>
+          <span style={{ background: 'rgba(255, 255, 255, 0.2)', padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-full)', fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0.04em' }}>
+            ACCESO SEGURO
+          </span>
 
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '800', margin: 0 }}>
-            {mode === 'login' ? 'Inicia Sesión en tu Cuenta' : 'Crea tu Cuenta en IdeaForm'}
+          <h2 style={{ fontSize: '1.45rem', fontWeight: '800', marginTop: '0.5rem', marginBottom: '0.25rem' }}>
+            {mode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'}
           </h2>
-          <p style={{ fontSize: '0.85rem', opacity: 0.9, marginTop: '0.35rem', margin: 0 }}>
-            Gestiona tus pedidos 3D, cotizaciones B2B y seguimiento en tiempo real.
+          <p style={{ fontSize: '0.85rem', opacity: 0.9, margin: 0 }}>
+            {mode === 'login'
+              ? 'Ingresa para ver el estado de tus pedidos y cotizaciones.'
+              : 'Únete para guardar tus diseños 3D y agilizar tus compras.'}
           </p>
         </div>
 
-        {/* Body */}
+        {/* Modal Body */}
         <div style={{ padding: '2rem' }}>
           
-          {/* 1. Google OAuth Fast Button */}
+          {/* 1. Fast Google OAuth Button */}
           <button
             onClick={handleGoogleAuth}
+            disabled={loading}
             style={{
               width: '100%',
               display: 'flex',
@@ -195,7 +214,7 @@ const AuthModal = () => {
           {/* Divider */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
             <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: '700' }}>O CON CORREO</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: '700' }}>O CON TU CORREO</span>
             <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
           </div>
 
@@ -204,7 +223,7 @@ const AuthModal = () => {
             {mode === 'register' && (
               <div>
                 <label style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                  Nombre Completo
+                  Nombre Completo *
                 </label>
                 <div style={{ position: 'relative' }}>
                   <User size={16} color="var(--text-tertiary)" style={{ position: 'absolute', top: '50%', left: '0.85rem', transform: 'translateY(-50%)' }} />
@@ -214,7 +233,7 @@ const AuthModal = () => {
                     placeholder="Carlos Morales"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    style={{ width: '100%', padding: '0.7rem 0.85rem 0.7rem 2.4rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', fontSize: '0.88rem' }}
+                    style={{ width: '100%', padding: '0.75rem 0.85rem 0.75rem 2.4rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', fontSize: '0.9rem', outline: 'none' }}
                   />
                 </div>
               </div>
@@ -222,7 +241,7 @@ const AuthModal = () => {
 
             <div>
               <label style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                Correo Electrónico
+                Correo Electrónico *
               </label>
               <div style={{ position: 'relative' }}>
                 <Mail size={16} color="var(--text-tertiary)" style={{ position: 'absolute', top: '50%', left: '0.85rem', transform: 'translateY(-50%)' }} />
@@ -232,15 +251,26 @@ const AuthModal = () => {
                   placeholder="usuario@ejemplo.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  style={{ width: '100%', padding: '0.7rem 0.85rem 0.7rem 2.4rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', fontSize: '0.88rem' }}
+                  style={{ width: '100%', padding: '0.75rem 0.85rem 0.75rem 2.4rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', fontSize: '0.9rem', outline: 'none' }}
                 />
               </div>
             </div>
 
             <div>
-              <label style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
-                Contraseña
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                <label style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-secondary)' }}>
+                  Contraseña *
+                </label>
+                {mode === 'login' && (
+                  <button
+                    type="button"
+                    onClick={() => showToast('Se ha enviado un enlace de recuperación a tu correo', 'info')}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer', padding: 0 }}
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                )}
+              </div>
               <div style={{ position: 'relative' }}>
                 <Lock size={16} color="var(--text-tertiary)" style={{ position: 'absolute', top: '50%', left: '0.85rem', transform: 'translateY(-50%)' }} />
                 <input
@@ -249,56 +279,24 @@ const AuthModal = () => {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  style={{ width: '100%', padding: '0.7rem 0.85rem 0.7rem 2.4rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', fontSize: '0.88rem' }}
+                  style={{ width: '100%', padding: '0.75rem 0.85rem 0.75rem 2.4rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', fontSize: '0.9rem', outline: 'none' }}
                 />
-              </div>
-            </div>
-
-            {/* Profile Role Selector */}
-            <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
-              <label style={{ fontSize: '0.72rem', fontWeight: '800', color: 'var(--text-tertiary)', display: 'block', marginBottom: '0.4rem' }}>
-                PERFIL DE USUARIO:
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem' }}>
-                {[
-                  { id: 'CUSTOMER', label: '👤 Cliente' },
-                  { id: 'B2B_CLIENT', label: '🏢 Empresa B2B' },
-                  { id: 'OPERATOR_3D', label: '🛠️ Operador 3D' },
-                  { id: 'ADMIN', label: '👑 Admin Taller' }
-                ].map((r) => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => setSelectedRole(r.id)}
-                    style={{
-                      padding: '0.4rem',
-                      borderRadius: 'var(--radius-sm)',
-                      border: selectedRole === r.id ? '2px solid #0F5F6D' : '1px solid var(--border-light)',
-                      background: selectedRole === r.id ? 'rgba(15, 95, 109, 0.1)' : '#ffffff',
-                      color: selectedRole === r.id ? '#0F5F6D' : '#475569',
-                      fontWeight: '700',
-                      fontSize: '0.75rem',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {r.label}
-                  </button>
-                ))}
               </div>
             </div>
 
             <button
               type="submit"
+              disabled={loading}
               className="btn btn-primary btn-lg"
-              style={{ width: '100%', fontWeight: '800', marginTop: '0.5rem' }}
+              style={{ width: '100%', fontWeight: '800', marginTop: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
             >
-              <span>{mode === 'login' ? 'Iniciar Sesión' : 'Registrarme'}</span>
+              <span>{loading ? 'Procesando...' : mode === 'login' ? 'Iniciar Sesión' : 'Registrarme'}</span>
               <ArrowRight size={16} />
             </button>
           </form>
 
           {/* Switch Mode Footer */}
-          <div style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+          <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
             {mode === 'login' ? (
               <span>
                 ¿No tienes cuenta aún?{' '}
@@ -306,17 +304,17 @@ const AuthModal = () => {
                   onClick={() => setMode('register')}
                   style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', fontWeight: '800', cursor: 'pointer', padding: 0 }}
                 >
-                  Regístrate aquí
+                  Regístrate gratis
                 </button>
               </span>
             ) : (
               <span>
-                ¿Ya tienes cuenta?{' '}
+                ¿Ya tienes una cuenta?{' '}
                 <button
                   onClick={() => setMode('login')}
                   style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', fontWeight: '800', cursor: 'pointer', padding: 0 }}
                 >
-                  Inicia sesión aquí
+                  Inicia sesión
                 </button>
               </span>
             )}
