@@ -7,7 +7,7 @@ const ThreeViewer = forwardRef(({
   selectedColor = '#00828A',
   materialType = 'PLA_SILK',
   customText = 'IDEAFORM',
-  fontFamily = 'Poppins',
+  fontFamily = 'Space Grotesk',
   scaleMultiplier = 1,
   showDimensions = true
 }, ref) => {
@@ -22,12 +22,10 @@ const ThreeViewer = forwardRef(({
   const isAutoRotatingRef = useRef(true);
   const isDraggingRef = useRef(false);
 
-  // Sync auto rotation state with ref
   useEffect(() => {
     isAutoRotatingRef.current = isAutoRotating;
   }, [isAutoRotating]);
 
-  // Expose snapshot capture and camera reset function to parent
   useImperativeHandle(ref, () => ({
     getSnapshot: () => {
       if (rendererRef.current && sceneRef.current && cameraRef.current) {
@@ -45,12 +43,10 @@ const ThreeViewer = forwardRef(({
     }
   }));
 
-  // Rebuild / Update 3D Geometry Function
   const buildGeometry = useCallback(() => {
     if (!meshGroupRef.current) return;
     const group = meshGroupRef.current;
 
-    // Clear existing meshes cleanly
     while (group.children.length > 0) {
       const obj = group.children[0];
       if (obj.geometry) obj.geometry.dispose();
@@ -69,7 +65,7 @@ const ThreeViewer = forwardRef(({
       roughness: 0.25,
       metalness: 0.35,
       wireframe: false,
-      clearcoat: 0.6,
+      clearcoat: 0.65,
       clearcoatRoughness: 0.1
     });
 
@@ -85,92 +81,95 @@ const ThreeViewer = forwardRef(({
       roughness: 0.1
     });
 
-    // Helper: Draw Official IdeaForm Bulb Vector Logo & Text Texture
+    // Helper: Draw Exact Vector Logo & Typography onto 3D Canvas Texture
     const createTextCanvasTexture = (text) => {
       const canvas = document.createElement('canvas');
       canvas.width = 1024;
       canvas.height = 512;
       const ctx = canvas.getContext('2d');
 
-      // 1. Background in chosen filament color with subtle relief gradient
-      const grad = ctx.createLinearGradient(0, 0, 1024, 512);
-      grad.addColorStop(0, selectedColor);
-      grad.addColorStop(1, selectedColor);
-      ctx.fillStyle = grad;
+      // 1. Base chosen filament background
+      ctx.fillStyle = selectedColor;
       ctx.fillRect(0, 0, 1024, 512);
 
-      // Subtle chamfer border in white
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.lineWidth = 12;
-      ctx.strokeRect(20, 20, 984, 472);
+      // Subtle chamfer outline
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+      ctx.lineWidth = 14;
+      ctx.strokeRect(24, 24, 976, 464);
 
       const isDefaultBrand = !text || text.toUpperCase() === 'IDEAFORM';
 
       if (isDefaultBrand) {
-        // DRAW OFFICIAL IDEAFORM BULB ICON + BRAND TYPOGRAPHY
+        // --- DRAW EXACT IDEAFORM LOGO FROM MANUAL ---
         ctx.save();
-        ctx.translate(140, 256);
-        ctx.scale(1.8, 1.8);
+        ctx.translate(160, 256);
+        ctx.scale(2.2, 2.2);
 
-        // Bulb Outer
+        // 3 Top Rays
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 7;
+        ctx.lineWidth = 6;
         ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowColor = 'rgba(0,0,0,0.55)';
         ctx.shadowBlur = 10;
         ctx.shadowOffsetX = 3;
         ctx.shadowOffsetY = 4;
 
-        // Rays
         ctx.beginPath();
-        ctx.moveTo(-25, -25); ctx.lineTo(-38, -38);
-        ctx.moveTo(0, -35); ctx.lineTo(0, -50);
-        ctx.moveTo(25, -25); ctx.lineTo(38, -38);
+        ctx.moveTo(-24, -24); ctx.lineTo(-34, -34);
+        ctx.moveTo(0, -32); ctx.lineTo(0, -45);
+        ctx.moveTo(24, -24); ctx.lineTo(34, -34);
         ctx.stroke();
 
-        // Bulb Arc
+        // Bulb Outer Contour
         ctx.beginPath();
-        ctx.arc(0, 0, 32, 0.75 * Math.PI, 2.25 * Math.PI, false);
-        ctx.lineTo(16, 32);
-        ctx.lineTo(-16, 32);
+        ctx.arc(0, 0, 30, 0.75 * Math.PI, 2.25 * Math.PI, false);
+        ctx.lineTo(14, 30);
+        ctx.lineTo(-14, 30);
         ctx.closePath();
         ctx.stroke();
 
-        // Filament Dot
+        // Filament 'i' Dot
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
-        ctx.arc(-8, -4, 5, 0, Math.PI * 2);
+        ctx.arc(-8, -4, 4.5, 0, Math.PI * 2);
         ctx.fill();
 
         // Filament 'i' & 'f' Loop
         ctx.beginPath();
         ctx.moveTo(-8, 6);
-        ctx.lineTo(-8, 26);
-        ctx.bezierCurveTo(-8, 32, 6, 34, 10, 26);
+        ctx.lineTo(-8, 28);
+        ctx.bezierCurveTo(-8, 34, 6, 36, 10, 28);
         ctx.lineTo(10, -6);
-        ctx.bezierCurveTo(10, -16, 20, -16, 24, -10);
-        ctx.moveTo(-2, 12);
-        ctx.lineTo(18, 12);
+        ctx.bezierCurveTo(10, -14, 18, -14, 22, -8);
+        ctx.moveTo(0, 10);
+        ctx.lineTo(18, 10);
         ctx.stroke();
         ctx.restore();
 
-        // Brand Text "ideaform"
+        // Text "IdeaForm" (Idea in White, Form in Cyan/White highlight)
         ctx.fillStyle = '#ffffff';
-        ctx.font = `800 84px ${fontFamily}, 'Space Grotesk', 'Poppins', sans-serif`;
+        ctx.font = "800 102px 'Space Grotesk', 'Plus Jakarta Sans', sans-serif";
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.shadowColor = 'rgba(0,0,0,0.55)';
-        ctx.shadowBlur = 10;
+        ctx.shadowColor = 'rgba(0,0,0,0.6)';
+        ctx.shadowBlur = 12;
         ctx.shadowOffsetX = 4;
         ctx.shadowOffsetY = 5;
-        ctx.fillText('ideaform', 310, 230);
 
-        // Subtitle "DISEÑO & IMPRESIÓN 3D"
-        ctx.font = `700 28px ${fontFamily}, 'Poppins', sans-serif`;
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        ctx.letterSpacing = '0.2em';
-        ctx.fillText('DISEÑO & IMPRESIÓN 3D', 315, 305);
+        // Measure & render Idea + Form
+        ctx.fillText('Idea', 320, 215);
+        const ideaWidth = ctx.measureText('Idea').width;
+        ctx.fillStyle = '#00e5ff';
+        ctx.fillText('Form', 320 + ideaWidth + 6, 215);
+
+        // Subtitle "Ideas que toman forma."
+        ctx.font = "500 36px 'Plus Jakarta Sans', 'Inter', sans-serif";
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 3;
+        ctx.fillText('Ideas que toman forma.', 324, 305);
 
       } else {
         // CUSTOM USER TEXT IN EMBOSSED 3D
@@ -197,9 +196,7 @@ const ThreeViewer = forwardRef(({
       metalness: 0.2
     });
 
-    // BUILD 3D PROCEDURAL MODELS
     if (modelType === 'keychain') {
-      // 1. Base Chamfered Hexagon Tag
       const baseGeo = new THREE.CylinderGeometry(1.9, 1.9, 0.22, 6);
       baseGeo.rotateX(Math.PI / 2);
       const baseMesh = new THREE.Mesh(baseGeo, mainMaterial);
@@ -207,26 +204,22 @@ const ThreeViewer = forwardRef(({
       baseMesh.receiveShadow = true;
       group.add(baseMesh);
 
-      // Inner Tag Plate Front
       const plateGeo = new THREE.BoxGeometry(2.6, 1.35, 0.06);
       const plateMesh = new THREE.Mesh(plateGeo, textPlateMaterial);
       plateMesh.position.z = 0.13;
       group.add(plateMesh);
 
-      // Back Plate
       const backPlate = new THREE.Mesh(plateGeo, textPlateMaterial);
       backPlate.position.z = -0.13;
       backPlate.rotation.y = Math.PI;
       group.add(backPlate);
 
-      // Keychain Metallic Ring
       const ringGeo = new THREE.TorusGeometry(0.55, 0.07, 16, 32);
       const ringMesh = new THREE.Mesh(ringGeo, steelMaterial);
       ringMesh.position.set(0, 2.05, 0);
       ringMesh.rotation.y = Math.PI / 4;
       group.add(ringMesh);
 
-      // Hole ring connector
       const holeGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.32, 16);
       holeGeo.rotateX(Math.PI / 2);
       const holeMesh = new THREE.Mesh(holeGeo, accentMaterial);
@@ -234,7 +227,6 @@ const ThreeViewer = forwardRef(({
       group.add(holeMesh);
 
     } else if (modelType === 'organizer') {
-      // Hexagonal Desk Station
       const mainGeo = new THREE.CylinderGeometry(1.6, 1.8, 2.0, 6);
       const mainMesh = new THREE.Mesh(mainGeo, mainMaterial);
       mainMesh.castShadow = true;
@@ -306,7 +298,6 @@ const ThreeViewer = forwardRef(({
     group.scale.set(scaleMultiplier, scaleMultiplier, scaleMultiplier);
   }, [modelType, selectedColor, materialType, customText, fontFamily, scaleMultiplier]);
 
-  // Initialize Three.js WebGL Scene ONCE on Mount
   useEffect(() => {
     const container = mountRef.current;
     if (!container) return;
@@ -366,7 +357,6 @@ const ThreeViewer = forwardRef(({
 
     buildGeometry();
 
-    // Mouse & Touch Orbit Controls
     let previousMousePosition = { x: 0, y: 0 };
 
     const onMouseDown = (e) => {
