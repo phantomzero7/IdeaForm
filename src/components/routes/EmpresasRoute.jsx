@@ -18,10 +18,14 @@ import {
   CheckCircle2,
   Upload,
   Sparkles,
-  FileCheck,
-  AlertCircle,
   ShieldCheck,
-  FileText
+  FileText,
+  Printer,
+  X,
+  Eye,
+  Type,
+  Ban,
+  Check
 } from 'lucide-react';
 
 const OBJECTIVES = [
@@ -79,30 +83,39 @@ const EmpresasRoute = () => {
   const { saveB2BQuote, showToast } = useApp();
   const viewerRef = useRef(null);
 
+  // Stepper State (1 to 4)
   const [activeStep, setActiveStep] = useState(1);
   const [selectedObjective, setSelectedObjective] = useState(OBJECTIVES[0]);
   const [selectedProduct, setSelectedProduct] = useState(PRODUCTS.find((p) => p.subcollection === 'empresas') || PRODUCTS[0]);
+  
+  // Customization & Logo State
+  const [customizationType, setCustomizationType] = useState('logo'); // 'logo' | 'text' | 'none'
   const [customBrandText, setCustomBrandText] = useState('MI EMPRESA');
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState(null);
   const [selectedColor, setSelectedColor] = useState(FILAMENT_COLORS[1]); // Azul Océano (#21658A)
+  
+  // Volume & Fiscal State
   const [units, setUnits] = useState(100);
   const [companyName, setCompanyName] = useState('');
   const [contactName, setContactName] = useState('');
   const [email, setEmail] = useState('');
   const [rfc, setRfc] = useState('');
-  const [logoFile, setLogoFile] = useState(null);
+  
+  // Quote PDF Preview Modal State
+  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+  const [generatedQuoteData, setGeneratedQuoteData] = useState(null);
 
   const STEPS = [
     { num: 1, label: '1. Objetivo' },
     { num: 2, label: '2. Productos' },
-    { num: 3, label: '3. Personaliza' },
-    { num: 4, label: '4. Archivo Logo' },
-    { num: 5, label: '5. Cotiza PDF' },
-    { num: 6, label: '6. Confirmación' }
+    { num: 3, label: '3. Personaliza & Logo' },
+    { num: 4, label: '4. Cotización PDF' }
   ];
 
   const B2B_PRODUCTS = PRODUCTS.filter((p) => p.subcollection === 'empresas' || p.isCustomizable);
 
-  // Calculate Tier Discount
+  // Pricing & Tier Calculation
   const currentTier = B2B_PRICE_TIERS.find((t) => units >= t.minUnits && units <= t.maxUnits) || B2B_PRICE_TIERS[0];
   const discountPercent = currentTier.discountPercent;
   const baseUnitPrice = selectedProduct ? selectedProduct.basePrice : 150;
@@ -111,6 +124,7 @@ const EmpresasRoute = () => {
   const iva = subtotal * 0.16;
   const total = subtotal + iva;
 
+  // Handle Logo Upload & Convert to Object URL for 3D Viewport
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -119,11 +133,15 @@ const EmpresasRoute = () => {
         return;
       }
       setLogoFile(file);
-      showToast(`Archivo "${file.name}" cargado exitosamente`, 'success');
+      const url = URL.createObjectURL(file);
+      setLogoPreviewUrl(url);
+      setCustomizationType('logo');
+      showToast(`Logotipo "${file.name}" cargado en el visor 3D`, 'success');
     }
   };
 
-  const handleGenerateQuote = () => {
+  // Open Formal Quote PDF Modal
+  const handleOpenQuoteModal = () => {
     if (!companyName || !email) {
       showToast('Por favor completa la Razón Social y Correo de Contacto', 'error');
       return;
@@ -135,7 +153,7 @@ const EmpresasRoute = () => {
       contactName: contactName || 'Representante de Compras',
       email,
       rfc: rfc || 'XAXX010101000',
-      productName: selectedProduct ? `${selectedProduct.name} (${customBrandText})` : 'Artículo 3D Corporativo',
+      productName: selectedProduct ? `${selectedProduct.name} ${customizationType === 'logo' ? '(Con Logotipo Grabado)' : customizationType === 'text' ? `(${customBrandText})` : '(Sin grabado)'}` : 'Artículo 3D Corporativo',
       quantity: units,
       units: units,
       unitPrice: baseUnitPrice,
@@ -148,9 +166,22 @@ const EmpresasRoute = () => {
       date: new Date().toLocaleDateString('es-MX')
     };
 
+    setGeneratedQuoteData(quoteData);
     saveB2BQuote(quoteData);
-    generateB2BQuotePDF(quoteData);
-    setActiveStep(6);
+    setIsQuoteModalOpen(true);
+  };
+
+  // Download PDF
+  const handleDownloadPDF = () => {
+    if (generatedQuoteData) {
+      generateB2BQuotePDF(generatedQuoteData);
+      showToast('¡Cotización PDF descargada!', 'success');
+    }
+  };
+
+  // Print Quote
+  const handlePrintQuote = () => {
+    window.print();
   };
 
   return (
@@ -158,7 +189,7 @@ const EmpresasRoute = () => {
       
       {/* 1. Header Banner */}
       <div style={{ background: '#FFFFFF', borderBottom: '1px solid #D5E4ED', padding: '1.5rem 0' }}>
-        <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+        <div className="container" style={{ maxWidth: '1140px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             <span
               style={{
@@ -186,9 +217,9 @@ const EmpresasRoute = () => {
         </div>
       </div>
 
-      {/* 2. Interactive Stepper Bar */}
-      <div className="container" style={{ paddingTop: '2.5rem', paddingBottom: '1.5rem' }}>
-        <div className="stepper-nav" style={{ maxWidth: '840px', margin: '0 auto 3rem auto' }}>
+      {/* 2. Interactive Centered Stepper Bar */}
+      <div className="container" style={{ maxWidth: '1140px', margin: '0 auto', paddingTop: '2.5rem', paddingBottom: '1.5rem' }}>
+        <div className="stepper-nav" style={{ maxWidth: '750px', margin: '0 auto 3rem auto' }}>
           <div className="stepper-progress-bg" style={{ backgroundColor: '#D5E4ED' }} />
           <div className="stepper-progress-fill" style={{ background: '#21658A', width: `${((activeStep - 1) / (STEPS.length - 1)) * 88}%` }} />
 
@@ -290,7 +321,6 @@ const EmpresasRoute = () => {
                       {obj.desc}
                     </p>
 
-                    {/* Benefits List */}
                     <div style={{ borderTop: '1px solid #D5E4ED', paddingTop: '0.75rem', marginBottom: '1.25rem' }}>
                       <div style={{ fontSize: '0.72rem', fontWeight: '800', color: '#21658A', marginBottom: '0.35rem' }}>BENEFICIOS CLAVE:</div>
                       {obj.benefits.map((b, idx) => (
@@ -312,7 +342,7 @@ const EmpresasRoute = () => {
           </div>
         )}
 
-        {/* PASO 2: PRODUCTOS CORPORATIVOS */}
+        {/* PASO 2: SELECCIÓN DE PRODUCTO CORPORATIVO */}
         {activeStep === 2 && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
@@ -321,7 +351,7 @@ const EmpresasRoute = () => {
                   Paso 2: Soluciones para "{selectedObjective.name}"
                 </h2>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                  Selecciona la pieza corporativa que deseas personalizar con el logo de tu empresa.
+                  Selecciona la pieza corporativa que deseas personalizar.
                 </p>
               </div>
 
@@ -403,7 +433,7 @@ const EmpresasRoute = () => {
                       }}
                     >
                       <Sparkles size={15} />
-                      <span>Paso 3: Personalizar con mi Marca</span>
+                      <span>Paso 3: Personalizar & Subir Logo</span>
                     </button>
                   </div>
                 </div>
@@ -412,59 +442,172 @@ const EmpresasRoute = () => {
           </div>
         )}
 
-        {/* PASO 3: PERSONALIZA TU MARCA EN 3D */}
+        {/* PASO 3: FUSIÓN DE PERSONALIZACIÓN Y CARGA DE LOGOTIPO EN VIVO */}
         {activeStep === 3 && selectedProduct && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 1.2fr) minmax(300px, 0.8fr)', gap: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 1.15fr) minmax(320px, 0.85fr)', gap: '2rem', alignItems: 'start' }}>
             
-            {/* 3D Visualizer */}
-            <div className="card card-elevated" style={{ padding: '0', background: '#ffffff', position: 'relative', overflow: 'hidden', height: '480px' }}>
+            {/* Left: 3D Stage with Live Logo Overlay */}
+            <div className="card card-elevated" style={{ padding: '0', background: '#ffffff', position: 'relative', overflow: 'hidden', height: '520px', borderRadius: 'var(--radius-xl)' }}>
               <ThreeViewer
                 ref={viewerRef}
                 modelType={selectedProduct.modelType || 'trophy'}
                 selectedColor={selectedColor.hex}
                 materialType="PLA_SILK"
-                customText={customBrandText}
+                customText={customizationType === 'text' ? customBrandText : customizationType === 'none' ? '' : 'IDEAFORM'}
+                logoImage={customizationType === 'logo' ? logoPreviewUrl : null}
+                noEngraving={customizationType === 'none'}
                 fontFamily="Space Grotesk"
                 showDimensions={true}
               />
+
+              {/* Status pill overlay on canvas */}
+              <div style={{ position: 'absolute', bottom: '1rem', left: '1rem', background: 'rgba(255, 255, 255, 0.9)', padding: '0.35rem 0.75rem', borderRadius: 'var(--radius-full)', fontSize: '0.75rem', fontWeight: '700', color: '#104F75', boxShadow: 'var(--shadow-sm)' }}>
+                {customizationType === 'logo' && (logoFile ? `🖼️ Logo: ${logoFile.name}` : '🖼️ Modo Logotipo Activo')}
+                {customizationType === 'text' && `✍️ Texto: "${customBrandText}"`}
+                {customizationType === 'none' && '🛡️ Pieza Lisa Sin Grabado'}
+              </div>
             </div>
 
-            {/* Controls */}
+            {/* Right: Unified Controls Sidebar */}
             <div style={{ background: '#FFFFFF', border: '1px solid #D5E4ED', borderRadius: 'var(--radius-xl)', padding: '2rem' }}>
-              <h2 style={{ fontSize: '1.35rem', fontWeight: '800', color: '#104F75', marginBottom: '0.4rem' }}>
-                Paso 3: Configura el Grabado de "{selectedProduct.name}"
-              </h2>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-                Visualiza el texto de tu empresa y el color corporativo.
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                <h2 style={{ fontSize: '1.35rem', fontWeight: '800', color: '#104F75', margin: 0 }}>
+                  Personalización en Vivo
+                </h2>
+                <span className="badge" style={{ background: '#EDF4F8', color: '#104F75' }}>
+                  {selectedProduct.name}
+                </span>
+              </div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', marginBottom: '1.5rem' }}>
+                Elige cómo deseas estampar la identidad de tu empresa en la pieza 3D.
               </p>
 
+              {/* 1. Customization Mode Switcher */}
               <div style={{ marginBottom: '1.5rem' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#104F75', display: 'block', marginBottom: '0.4rem' }}>
-                  NOMBRE O LEMA CORPORATIVO
+                  1. TIPO DE GRABADO CORPORATIVO
                 </label>
-                <input
-                  type="text"
-                  maxLength={selectedProduct.maxCharacters || 24}
-                  value={customBrandText}
-                  onChange={(e) => setCustomBrandText(e.target.value)}
-                  placeholder="Ej. GRUPO TECH"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid #D5E4ED',
-                    fontSize: '1rem',
-                    fontWeight: '700',
-                    color: '#104F75',
-                    outline: 'none'
-                  }}
-                />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.4rem' }}>
+                  <button
+                    onClick={() => setCustomizationType('logo')}
+                    style={{
+                      padding: '0.6rem 0.4rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: customizationType === 'logo' ? '2px solid #21658A' : '1px solid #D5E4ED',
+                      background: customizationType === 'logo' ? 'rgba(33, 101, 138, 0.1)' : '#ffffff',
+                      color: customizationType === 'logo' ? '#104F75' : '#555',
+                      fontWeight: '700',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '0.3rem'
+                    }}
+                  >
+                    <Upload size={16} />
+                    <span>Con Logotipo</span>
+                  </button>
+
+                  <button
+                    onClick={() => setCustomizationType('text')}
+                    style={{
+                      padding: '0.6rem 0.4rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: customizationType === 'text' ? '2px solid #21658A' : '1px solid #D5E4ED',
+                      background: customizationType === 'text' ? 'rgba(33, 101, 138, 0.1)' : '#ffffff',
+                      color: customizationType === 'text' ? '#104F75' : '#555',
+                      fontWeight: '700',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '0.3rem'
+                    }}
+                  >
+                    <Type size={16} />
+                    <span>Sólo Texto</span>
+                  </button>
+
+                  <button
+                    onClick={() => setCustomizationType('none')}
+                    style={{
+                      padding: '0.6rem 0.4rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: customizationType === 'none' ? '2px solid #21658A' : '1px solid #D5E4ED',
+                      background: customizationType === 'none' ? 'rgba(33, 101, 138, 0.1)' : '#ffffff',
+                      color: customizationType === 'none' ? '#104F75' : '#555',
+                      fontWeight: '700',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '0.3rem'
+                    }}
+                  >
+                    <Ban size={16} />
+                    <span>Sin Grabado</span>
+                  </button>
+                </div>
               </div>
 
+              {/* 2. File Uploader Box (if 'logo') */}
+              {customizationType === 'logo' && (
+                <div style={{ marginBottom: '1.5rem', border: '2px dashed #21658A', borderRadius: 'var(--radius-md)', padding: '1.25rem', textAlign: 'center', background: '#FAFCFD' }}>
+                  <Upload size={24} color="#21658A" style={{ margin: '0 auto 0.4rem auto' }} />
+                  <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#104F75', marginBottom: '0.2rem' }}>
+                    {logoFile ? `Logo: ${logoFile.name}` : 'Sube tu logotipo (.SVG, .AI, .PNG)'}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginBottom: '0.75rem' }}>
+                    Máx 25 MB • Trazo mín 0.8mm para óptimo relieve 3D
+                  </div>
+
+                  <input
+                    type="file"
+                    id="b2b-live-logo-input"
+                    accept=".svg,.ai,.eps,.pdf,.png,.jpg,.jpeg"
+                    onChange={handleFileUpload}
+                    style={{ display: 'none' }}
+                  />
+                  <label htmlFor="b2b-live-logo-input" className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', borderColor: '#21658A', color: '#104F75', fontWeight: '700', fontSize: '0.78rem' }}>
+                    {logoFile ? 'Reemplazar Archivo' : 'Explorar Archivo'}
+                  </label>
+                </div>
+              )}
+
+              {/* 3. Text Input (if 'text') */}
+              {customizationType === 'text' && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#104F75', display: 'block', marginBottom: '0.4rem' }}>
+                    TEXTO O SIGLAS CORPORATIVAS
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={24}
+                    value={customBrandText}
+                    onChange={(e) => setCustomBrandText(e.target.value)}
+                    placeholder="Ej. GRUPO EXPAC"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid #D5E4ED',
+                      fontSize: '0.95rem',
+                      fontWeight: '700',
+                      color: '#104F75',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* 4. Color Swatches */}
               <div style={{ marginBottom: '1.75rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                   <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#104F75' }}>
-                    COLOR CORPORATIVO
+                    COLOR DE FILAMENTO CORPORATIVO
                   </label>
                   <span style={{ fontSize: '0.82rem', fontWeight: '700', color: '#21658A' }}>
                     {selectedColor.name}
@@ -484,93 +627,37 @@ const EmpresasRoute = () => {
                 </div>
               </div>
 
-              <button
-                className="btn btn-empresas btn-lg"
-                style={{ width: '100%', fontWeight: '800' }}
-                onClick={() => setActiveStep(4)}
-              >
-                <span>Paso 4: Subir Archivo de Logotipo</span>
-                <ArrowRight size={16} />
-              </button>
-            </div>
-          </div>
-        )}
+              {/* Action */}
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button
+                  className="btn btn-secondary"
+                  style={{ flex: 1, borderColor: '#D5E4ED', color: '#104F75' }}
+                  onClick={() => setActiveStep(2)}
+                >
+                  <ArrowLeft size={16} />
+                  <span>Volver</span>
+                </button>
 
-        {/* PASO 4: ESPECIFICACIONES DE ARCHIVO Y UPLOADER */}
-        {activeStep === 4 && (
-          <div style={{ maxWidth: '750px', margin: '0 auto', background: '#FFFFFF', border: '1px solid #D5E4ED', borderRadius: 'var(--radius-xl)', padding: '2.5rem' }}>
-            <h2 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#104F75', marginBottom: '0.5rem', textAlign: 'center' }}>
-              Paso 4: Sube el Logotipo de tu Empresa
-            </h2>
-            <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '2rem' }}>
-              Nuestro equipo técnico adaptará tu vector para extrusión tridimensional perfecta.
-            </p>
-
-            {/* Technical Specifications Guide */}
-            <div style={{ background: '#EDF4F8', border: '1px solid #D5E4ED', borderRadius: 'var(--radius-lg)', padding: '1.25rem', marginBottom: '2rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '800', color: '#104F75', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
-                <ShieldCheck size={18} color="#21658A" />
-                <span>ESPECIFICACIONES TÉCNICAS REQUERIDAS:</span>
+                <button
+                  className="btn btn-empresas"
+                  style={{ flex: 1.75, fontWeight: '800' }}
+                  onClick={() => setActiveStep(4)}
+                >
+                  <span>Paso 4: Cotizar por Volumen</span>
+                  <ArrowRight size={16} />
+                </button>
               </div>
-              <ul style={{ paddingLeft: '1.25rem', fontSize: '0.82rem', color: '#4a5568', lineHeight: '1.6' }}>
-                <li><strong>Formatos admitidos:</strong> Vectorial <code>.SVG</code> o <code>.AI</code> (Recomendado), o <code>.PNG</code> de alta resolución sin fondo.</li>
-                <li><strong>Tamaño máximo de archivo:</strong> 25 MB por archivo.</li>
-                <li><strong>Grosor de trazo mínimo:</strong> 0.8 mm para garantizar relieve físico nítido sin deformaciones.</li>
-                <li><strong>Colores:</strong> El logo se adaptará al tono de filamento corporativo seleccionado.</li>
-              </ul>
-            </div>
-
-            {/* Uploader Box */}
-            <div style={{ border: '2px dashed #21658A', borderRadius: 'var(--radius-lg)', padding: '2.5rem', textAlign: 'center', background: '#FAFCFD', marginBottom: '2rem' }}>
-              <Upload size={36} color="#21658A" style={{ margin: '0 auto 0.75rem auto' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#104F75', marginBottom: '0.35rem' }}>
-                {logoFile ? `Archivo Cargado: ${logoFile.name}` : 'Arrastra tu archivo aquí o haz clic para examinar'}
-              </h3>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)', marginBottom: '1.25rem' }}>
-                Archivos SVG, AI, EPS, PDF o PNG (Máx 25 MB)
-              </p>
-
-              <input
-                type="file"
-                id="b2b-logo-input"
-                accept=".svg,.ai,.eps,.pdf,.png"
-                onChange={handleFileUpload}
-                style={{ display: 'none' }}
-              />
-              <label htmlFor="b2b-logo-input" className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', borderColor: '#21658A', color: '#104F75', fontWeight: '700' }}>
-                {logoFile ? 'Reemplazar Archivo' : 'Seleccionar Archivo'}
-              </label>
-            </div>
-
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <button
-                className="btn btn-secondary"
-                style={{ flex: 1, borderColor: '#D5E4ED', color: '#104F75' }}
-                onClick={() => setActiveStep(3)}
-              >
-                <ArrowLeft size={16} />
-                <span>Volver</span>
-              </button>
-
-              <button
-                className="btn btn-empresas"
-                style={{ flex: 1.5, fontWeight: '800' }}
-                onClick={() => setActiveStep(5)}
-              >
-                <span>Paso 5: Cotizar por Volumen y Descargar PDF</span>
-                <ArrowRight size={16} />
-              </button>
             </div>
           </div>
         )}
 
-        {/* PASO 5: CALCULADORA DE VOLUMEN Y DESCARGA DE COTIZACIÓN */}
-        {activeStep === 5 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1.2fr) minmax(300px, 0.8fr)', gap: '2rem' }}>
+        {/* PASO 4: CALCULADORA DE VOLUMEN & FORMULARIO FISCAL */}
+        {activeStep === 4 && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1.15fr) minmax(300px, 0.85fr)', gap: '2rem', alignItems: 'start' }}>
             
-            {/* Left: Form */}
-            <div style={{ background: '#FFFFFF', border: '1px solid #D5E4ED', borderRadius: 'var(--radius-xl)', padding: '2rem' }}>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#104F75', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {/* Left: Fiscal Form */}
+            <div style={{ background: '#FFFFFF', border: '1px solid #D5E4ED', borderRadius: 'var(--radius-xl)', padding: '2.25rem' }}>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: '800', color: '#104F75', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <FileText size={22} color="#21658A" />
                 <span>Datos Fiscales & Volumen</span>
               </h2>
@@ -613,7 +700,7 @@ const EmpresasRoute = () => {
                     placeholder="Ej. Corporativo Innovación S.A."
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
-                    style={{ width: '100%', padding: '0.65rem', borderRadius: 'var(--radius-sm)', background: '#EDF4F8', border: '1px solid #D5E4ED', color: '#1A1A1A', fontSize: '0.85rem' }}
+                    style={{ width: '100%', padding: '0.7rem', borderRadius: 'var(--radius-sm)', background: '#EDF4F8', border: '1px solid #D5E4ED', color: '#1A1A1A', fontSize: '0.85rem' }}
                   />
                 </div>
 
@@ -626,7 +713,7 @@ const EmpresasRoute = () => {
                     placeholder="CIN180425ABC"
                     value={rfc}
                     onChange={(e) => setRfc(e.target.value.toUpperCase())}
-                    style={{ width: '100%', padding: '0.65rem', borderRadius: 'var(--radius-sm)', background: '#EDF4F8', border: '1px solid #D5E4ED', color: '#1A1A1A', fontSize: '0.85rem' }}
+                    style={{ width: '100%', padding: '0.7rem', borderRadius: 'var(--radius-sm)', background: '#EDF4F8', border: '1px solid #D5E4ED', color: '#1A1A1A', fontSize: '0.85rem' }}
                   />
                 </div>
               </div>
@@ -641,7 +728,7 @@ const EmpresasRoute = () => {
                     placeholder="Lic. Carlos Morales"
                     value={contactName}
                     onChange={(e) => setContactName(e.target.value)}
-                    style={{ width: '100%', padding: '0.65rem', borderRadius: 'var(--radius-sm)', background: '#EDF4F8', border: '1px solid #D5E4ED', color: '#1A1A1A', fontSize: '0.85rem' }}
+                    style={{ width: '100%', padding: '0.7rem', borderRadius: 'var(--radius-sm)', background: '#EDF4F8', border: '1px solid #D5E4ED', color: '#1A1A1A', fontSize: '0.85rem' }}
                   />
                 </div>
 
@@ -655,14 +742,14 @@ const EmpresasRoute = () => {
                     placeholder="compras@empresa.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    style={{ width: '100%', padding: '0.65rem', borderRadius: 'var(--radius-sm)', background: '#EDF4F8', border: '1px solid #D5E4ED', color: '#1A1A1A', fontSize: '0.85rem' }}
+                    style={{ width: '100%', padding: '0.7rem', borderRadius: 'var(--radius-sm)', background: '#EDF4F8', border: '1px solid #D5E4ED', color: '#1A1A1A', fontSize: '0.85rem' }}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Right: Summary & PDF Trigger */}
-            <div style={{ background: '#FFFFFF', border: '1px solid #21658A', borderRadius: 'var(--radius-xl)', padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            {/* Right: Balanced Summary & PDF Trigger */}
+            <div style={{ background: '#FFFFFF', border: '1px solid #21658A', borderRadius: 'var(--radius-xl)', padding: '2.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                   <span style={{ fontSize: '0.8rem', fontWeight: '800', color: '#104F75', letterSpacing: '0.04em' }}>
@@ -708,44 +795,177 @@ const EmpresasRoute = () => {
                 <button
                   className="btn btn-empresas btn-lg"
                   style={{ width: '100%', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}
-                  onClick={handleGenerateQuote}
+                  onClick={handleOpenQuoteModal}
                 >
-                  <FileDown size={20} />
-                  <span>Paso 6: Descargar Cotización PDF</span>
+                  <Eye size={18} />
+                  <span>Ver y Descargar Cotización PDF</span>
                 </button>
 
                 <div style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-                  Comprobante formal con CLABE para transferencia SPEI BBVA.
+                  Visualiza el documento oficial antes de imprimir o guardar.
                 </div>
               </div>
             </div>
           </div>
         )}
+      </div>
 
-        {/* PASO 6: CONFIRMACIÓN */}
-        {activeStep === 6 && (
-          <div style={{ maxWidth: '650px', margin: '0 auto', textAlign: 'center', background: '#FFFFFF', border: '1px solid #21658A', borderRadius: 'var(--radius-xl)', padding: '3rem 2rem' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(33, 101, 138, 0.15)', color: '#104F75', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
-              <CheckCircle2 size={36} />
+      {/* 3. MODAL DE PREVISUALIZACIÓN DE COTIZACIÓN FORMAL PDF */}
+      {isQuoteModalOpen && generatedQuoteData && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem'
+          }}
+          onClick={() => setIsQuoteModalOpen(false)}
+        >
+          <div
+            style={{
+              background: '#FFFFFF',
+              borderRadius: 'var(--radius-xl)',
+              width: '100%',
+              maxWidth: '680px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: 'var(--shadow-xl)',
+              position: 'relative',
+              padding: '2.5rem'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #D5E4ED', paddingBottom: '1.25rem', marginBottom: '1.5rem' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                  <span className="badge badge-primary" style={{ background: '#21658A', color: '#ffffff' }}>
+                    DOCUMENTO OFICIAL
+                  </span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: '700', color: '#104F75' }}>
+                    Folio: {generatedQuoteData.quoteNumber}
+                  </span>
+                </div>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#1A1A1A', margin: 0 }}>
+                  Cotización Formal B2B — IdeaForm
+                </h2>
+              </div>
+
+              <button
+                onClick={() => setIsQuoteModalOpen(false)}
+                style={{
+                  background: '#f1f5f9',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#64748b'
+                }}
+              >
+                <X size={18} />
+              </button>
             </div>
 
-            <h2 style={{ fontSize: '1.8rem', fontWeight: '800', color: '#104F75', marginBottom: '0.5rem' }}>
-              ¡Cotización Formal B2B Emitida!
-            </h2>
+            {/* Document Body Preview */}
+            <div style={{ background: '#FAFCFD', border: '1px solid #D5E4ED', borderRadius: 'var(--radius-lg)', padding: '1.5rem', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem', fontSize: '0.85rem' }}>
+                <div>
+                  <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', fontWeight: '700' }}>EMITIDO A:</div>
+                  <div style={{ fontWeight: '800', color: '#104F75' }}>{generatedQuoteData.companyName}</div>
+                  <div style={{ color: 'var(--text-secondary)' }}>RFC: {generatedQuoteData.rfc}</div>
+                  <div style={{ color: 'var(--text-secondary)' }}>Contacto: {generatedQuoteData.contactName}</div>
+                  <div style={{ color: 'var(--text-secondary)' }}>Email: {generatedQuoteData.email}</div>
+                </div>
 
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '2rem' }}>
-              Hemos descargado tu archivo PDF y enviado una copia a <strong>{email}</strong>. Un especialista técnico de IdeaForm revisará tu archivo vectorial para validar la producción.
-            </p>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', fontWeight: '700' }}>FECHA & VIGENCIA:</div>
+                  <div style={{ fontWeight: '700', color: '#1A1A1A' }}>{generatedQuoteData.date}</div>
+                  <div style={{ color: '#059669', fontWeight: '700', fontSize: '0.78rem' }}>Vigencia: 15 Días Naturales</div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>CFDI 4.0: Gastos en General (G03)</div>
+                </div>
+              </div>
 
-            <button
-              className="btn btn-empresas"
-              onClick={() => setActiveStep(1)}
-            >
-              Crear Otra Cotización
-            </button>
+              {/* Items Table */}
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
+                <thead>
+                  <tr style={{ background: '#EDF4F8', color: '#104F75', textAlign: 'left' }}>
+                    <th style={{ padding: '0.6rem', borderRadius: '4px 0 0 4px' }}>Concepto</th>
+                    <th style={{ padding: '0.6rem', textAlign: 'center' }}>Cant.</th>
+                    <th style={{ padding: '0.6rem', textAlign: 'right' }}>P. Unit</th>
+                    <th style={{ padding: '0.6rem', textAlign: 'right', borderRadius: '0 4px 4px 0' }}>Importe</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid #D5E4ED' }}>
+                    <td style={{ padding: '0.75rem 0.6rem' }}>
+                      <div style={{ fontWeight: '700', color: '#1A1A1A' }}>{generatedQuoteData.productName}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Manufactura aditiva en PLA Seda Premium</div>
+                    </td>
+                    <td style={{ padding: '0.75rem 0.6rem', textAlign: 'center', fontWeight: '700' }}>{generatedQuoteData.units}</td>
+                    <td style={{ padding: '0.75rem 0.6rem', textAlign: 'right' }}>{formatCurrency(unitPriceAfterDiscount)}</td>
+                    <td style={{ padding: '0.75rem 0.6rem', textAlign: 'right', fontWeight: '800', color: '#104F75' }}>{formatCurrency(subtotal)}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              {/* Totals */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <div style={{ width: '240px', fontSize: '0.85rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Subtotal:</span>
+                    <span style={{ fontWeight: '700' }}>{formatCurrency(subtotal)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>IVA (16%):</span>
+                    <span style={{ fontWeight: '700' }}>{formatCurrency(iva)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.15rem', fontWeight: '800', color: '#104F75', borderTop: '1px solid #D5E4ED', paddingTop: '0.5rem' }}>
+                    <span>Total Neto:</span>
+                    <span>{formatCurrency(total)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* SPEI Wire Transfer Info */}
+              <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #D5E4ED', fontSize: '0.78rem', color: '#475569' }}>
+                <strong>🏦 Datos de Pago por Transferencia Electrónica SPEI:</strong>
+                <div>Banco: BBVA México | Beneficiario: IdeaForm 3D S.A.P.I. de C.V.</div>
+                <div>CLABE Interbancaria: <strong>0121 8000 1234 5678 90</strong></div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={handlePrintQuote}
+                style={{ borderColor: '#D5E4ED', color: '#104F75', fontWeight: '700' }}
+              >
+                <Printer size={16} />
+                <span>Imprimir</span>
+              </button>
+
+              <button
+                className="btn btn-empresas btn-lg"
+                onClick={handleDownloadPDF}
+                style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              >
+                <FileDown size={18} />
+                <span>Descargar Archivo PDF</span>
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

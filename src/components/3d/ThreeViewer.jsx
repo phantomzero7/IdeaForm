@@ -8,6 +8,8 @@ const ThreeViewer = forwardRef(({
   materialType = 'PLA_SILK',
   customText = 'IDEAFORM',
   fontFamily = 'Space Grotesk',
+  logoImage = null, // string URL / DataURL or null
+  noEngraving = false,
   scaleMultiplier = 1,
   showDimensions = true
 }, ref) => {
@@ -81,14 +83,14 @@ const ThreeViewer = forwardRef(({
       roughness: 0.1
     });
 
-    // Helper: Draw Exact Vector Logo & Typography onto 3D Canvas Texture
-    const createTextCanvasTexture = (text) => {
+    // Helper: Draw Canvas Texture with Logo or Text
+    const createTextCanvasTexture = () => {
       const canvas = document.createElement('canvas');
       canvas.width = 1024;
       canvas.height = 512;
       const ctx = canvas.getContext('2d');
 
-      // 1. Base chosen filament background
+      // Base background in chosen filament color
       ctx.fillStyle = selectedColor;
       ctx.fillRect(0, 0, 1024, 512);
 
@@ -97,10 +99,52 @@ const ThreeViewer = forwardRef(({
       ctx.lineWidth = 14;
       ctx.strokeRect(24, 24, 976, 464);
 
-      const isDefaultBrand = !text || text.toUpperCase() === 'IDEAFORM';
+      const texture = new THREE.CanvasTexture(canvas);
+
+      if (noEngraving) {
+        // Plain solid plate
+        texture.needsUpdate = true;
+        return texture;
+      }
+
+      if (logoImage) {
+        // If user uploaded a corporate logo image
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          ctx.save();
+          // Draw logo centered with 3D drop shadow
+          ctx.shadowColor = 'rgba(0,0,0,0.6)';
+          ctx.shadowBlur = 12;
+          ctx.shadowOffsetX = 4;
+          ctx.shadowOffsetY = 6;
+
+          const maxDim = 320;
+          const ratio = Math.min(maxDim / img.width, maxDim / img.height);
+          const drawW = img.width * ratio;
+          const drawH = img.height * ratio;
+          const drawX = (1024 - drawW) / 2;
+          const drawY = (512 - drawH) / 2;
+
+          ctx.drawImage(img, drawX, drawY, drawW, drawH);
+          ctx.restore();
+
+          if (customText && customText.toUpperCase() !== 'IDEAFORM') {
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `bold 42px ${fontFamily}, 'Poppins', sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.fillText(customText.toUpperCase(), 512, 440);
+          }
+          texture.needsUpdate = true;
+        };
+        img.src = logoImage;
+        return texture;
+      }
+
+      const isDefaultBrand = !customText || customText.toUpperCase() === 'IDEAFORM';
 
       if (isDefaultBrand) {
-        // --- DRAW EXACT IDEAFORM LOGO FROM MANUAL ---
+        // DRAW EXACT IDEAFORM LOGO FROM MANUAL
         ctx.save();
         ctx.translate(160, 256);
         ctx.scale(2.2, 2.2);
@@ -146,7 +190,7 @@ const ThreeViewer = forwardRef(({
         ctx.stroke();
         ctx.restore();
 
-        // Text "IdeaForm" (Idea in White, Form in Cyan/White highlight)
+        // Text "IdeaForm"
         ctx.fillStyle = '#ffffff';
         ctx.font = "800 102px 'Space Grotesk', 'Plus Jakarta Sans', sans-serif";
         ctx.textAlign = 'left';
@@ -156,7 +200,6 @@ const ThreeViewer = forwardRef(({
         ctx.shadowOffsetX = 4;
         ctx.shadowOffsetY = 5;
 
-        // Measure & render Idea + Form
         ctx.fillText('Idea', 320, 215);
         const ideaWidth = ctx.measureText('Idea').width;
         ctx.fillStyle = '#00e5ff';
@@ -181,15 +224,14 @@ const ThreeViewer = forwardRef(({
         ctx.shadowBlur = 12;
         ctx.shadowOffsetX = 4;
         ctx.shadowOffsetY = 6;
-        ctx.fillText(text.toUpperCase(), 512, 256);
+        ctx.fillText(customText.toUpperCase(), 512, 256);
       }
 
-      const texture = new THREE.CanvasTexture(canvas);
       texture.needsUpdate = true;
       return texture;
     };
 
-    const textTexture = createTextCanvasTexture(customText);
+    const textTexture = createTextCanvasTexture();
     const textPlateMaterial = new THREE.MeshStandardMaterial({
       map: textTexture,
       roughness: 0.3,
@@ -296,7 +338,7 @@ const ThreeViewer = forwardRef(({
     }
 
     group.scale.set(scaleMultiplier, scaleMultiplier, scaleMultiplier);
-  }, [modelType, selectedColor, materialType, customText, fontFamily, scaleMultiplier]);
+  }, [modelType, selectedColor, materialType, customText, fontFamily, logoImage, noEngraving, scaleMultiplier]);
 
   useEffect(() => {
     const container = mountRef.current;
