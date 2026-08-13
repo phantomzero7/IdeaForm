@@ -22,8 +22,10 @@ const Header = () => {
   const handleSelectSearchResult = (product) => {
     setSearchQuery('');
     setIsSearchOpen(false);
-    if (product.isCustomizable) {
-      navigateTo('customizer', { productId: product.id });
+    if (product.subcollection === 'empresas') {
+      navigateTo('empresas');
+    } else if (product.subcollection === 'eventos') {
+      navigateTo('eventos');
     } else {
       navigateTo('colecciones');
     }
@@ -64,18 +66,18 @@ const Header = () => {
         <IdeaFormLogo onClick={() => navigateTo('home')} />
 
         {/* Desktop Navigation Links */}
-        <nav style={{ display: 'none', gap: '0.35rem', alignItems: 'center' }} className="desktop-nav">
+        <nav style={{ display: 'none', gap: '0.5rem', alignItems: 'center' }} className="desktop-nav">
           <button
             onClick={() => navigateTo('colecciones')}
             style={{
-              background: currentView === 'colecciones' || currentView === 'catalog' ? 'rgba(0, 130, 138, 0.08)' : 'transparent',
-              color: currentView === 'colecciones' || currentView === 'catalog' ? 'var(--color-primary)' : 'var(--text-secondary)',
+              background: currentView === 'colecciones' ? '#FAEEEB' : 'transparent',
+              color: currentView === 'colecciones' ? '#A94D43' : 'var(--text-secondary)',
               fontWeight: '700',
-              padding: '0.5rem 0.85rem',
+              padding: '0.5rem 0.95rem',
               borderRadius: 'var(--radius-md)',
-              border: 'none',
+              border: currentView === 'colecciones' ? '1px solid #F0D7D2' : 'none',
               cursor: 'pointer',
-              fontSize: '0.88rem',
+              fontSize: '0.9rem',
               transition: 'all 0.15s ease'
             }}
           >
@@ -85,14 +87,14 @@ const Header = () => {
           <button
             onClick={() => navigateTo('empresas')}
             style={{
-              background: currentView === 'empresas' || currentView === 'b2b' ? 'rgba(0, 130, 138, 0.08)' : 'transparent',
-              color: currentView === 'empresas' || currentView === 'b2b' ? 'var(--color-primary)' : 'var(--text-secondary)',
+              background: currentView === 'empresas' ? '#EDF4F8' : 'transparent',
+              color: currentView === 'empresas' ? '#104F75' : 'var(--text-secondary)',
               fontWeight: '700',
-              padding: '0.5rem 0.85rem',
+              padding: '0.5rem 0.95rem',
               borderRadius: 'var(--radius-md)',
-              border: 'none',
+              border: currentView === 'empresas' ? '1px solid #D5E4ED' : 'none',
               cursor: 'pointer',
-              fontSize: '0.88rem',
+              fontSize: '0.9rem',
               transition: 'all 0.15s ease'
             }}
           >
@@ -102,14 +104,14 @@ const Header = () => {
           <button
             onClick={() => navigateTo('eventos')}
             style={{
-              background: currentView === 'eventos' ? '#f5efe6' : 'transparent',
-              color: currentView === 'eventos' ? '#8c6d48' : 'var(--text-secondary)',
+              background: currentView === 'eventos' ? '#FBF4E8' : 'transparent',
+              color: currentView === 'eventos' ? '#956016' : 'var(--text-secondary)',
               fontWeight: '700',
-              padding: '0.5rem 0.85rem',
+              padding: '0.5rem 0.95rem',
               borderRadius: 'var(--radius-md)',
-              border: 'none',
+              border: currentView === 'eventos' ? '1px solid #EFE4D2' : 'none',
               cursor: 'pointer',
-              fontSize: '0.88rem',
+              fontSize: '0.9rem',
               transition: 'all 0.15s ease'
             }}
           >
@@ -117,52 +119,32 @@ const Header = () => {
           </button>
 
           <button
-            onClick={() => navigateTo('customizer')}
-            style={{
-              background: currentView === 'customizer' ? 'rgba(0, 130, 138, 0.12)' : 'transparent',
-              color: currentView === 'customizer' ? 'var(--color-primary)' : 'var(--text-secondary)',
-              fontWeight: '700',
-              padding: '0.5rem 0.85rem',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid rgba(0, 130, 138, 0.2)',
-              cursor: 'pointer',
-              fontSize: '0.88rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem'
-            }}
-          >
-            <Sparkles size={14} color="var(--color-primary)" />
-            <span>Personalizador 3D</span>
-          </button>
-
-          <button
             onClick={() => navigateTo('tracking')}
             style={{
-              background: currentView === 'tracking' ? 'rgba(0, 130, 138, 0.08)' : 'transparent',
+              background: currentView === 'tracking' ? 'rgba(15, 95, 109, 0.08)' : 'transparent',
               color: currentView === 'tracking' ? 'var(--color-primary)' : 'var(--text-secondary)',
               fontWeight: '600',
-              padding: '0.5rem 0.85rem',
+              padding: '0.5rem 0.95rem',
               borderRadius: 'var(--radius-md)',
               border: 'none',
               cursor: 'pointer',
-              fontSize: '0.88rem',
+              fontSize: '0.9rem',
               display: 'flex',
               alignItems: 'center',
               gap: '0.35rem'
             }}
           >
-            <Truck size={15} />
+            <Truck size={16} />
             <span>Rastrear</span>
           </button>
 
-          {/* ADMIN / TALLER BUTTON: STRICTLY PROTECTED & ONLY VISIBLE TO ADMINS OR OPERATORS */}
+          {/* ADMIN / TALLER BUTTON: PROTECTED & ONLY VISIBLE TO ADMINS OR OPERATORS */}
           {isOperatorOrAdmin && (
             <button
               onClick={() => navigateTo('admin')}
-              title="Panel de Control & Taller 3D (Acceso Restringido)"
+              title="Panel de Control & Taller 3D"
               style={{
-                background: currentView === 'admin' ? '#0f172a' : 'rgba(15, 23, 42, 0.06)',
+                background: currentView === 'admin' ? '#0f172a' : '#f1f5f9',
                 color: currentView === 'admin' ? '#ffffff' : '#0f172a',
                 fontWeight: '700',
                 padding: '0.5rem 0.85rem',
@@ -373,7 +355,6 @@ const Header = () => {
             <button className="btn btn-secondary" onClick={() => { navigateTo('colecciones'); setMobileMenuOpen(false); }}>Colecciones</button>
             <button className="btn btn-secondary" onClick={() => { navigateTo('empresas'); setMobileMenuOpen(false); }}>Empresas (B2B)</button>
             <button className="btn btn-secondary" onClick={() => { navigateTo('eventos'); setMobileMenuOpen(false); }}>Eventos</button>
-            <button className="btn btn-primary" onClick={() => { navigateTo('customizer'); setMobileMenuOpen(false); }}>✨ Personalizador 3D</button>
             <button className="btn btn-secondary" onClick={() => { navigateTo('tracking'); setMobileMenuOpen(false); }}>Rastrear Pedido</button>
             
             {user ? (
@@ -390,12 +371,12 @@ const Header = () => {
       )}
 
       <style>{`
-        @media (min-width: 990px) {
+        @media (min-width: 900px) {
           .desktop-nav { display: flex !important; }
           .cart-text { display: inline !important; }
           .mobile-menu-btn { display: none !important; }
         }
-        @media (max-width: 989px) {
+        @media (max-width: 899px) {
           .mobile-menu-btn { display: block !important; }
         }
       `}</style>
