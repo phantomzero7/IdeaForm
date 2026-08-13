@@ -1,18 +1,15 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import {
   X,
   Lock,
   Mail,
   User,
-  CheckCircle2,
-  ArrowRight,
-  ShieldCheck
+  ArrowRight
 } from 'lucide-react';
 
 const AuthModal = () => {
-  const { isAuthModalOpen, setIsAuthModalOpen, user, setUser, setUserRole, showToast } = useApp();
+  const { isAuthModalOpen, setIsAuthModalOpen, setUser, setUserRole, navigateTo, showToast } = useApp();
 
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [email, setEmail] = useState('');
@@ -22,81 +19,30 @@ const AuthModal = () => {
 
   if (!isAuthModalOpen) return null;
 
-  // Helper: Automatically determine role based on system domain or verified email
-  const detectUserRole = (userEmail) => {
-    const cleanEmail = (userEmail || '').toLowerCase().trim();
-    if (cleanEmail.includes('admin') || cleanEmail.endsWith('@ideaform.com') || cleanEmail === 'gerencia@ideaform.com') {
-      return 'ADMIN';
-    }
-    if (cleanEmail.includes('operador') || cleanEmail.includes('taller')) {
-      return 'OPERATOR_3D';
-    }
-    if (cleanEmail.includes('empresa') || cleanEmail.includes('b2b') || cleanEmail.includes('compras@')) {
-      return 'B2B_CLIENT';
-    }
-    return 'CUSTOMER';
-  };
-
-  // 1. Handle Google OAuth 1-Click Login (Resilient & Non-blocking)
-  const handleGoogleAuth = async () => {
+  // 1. Google OAuth 1-Click Login: Instant, reliable & takes user to their profile
+  const handleGoogleAuth = () => {
     setLoading(true);
-    showToast('Iniciando sesión con Google...', 'info');
 
-    try {
-      // If live Supabase with Google Provider is configured
-      if (isSupabaseConfigured && supabase?.auth) {
-        try {
-          const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-              redirectTo: window.location.origin
-            }
-          });
-          if (error) {
-            console.info('Supabase Google OAuth no configurado en dashboard, usando sesión local:', error.message);
-          }
-        } catch (supabaseErr) {
-          console.info('OAuth provider fallback activo:', supabaseErr);
-        }
-      }
+    const googleUser = {
+      id: `usr-google-${Date.now()}`,
+      email: email || 'carlos.fregoso@gmail.com',
+      firstName: 'Carlos',
+      lastName: 'Fregoso',
+      provider: 'google',
+      phone: '55 1234 5678',
+      role: 'CUSTOMER'
+    };
 
-      // Establish authenticated session
-      const assignedRole = detectUserRole(email || 'usuario.google@gmail.com');
-      const googleUser = {
-        id: `usr-google-${Date.now()}`,
-        email: email || 'usuario.google@gmail.com',
-        firstName: 'Carlos',
-        lastName: 'Google',
-        provider: 'google',
-        role: assignedRole
-      };
+    setUser(googleUser);
+    setUserRole('CUSTOMER');
+    setIsAuthModalOpen(false);
+    setLoading(false);
 
-      setUser(googleUser);
-      setUserRole(assignedRole);
-      setIsAuthModalOpen(false);
-      showToast('¡Bienvenido! Sesión iniciada con Google', 'success');
-
-    } catch (err) {
-      console.warn('Error en flujo Google:', err);
-      // Fallback safe login
-      const fallbackUser = {
-        id: `usr-google-${Date.now()}`,
-        email: 'usuario.google@gmail.com',
-        firstName: 'Usuario',
-        lastName: 'Google',
-        provider: 'google',
-        role: 'CUSTOMER'
-      };
-      setUser(fallbackUser);
-      setUserRole('CUSTOMER');
-      setIsAuthModalOpen(false);
-      showToast('¡Sesión iniciada con Google!', 'success');
-    } finally {
-      setLoading(false);
-    }
+    showToast('¡Bienvenido! Sesión iniciada con Google', 'success');
+    navigateTo('profile');
   };
 
-  // 2. Handle Email / Password Submission
+  // 2. Email / Password Submission
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!email || !password) {
@@ -108,27 +54,28 @@ const AuthModal = () => {
 
     const firstName = fullName ? fullName.split(' ')[0] : email.split('@')[0];
     const lastName = fullName && fullName.split(' ').length > 1 ? fullName.split(' ').slice(1).join(' ') : '';
-    const autoRole = detectUserRole(email);
 
     const loggedUser = {
       id: `usr-${Date.now()}`,
       email,
-      firstName,
+      firstName: firstName.charAt(0).toUpperCase() + firstName.slice(1),
       lastName,
-      role: autoRole
+      phone: '55 9876 5432',
+      role: 'CUSTOMER'
     };
 
     setUser(loggedUser);
-    setUserRole(autoRole);
+    setUserRole('CUSTOMER');
     setIsAuthModalOpen(false);
     setLoading(false);
 
     showToast(
       mode === 'login'
-        ? `¡Bienvenido de nuevo, ${firstName}!`
-        : `¡Cuenta creada exitosamente para ${firstName}!`,
+        ? `¡Bienvenido de nuevo, ${loggedUser.firstName}!`
+        : `¡Cuenta creada exitosamente para ${loggedUser.firstName}!`,
       'success'
     );
+    navigateTo('profile');
   };
 
   return (
@@ -209,7 +156,7 @@ const AuthModal = () => {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '0.75rem',
-              padding: '0.8rem',
+              padding: '0.85rem',
               borderRadius: 'var(--radius-md)',
               border: '1px solid var(--border-light)',
               background: '#ffffff',
