@@ -1,6 +1,6 @@
 /**
  * Servicio de Logística y Paquetería para México
- * Cotización en tiempo real por Código Postal y emisión de Guías de Envío
+ * Cotización en tiempo real por Código Postal, autocompletado de municipios y emisión de Guías
  */
 
 export const CARRIERS = [
@@ -33,11 +33,46 @@ export const CARRIERS = [
   }
 ];
 
-export const shippingService = {
-  // Cotizar opciones de paquetería según Código Postal y total del carrito
-  calculateRates(postalCode, subtotalAmount = 0) {
-    const cleanCp = (postalCode || '').trim();
+// Diccionario de Códigos Postales Mexicanos Principales
+const CP_DATABASE = {
+  '23000': { city: 'La Paz', state: 'Baja California Sur', colony: 'Centro' },
+  '23400': { city: 'San José del Cabo', state: 'Baja California Sur', colony: 'Centro' },
+  '23450': { city: 'Cabo San Lucas', state: 'Baja California Sur', colony: 'Marina' },
+  '01000': { city: 'Ciudad de México', state: 'CDMX', colony: 'San Ángel' },
+  '06700': { city: 'Ciudad de México', state: 'CDMX', colony: 'Roma Norte' },
+  '11000': { city: 'Ciudad de México', state: 'CDMX', colony: 'Lomas de Chapultepec' },
+  '44100': { city: 'Guadalajara', state: 'Jalisco', colony: 'Centro' },
+  '45050': { city: 'Zapopan', state: 'Jalisco', colony: 'Las Águilas' },
+  '64000': { city: 'Monterrey', state: 'Nuevo León', colony: 'Centro' },
+  '66220': { city: 'San Pedro Garza García', state: 'Nuevo León', colony: 'Valle Oriente' },
+  '76000': { city: 'Querétaro', state: 'Querétaro', colony: 'Centro Histórico' },
+  '72000': { city: 'Puebla', state: 'Puebla', colony: 'Centro' },
+  '97000': { city: 'Mérida', state: 'Yucatán', colony: 'Centro' },
+  '77500': { city: 'Cancún', state: 'Quintana Roo', colony: 'Centro' },
+  '22000': { city: 'Tijuana', state: 'Baja California', colony: 'Zona Urbana Río' },
+  '31000': { city: 'Chihuahua', state: 'Chihuahua', colony: 'Centro' },
+  '80000': { city: 'Culiacán', state: 'Sinaloa', colony: 'Centro' },
+  '86000': { city: 'Villahermosa', state: 'Tabasco', colony: 'Centro' }
+};
 
+export const shippingService = {
+  // Autocompletado de Estado y Municipio por Código Postal (5 dígitos)
+  lookupPostalCode(postalCode) {
+    const cleanCp = (postalCode || '').trim();
+    if (CP_DATABASE[cleanCp]) {
+      return CP_DATABASE[cleanCp];
+    }
+    // Fallback genérico por prefijo de estado
+    const prefix = cleanCp.substring(0, 2);
+    if (prefix === '23') return { city: 'La Paz', state: 'Baja California Sur', colony: 'Colonia Local' };
+    if (prefix === '01' || prefix === '06' || prefix === '11') return { city: 'Ciudad de México', state: 'CDMX', colony: 'Colonia' };
+    if (prefix === '44' || prefix === '45') return { city: 'Guadalajara', state: 'Jalisco', colony: 'Colonia' };
+    if (prefix === '64' || prefix === '66') return { city: 'Monterrey', state: 'Nuevo León', colony: 'Colonia' };
+    return null;
+  },
+
+  // Cotizar opciones de paquetería según Código Postal y subtotal
+  calculateRates(postalCode, subtotalAmount = 0) {
     return CARRIERS.map((carrier) => {
       const isFree = subtotalAmount >= carrier.freeThreshold;
       const cost = isFree ? 0 : carrier.basePrice;

@@ -59,6 +59,21 @@ const CheckoutView = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [createdOrderFolio, setCreatedOrderFolio] = useState(null);
 
+  // Autocomplete City/State when Mexican Postal Code changes
+  const handlePostalCodeChange = (e) => {
+    const val = e.target.value;
+    setPostalCode(val);
+    if (val.length === 5) {
+      const match = shippingService.lookupPostalCode(val);
+      if (match) {
+        setCity(match.city);
+        setState(match.state);
+        if (match.colony) setColony(match.colony);
+        showToast(`📍 Ubicación detectada: ${match.city}, ${match.state}`, 'info');
+      }
+    }
+  };
+
   // Calculate Shipping Rates dynamically
   const carrierRates = shippingService.calculateRates(postalCode, cartSubtotal);
   const selectedCarrier = carrierRates.find((c) => c.id === selectedCarrierId) || carrierRates[0];
@@ -233,7 +248,7 @@ const CheckoutView = () => {
               </div>
               <div>
                 <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>Código Postal *</label>
-                <input type="text" required maxLength={5} value={postalCode} onChange={(e) => setPostalCode(e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)', fontSize: '0.88rem', fontWeight: '700' }} />
+                <input type="text" required maxLength={5} value={postalCode} onChange={handlePostalCodeChange} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)', fontSize: '0.88rem', fontWeight: '700' }} />
               </div>
             </div>
           </div>

@@ -1,472 +1,496 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { PRODUCTS, FILAMENT_MATERIALS } from '../../data/mockData';
 import ThreeViewer from '../3d/ThreeViewer';
-import { Sparkles, Check, ShoppingBag, ArrowRight, ArrowLeft, Clock, Shield, Layers, Palette, Type, HelpCircle } from 'lucide-react';
 import { formatCurrency, formatGrams } from '../../utils/formatters';
+import {
+  Sparkles,
+  Layers,
+  Palette,
+  Type,
+  Maximize2,
+  Download,
+  Share2,
+  ShoppingBag,
+  CheckCircle2,
+  ArrowRight,
+  ShieldCheck,
+  Zap,
+  Info,
+  Clock,
+  RotateCcw,
+  Smile,
+  GraduationCap,
+  Building2,
+  Heart,
+  HelpCircle
+} from 'lucide-react';
+
+const PRESETS = [
+  {
+    id: 'escolar',
+    name: '🎒 Escolar / Mochila',
+    text: 'VALENTINA',
+    modelType: 'keychain',
+    colorHex: '#00828A',
+    materialId: 'mat-02',
+    font: 'Poppins'
+  },
+  {
+    id: 'corporativo',
+    name: '🏢 Oficina Ejecutiva',
+    text: 'IDEA TECH',
+    modelType: 'organizer',
+    colorHex: '#1A1A1A',
+    materialId: 'mat-01',
+    font: 'Space Grotesk'
+  },
+  {
+    id: 'trofeo',
+    name: '🏆 Reconocimiento',
+    text: 'LÍDER 2026',
+    modelType: 'trophy',
+    colorHex: '#D4AF37',
+    materialId: 'mat-02',
+    font: 'Poppins'
+  },
+  {
+    id: 'boda',
+    name: '💍 Boda / Aniversario',
+    text: 'CARLOS & SOFÍA',
+    modelType: 'lamp',
+    colorHex: '#E6E8EA',
+    materialId: 'mat-02',
+    font: 'Dancing Script'
+  },
+  {
+    id: 'gamer',
+    name: '⚡ Gamer / Tech',
+    text: 'CYBERPUNK',
+    modelType: 'keychain',
+    colorHex: '#EA580C',
+    materialId: 'mat-03',
+    font: 'Space Grotesk'
+  }
+];
+
+const FONTS_LIST = [
+  { id: 'Poppins', name: 'Poppins Moderna', sample: 'Aa Bb 123' },
+  { id: 'Space Grotesk', name: 'Tech Grotesk', sample: 'Aa Bb 123' },
+  { id: 'Playfair Display', name: 'Serif Elegante', sample: 'Aa Bb 123' },
+  { id: 'Dancing Script', name: 'Cursiva Signature', sample: 'Aa Bb 123' }
+];
 
 const CustomizerView = () => {
-  const { viewParams, addToCart, navigateTo } = useApp();
-  const threeViewerRef = useRef(null);
+  const { viewParams, addToCart, navigateTo, showToast } = useApp();
+  const viewerRef = useRef(null);
 
-  // Available customizable products
-  const customizableProducts = PRODUCTS.filter((p) => p.isCustomizable);
+  // 1. Initial State from Navigation Params or Default
+  const initialProduct = PRODUCTS.find((p) => p.id === viewParams?.productId) || PRODUCTS[0];
 
-  // Initial Product selection from viewParams or default
-  const defaultProduct =
-    customizableProducts.find((p) => p.id === viewParams.productId) || customizableProducts[0];
-
-  const [selectedProduct, setSelectedProduct] = useState(defaultProduct);
-  const [selectedMaterial, setSelectedMaterial] = useState(FILAMENT_MATERIALS[0]);
-  const [selectedColor, setSelectedColor] = useState(FILAMENT_MATERIALS[0].colors[0]);
-  const [customText, setCustomText] = useState('SOFIA & CARLOS');
-  const [fontFamily, setFontFamily] = useState('Plus Jakarta Sans');
-  const [activeStep, setActiveStep] = useState(1); // 1: Modelo | 2: Filamento | 3: Grabado | 4: Resumen
+  const [selectedProduct, setSelectedProduct] = useState(initialProduct);
+  const [modelType, setModelType] = useState(viewParams?.modelType || initialProduct.modelType || 'keychain');
+  const [selectedMaterial, setSelectedMaterial] = useState(FILAMENT_MATERIALS[1]); // Default Silk PLA
+  const [selectedColor, setSelectedColor] = useState(FILAMENT_MATERIALS[1].colors[0]);
+  const [customText, setCustomText] = useState(viewParams?.customText || 'IDEAFORM');
+  const [selectedFont, setSelectedFont] = useState('Poppins');
   const [quantity, setQuantity] = useState(1);
-  const [isAdding, setIsAdding] = useState(false);
+  const [showScaleReference, setShowScaleReference] = useState(false);
 
-  // Handle product change
-  const handleProductChange = (prod) => {
-    setSelectedProduct(prod);
-  };
+  // Sync if viewParams change
+  useEffect(() => {
+    if (viewParams?.productId) {
+      const prod = PRODUCTS.find((p) => p.id === viewParams.productId);
+      if (prod) {
+        setSelectedProduct(prod);
+        if (prod.modelType) setModelType(prod.modelType);
+      }
+    }
+    if (viewParams?.customText) setCustomText(viewParams.customText);
+    if (viewParams?.modelType) setModelType(viewParams.modelType);
+  }, [viewParams]);
 
   // Price Calculation
   const materialMultiplier = selectedMaterial?.priceMultiplier || 1.0;
-  const unitPrice = selectedProduct.basePrice * materialMultiplier;
-  const totalPrice = unitPrice * quantity;
+  const basePrice = selectedProduct?.basePrice || 150.00;
+  const unitPrice = basePrice * materialMultiplier;
+  const subtotal = unitPrice * quantity;
 
-  // Add to cart with 3D canvas snapshot
+  // Apply Quick Preset
+  const handleApplyPreset = (preset) => {
+    setModelType(preset.modelType);
+    setCustomText(preset.text);
+    setSelectedFont(preset.font);
+
+    const mat = FILAMENT_MATERIALS.find((m) => m.id === preset.materialId) || FILAMENT_MATERIALS[1];
+    setSelectedMaterial(mat);
+
+    const col = mat.colors.find((c) => c.hex.toLowerCase() === preset.colorHex.toLowerCase()) || mat.colors[0];
+    setSelectedColor(col);
+
+    showToast(`Plantilla "${preset.name}" aplicada al configurador 3D ✨`, 'info');
+  };
+
+  // Download High-Res 3D Render
+  const handleDownloadSnapshot = () => {
+    if (viewerRef.current) {
+      const dataUrl = viewerRef.current.getSnapshot();
+      if (dataUrl) {
+        const link = document.createElement('a');
+        link.download = `ideaform-${modelType}-${customText.toLowerCase().replace(/\s+/g, '-')}.png`;
+        link.href = dataUrl;
+        link.click();
+        showToast('¡Imagen 3D descargada en alta resolución!', 'success');
+      }
+    }
+  };
+
+  // Add to Cart with snapshot
   const handleAddToCart = () => {
-    setIsAdding(true);
-    let snapshot = null;
-    if (threeViewerRef.current) {
-      snapshot = threeViewerRef.current.getSnapshot();
+    let snapshotUrl = null;
+    if (viewerRef.current) {
+      snapshotUrl = viewerRef.current.getSnapshot();
     }
 
-    setTimeout(() => {
-      addToCart({
-        id: selectedProduct.id,
-        name: selectedProduct.name,
-        basePrice: selectedProduct.basePrice,
-        finalUnitPrice: unitPrice,
-        selectedMaterial: selectedMaterial,
-        selectedColor: selectedColor,
-        customText: customText.trim(),
-        fontFamily: fontFamily,
-        previewSnapshot: snapshot,
-        weightGrams: selectedProduct.weightGrams,
-        printTimeMins: selectedProduct.printTimeMins,
-        quantity: quantity,
-        isCustom: true
-      });
-      setIsAdding(false);
-    }, 400);
+    const customizedItem = {
+      ...selectedProduct,
+      id: `${selectedProduct.id}-custom-${Date.now()}`,
+      originalId: selectedProduct.id,
+      name: `${selectedProduct.name} Personalizado`,
+      modelType,
+      customText,
+      fontFamily: selectedFont,
+      selectedMaterial: {
+        id: selectedMaterial.id,
+        name: selectedMaterial.name
+      },
+      selectedColor: {
+        id: selectedColor.id,
+        name: selectedColor.name,
+        hex: selectedColor.hex
+      },
+      finalUnitPrice: unitPrice,
+      quantity,
+      snapshotUrl,
+      weightGrams: selectedProduct.weightGrams || 25,
+      printTimeMins: selectedProduct.printTimeMins || 45
+    };
+
+    addToCart(customizedItem);
   };
 
   return (
-    <div className="container" style={{ paddingTop: '2rem', paddingBottom: '4rem' }}>
-      {/* Stepper Navigation Header */}
-      <div style={{ maxWidth: '800px', margin: '0 auto 2.5rem auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <div className="badge badge-primary" style={{ marginBottom: '0.5rem' }}>
-            <Sparkles size={14} /> TALLER DIGITAL EN VIVO
+    <div style={{ background: '#f8fafc', minHeight: '85vh', paddingBottom: '6rem' }}>
+      
+      {/* 1. Header Bar */}
+      <div style={{ background: '#ffffff', borderBottom: '1px solid var(--border-light)', padding: '1.25rem 0' }}>
+        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+              <span className="badge badge-primary">
+                <Sparkles size={13} /> CONFIGURADOR EN TIEMPO REAL
+              </span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
+                Render WebGL Three.js a 60 FPS
+              </span>
+            </div>
+            <h1 style={{ fontSize: '1.65rem', fontWeight: '800', color: '#0f172a' }}>
+              Personaliza tu Pieza 3D
+            </h1>
           </div>
-          <h1 style={{ fontSize: '2rem', fontWeight: '800' }}>Personalizador 3D Interactivo</h1>
-          <p style={{ fontSize: '0.95rem' }}>Diseña tu pieza única paso a paso y visualiza cada capa en tiempo real.</p>
-        </div>
 
-        {/* Stepper Bar */}
-        <div className="stepper-nav">
-          <div className="stepper-progress-bg" />
-          <div
-            className="stepper-progress-fill"
-            style={{
-              width: activeStep === 1 ? '0%' : activeStep === 2 ? '33%' : activeStep === 3 ? '66%' : '100%'
-            }}
-          />
-
-          <button
-            className={`stepper-step ${activeStep === 1 ? 'active' : activeStep > 1 ? 'completed' : ''}`}
-            onClick={() => setActiveStep(1)}
-          >
-            <div className="stepper-circle">{activeStep > 1 ? <Check size={16} /> : '1'}</div>
-            <span className="stepper-label">1. Modelo Base</span>
-          </button>
-
-          <button
-            className={`stepper-step ${activeStep === 2 ? 'active' : activeStep > 2 ? 'completed' : ''}`}
-            onClick={() => setActiveStep(2)}
-          >
-            <div className="stepper-circle">{activeStep > 2 ? <Check size={16} /> : '2'}</div>
-            <span className="stepper-label">2. Filamento & Color</span>
-          </button>
-
-          <button
-            className={`stepper-step ${activeStep === 3 ? 'active' : activeStep > 3 ? 'completed' : ''}`}
-            onClick={() => setActiveStep(3)}
-          >
-            <div className="stepper-circle">{activeStep > 3 ? <Check size={16} /> : '3'}</div>
-            <span className="stepper-label">3. Grabado en Relieve</span>
-          </button>
-
-          <button
-            className={`stepper-step ${activeStep === 4 ? 'active' : ''}`}
-            onClick={() => setActiveStep(4)}
-          >
-            <div className="stepper-circle">4</div>
-            <span className="stepper-label">4. Resumen & Pedido</span>
-          </button>
+          {/* Preset Buttons Quick Hub */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--text-tertiary)', marginRight: '0.25rem' }}>
+              PLANTILLAS RÁPIDAS:
+            </span>
+            {PRESETS.map((pr) => (
+              <button
+                key={pr.id}
+                onClick={() => handleApplyPreset(pr)}
+                className="btn btn-secondary btn-sm"
+                style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem', background: '#ffffff', borderRadius: 'var(--radius-full)' }}
+              >
+                {pr.name}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Main Split Layout: Left 3D Canvas (60%) / Right Configuration Panel (40%) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1.2fr) minmax(300px, 1fr)', gap: '2rem', alignItems: 'start' }} className="customizer-split">
-        
-        {/* LEFT: 3D WebGL Canvas Card */}
-        <div
-          className="card card-elevated"
-          style={{
-            padding: '1rem',
-            background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
-            position: 'sticky',
-            top: '5.5rem'
-          }}
-        >
-          <ThreeViewer
-            ref={threeViewerRef}
-            modelType={selectedProduct.model3dType || 'keychain'}
-            selectedColor={selectedColor.hex}
-            materialType={selectedMaterial.id}
-            customText={customText}
-            fontFamily={fontFamily}
-          />
+      {/* 2. Main Studio Split Grid */}
+      <div className="container" style={{ paddingTop: '2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 1.25fr) minmax(320px, 0.75fr)', gap: '2rem' }} className="customizer-split">
+          
+          {/* Left: 3D Stage Viewport */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="card card-elevated" style={{ padding: '0', background: '#ffffff', position: 'relative', overflow: 'hidden', height: '520px' }}>
+              <ThreeViewer
+                ref={viewerRef}
+                modelType={modelType}
+                selectedColor={selectedColor.hex}
+                materialType={selectedMaterial.typeCode}
+                customText={customText}
+                fontFamily={selectedFont}
+                showDimensions={true}
+              />
 
-          {/* Quick specs under canvas */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginTop: '1rem',
-              padding: '0.75rem 1rem',
-              background: '#ffffff',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-light)',
-              fontSize: '0.82rem'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)' }}>
-              <Clock size={15} color="var(--color-primary)" />
-              <span>Fabricación: <strong>{selectedMaterial.leadTimeHours} hrs</strong></span>
+              {/* Real-scale Coin Comparison Overlay */}
+              {showScaleReference && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '1rem',
+                    left: '1rem',
+                    background: 'rgba(15, 23, 42, 0.9)',
+                    backdropFilter: 'blur(8px)',
+                    color: '#ffffff',
+                    padding: '0.75rem 1rem',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.78rem',
+                    zIndex: 20,
+                    maxWidth: '240px',
+                    border: '1px solid rgba(0, 229, 255, 0.3)'
+                  }}
+                >
+                  <div style={{ fontWeight: '800', color: '#00e5ff', marginBottom: '0.25rem' }}>
+                    🪙 Referencia de Escala Real
+                  </div>
+                  <div>
+                    {modelType === 'keychain' && 'Tamaño: 65 mm (aprox. 2.3 monedas de $10 pesos mexicanas).'}
+                    {modelType === 'organizer' && 'Tamaño: 140 mm de ancho (cabe un iPhone Pro y 4 plumas).'}
+                    {modelType === 'lamp' && 'Tamaño: 135 mm de alto (lámpara decorativa de mesa).'}
+                    {modelType === 'trophy' && 'Tamaño: 190 mm de alto (estatuilla conmemorativa).'}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Floating Buttons */}
+              <div style={{ position: 'absolute', bottom: '1rem', right: '1rem', display: 'flex', gap: '0.5rem', zIndex: 10 }}>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setShowScaleReference(!showScaleReference)}
+                  style={{ background: showScaleReference ? '#00e5ff' : 'rgba(255, 255, 255, 0.95)', color: '#0f172a', fontWeight: '700' }}
+                  title="Ver referencia de tamaño real en cm"
+                >
+                  <span>{showScaleReference ? 'Ocultar Escala' : '📏 Ver Escala Real'}</span>
+                </button>
+
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleDownloadSnapshot}
+                  style={{ background: 'rgba(255, 255, 255, 0.95)', color: '#0f172a', fontWeight: '700' }}
+                  title="Descargar captura 3D en alta resolución"
+                >
+                  <Download size={14} />
+                  <span>Guardar Imagen 3D</span>
+                </button>
+              </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)' }}>
-              <Layers size={15} color="var(--color-primary)" />
-              <span>Peso filamento: <strong>{formatGrams(selectedProduct.weightGrams)}</strong></span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#059669', fontWeight: '700' }}>
-              <Shield size={15} />
-              <span>Garantía 100%</span>
+
+            {/* SLA Badge */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '0.75rem 1.25rem', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', color: '#065f46' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Clock size={16} color="#059669" />
+                <span><strong>⏰ Manufactura Prioritaria:</strong> Pide en las próximas 3 hrs para imprimir tu pieza hoy mismo.</span>
+              </div>
+              <span className="badge badge-success">SLA 24-48h</span>
             </div>
           </div>
-        </div>
 
-        {/* RIGHT: Step-by-Step Configuration Form */}
-        <div className="card" style={{ padding: '2rem' }}>
-          {/* STEP 1: Seleccionar Modelo Base */}
-          {activeStep === 1 && (
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', background: 'var(--color-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '0.85rem' }}>1</div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: '700' }}>Selecciona el Artículo Base</h3>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '1.5rem' }}>
-                {customizableProducts.map((prod) => (
-                  <div
-                    key={prod.id}
-                    onClick={() => handleProductChange(prod)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '1rem',
-                      borderRadius: 'var(--radius-md)',
-                      border: selectedProduct.id === prod.id ? '2px solid var(--color-primary)' : '1px solid var(--border-light)',
-                      background: selectedProduct.id === prod.id ? 'rgba(0, 130, 138, 0.04)' : '#ffffff',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontWeight: '700', fontSize: '0.95rem', color: '#0f172a' }}>{prod.name}</div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>{prod.dimensions} • {prod.categoryName}</div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontWeight: '800', fontSize: '1.05rem', color: 'var(--color-primary)' }}>
-                        {formatCurrency(prod.basePrice)}
-                      </div>
-                      <span className="badge badge-primary" style={{ fontSize: '0.68rem' }}>{prod.badge}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => setActiveStep(2)}>
-                <span>Continuar a Filamentos & Colores</span>
-                <ArrowRight size={18} />
-              </button>
-            </div>
-          )}
-
-          {/* STEP 2: Seleccionar Filamento y Color */}
-          {activeStep === 2 && (
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', background: 'var(--color-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '0.85rem' }}>2</div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: '700' }}>Elige Tipo de Filamento y Color</h3>
-              </div>
-
-              {/* Material Type Tabs */}
+          {/* Right: Controls & Parameters Sidebar */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div className="card" style={{ padding: '1.75rem' }}>
+              
+              {/* 1. Model Type Selector */}
               <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>
-                  TIPO DE POLÍMERO 3D
+                <label style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--text-tertiary)', letterSpacing: '0.04em', display: 'block', marginBottom: '0.5rem' }}>
+                  1. TIPO DE OBJETO 3D
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
-                  {FILAMENT_MATERIALS.map((mat) => (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  {[
+                    { id: 'keychain', label: 'Llavero Hexagonal', base: 150 },
+                    { id: 'organizer', label: 'Estación HexaDesk', base: 280 },
+                    { id: 'lamp', label: 'Lámpara DecoGlow', base: 380 },
+                    { id: 'trophy', label: 'Trofeo Prisma', base: 450 }
+                  ].map((item) => (
                     <button
-                      key={mat.id}
+                      key={item.id}
                       onClick={() => {
-                        setSelectedMaterial(mat);
-                        setSelectedColor(mat.colors[0]);
+                        setModelType(item.id);
+                        const prod = PRODUCTS.find((p) => p.modelType === item.id) || PRODUCTS[0];
+                        setSelectedProduct(prod);
                       }}
                       style={{
-                        padding: '0.75rem',
-                        borderRadius: 'var(--radius-md)',
-                        border: selectedMaterial.id === mat.id ? '2px solid var(--color-primary)' : '1px solid var(--border-light)',
-                        background: selectedMaterial.id === mat.id ? 'rgba(0, 130, 138, 0.05)' : '#ffffff',
-                        textAlign: 'left',
+                        padding: '0.65rem',
+                        borderRadius: 'var(--radius-sm)',
+                        border: modelType === item.id ? '2px solid var(--color-primary)' : '1px solid var(--border-light)',
+                        background: modelType === item.id ? 'rgba(15, 95, 109, 0.08)' : '#ffffff',
+                        fontSize: '0.82rem',
+                        fontWeight: '700',
+                        color: modelType === item.id ? 'var(--color-primary)' : '#0f172a',
                         cursor: 'pointer',
-                        transition: 'all 0.15s ease'
+                        textAlign: 'left'
                       }}
                     >
-                      <div style={{ fontWeight: '700', fontSize: '0.85rem', color: '#0f172a' }}>{mat.name}</div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginTop: '0.2rem' }}>
-                        {mat.priceMultiplier > 1.0 ? `+${Math.round((mat.priceMultiplier - 1) * 100)}% valor` : 'Precio base'}
-                      </div>
+                      <div>{item.label}</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>{formatCurrency(item.base)}</div>
                     </button>
                   ))}
                 </div>
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)', marginTop: '0.5rem', lineHeight: '1.4' }}>
-                  💡 {selectedMaterial.description}
-                </p>
               </div>
 
-              {/* Color Swatches */}
-              <div style={{ marginBottom: '2rem' }}>
-                <label style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.75rem' }}>
-                  COLOR DISPONIBLE: <strong style={{ color: 'var(--text-primary)' }}>{selectedColor.name}</strong>
+              {/* 2. Text Engraving & Font Selector */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--text-tertiary)', letterSpacing: '0.04em', display: 'block', marginBottom: '0.5rem' }}>
+                  2. TEXTO EN RELIEVE 3D
                 </label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <input
+                  type="text"
+                  maxLength={18}
+                  value={customText}
+                  onChange={(e) => setCustomText(e.target.value)}
+                  placeholder="Escribe aquí tu nombre o marca..."
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border-light)',
+                    fontSize: '1rem',
+                    fontWeight: '700',
+                    color: '#0f172a',
+                    outline: 'none',
+                    marginBottom: '0.75rem'
+                  }}
+                />
+
+                {/* Font Selector Buttons */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem' }}>
+                  {FONTS_LIST.map((f) => (
+                    <button
+                      key={f.id}
+                      onClick={() => setSelectedFont(f.id)}
+                      style={{
+                        padding: '0.4rem 0.6rem',
+                        borderRadius: 'var(--radius-sm)',
+                        border: selectedFont === f.id ? '2px solid var(--color-primary)' : '1px solid var(--border-light)',
+                        background: selectedFont === f.id ? 'rgba(15, 95, 109, 0.08)' : '#ffffff',
+                        fontSize: '0.78rem',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        fontFamily: f.id
+                      }}
+                    >
+                      {f.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. Polymer & Filament Material */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--text-tertiary)', letterSpacing: '0.04em', display: 'block', marginBottom: '0.5rem' }}>
+                  3. TIPO DE POLÍMERO 3D
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {FILAMENT_MATERIALS.map((mat) => {
+                    const isSelected = selectedMaterial.id === mat.id;
+
+                    return (
+                      <div
+                        key={mat.id}
+                        onClick={() => {
+                          setSelectedMaterial(mat);
+                          setSelectedColor(mat.colors[0]);
+                        }}
+                        style={{
+                          padding: '0.75rem',
+                          borderRadius: 'var(--radius-md)',
+                          border: isSelected ? '2px solid var(--color-primary)' : '1px solid var(--border-light)',
+                          background: isSelected ? 'rgba(15, 95, 109, 0.04)' : '#ffffff',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: '700', fontSize: '0.88rem', color: '#0f172a' }}>{mat.name}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{mat.description}</div>
+                        </div>
+                        <span className="badge" style={{ background: '#f1f5f9', color: '#0f172a', fontWeight: '800' }}>
+                          x{mat.priceMultiplier}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 4. Color Swatches */}
+              <div style={{ marginBottom: '1.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--text-tertiary)', letterSpacing: '0.04em' }}>
+                    4. COLOR DEL FILAMENTO
+                  </label>
+                  <span style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--color-primary)' }}>
+                    {selectedColor.name}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
                   {selectedMaterial.colors.map((col) => (
                     <button
                       key={col.id}
-                      className={`swatch-btn ${selectedColor.id === col.id ? 'selected' : ''}`}
-                      style={{ backgroundColor: col.hex }}
                       onClick={() => setSelectedColor(col)}
-                      title={`${col.name} (${formatGrams(col.stockGrams)} disponibles)`}
+                      className={`swatch-btn ${selectedColor.id === col.id ? 'selected' : ''}`}
+                      style={{ background: col.hex }}
+                      title={col.name}
                     />
                   ))}
                 </div>
               </div>
 
-              {/* Step 2 Buttons */}
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <button className="btn btn-secondary" onClick={() => setActiveStep(1)}>
-                  <ArrowLeft size={16} />
-                  <span>Atrás</span>
-                </button>
-                <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => setActiveStep(3)}>
-                  <span>Continuar a Grabado 3D</span>
-                  <ArrowRight size={18} />
-                </button>
-              </div>
-            </div>
-          )}
+              {/* 5. Pricing & Add to Cart */}
+              <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '1.25rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1.25rem' }}>
+                  <div>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)' }}>Precio Unitario:</span>
+                    <div style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--color-primary)' }}>
+                      {formatCurrency(unitPrice)}
+                    </div>
+                  </div>
 
-          {/* STEP 3: Grabado y Tipografía */}
-          {activeStep === 3 && (
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', background: 'var(--color-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '0.85rem' }}>3</div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: '700' }}>Personaliza Texto en Relieve</h3>
-              </div>
-
-              {/* Text Input */}
-              <div style={{ marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                  <label style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-secondary)' }}>
-                    TEXTO A GRABAR
-                  </label>
-                  <span style={{ fontSize: '0.75rem', color: customText.length > selectedProduct.maxCharacters ? '#dc2626' : 'var(--text-tertiary)' }}>
-                    {customText.length} / {selectedProduct.maxCharacters} letras
-                  </span>
-                </div>
-                <input
-                  type="text"
-                  maxLength={selectedProduct.maxCharacters}
-                  value={customText}
-                  onChange={(e) => setCustomText(e.target.value)}
-                  placeholder="Escribe tu texto..."
-                  style={{
-                    width: '100%',
-                    padding: '0.85rem 1rem',
-                    fontSize: '1.05rem',
-                    fontWeight: '700',
-                    letterSpacing: '0.04em',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-light)',
-                    outline: 'none',
-                    fontFamily: fontFamily
-                  }}
-                />
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: '0.35rem' }}>
-                  El texto se extruirá en 3D en capas sucesivas de 0.2mm de altura.
-                </p>
-              </div>
-
-              {/* Font Selector */}
-              <div style={{ marginBottom: '2rem' }}>
-                <label style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>
-                  TIPOGRAFÍA EN RELIEVE
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
-                  {[
-                    { id: 'Plus Jakarta Sans', label: 'Moderna (Sans)' },
-                    { id: 'Space Grotesk', label: 'Tech & Geométrica' },
-                    { id: 'Arial', label: 'Clásica Bold' },
-                    { id: 'Georgia', label: 'Elegante Serif' }
-                  ].map((f) => (
+                  {/* Quantity selector */}
+                  <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '0.2rem' }}>
                     <button
-                      key={f.id}
-                      onClick={() => setFontFamily(f.id)}
-                      style={{
-                        padding: '0.75rem',
-                        borderRadius: 'var(--radius-md)',
-                        border: fontFamily === f.id ? '2px solid var(--color-primary)' : '1px solid var(--border-light)',
-                        background: fontFamily === f.id ? 'rgba(0, 130, 138, 0.05)' : '#ffffff',
-                        fontFamily: f.id,
-                        fontWeight: '700',
-                        fontSize: '0.9rem',
-                        cursor: 'pointer',
-                        textAlign: 'center'
-                      }}
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      style={{ width: '28px', height: '28px', border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: '800' }}
                     >
-                      {f.label}
+                      -
                     </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Step 3 Buttons */}
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <button className="btn btn-secondary" onClick={() => setActiveStep(2)}>
-                  <ArrowLeft size={16} />
-                  <span>Atrás</span>
-                </button>
-                <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => setActiveStep(4)}>
-                  <span>Ver Resumen & Confirmar</span>
-                  <ArrowRight size={18} />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 4: Resumen y Añadir al Carrito */}
-          {activeStep === 4 && (
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', background: 'var(--color-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '0.85rem' }}>4</div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: '700' }}>Confirmación de Manufactura</h3>
-              </div>
-
-              {/* Item Specs Box */}
-              <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
-                <div style={{ fontWeight: '800', fontSize: '1.1rem', color: '#0f172a', marginBottom: '0.5rem' }}>
-                  {selectedProduct.name}
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Grabado:</span>
-                    <strong style={{ color: 'var(--color-primary)' }}>"{customText}"</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Filamento:</span>
-                    <strong>{selectedMaterial.name} ({selectedColor.name})</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Tiempo de Impresión:</span>
-                    <strong>{selectedMaterial.leadTimeHours} hrs hábiles</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Dimensiones:</span>
-                    <strong>{selectedProduct.dimensions}</strong>
+                    <span style={{ width: '32px', textAlign: 'center', fontWeight: '700', fontSize: '0.9rem' }}>{quantity}</span>
+                    <button
+                      onClick={() => setQuantity(quantity + 1)}
+                      style={{ width: '28px', height: '28px', border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: '800' }}
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
-              </div>
-
-              {/* Quantity selector */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                <span style={{ fontSize: '0.9rem', fontWeight: '700' }}>Cantidad de Piezas:</span>
-                <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)' }}>
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    style={{ padding: '0.5rem 0.85rem', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '1rem' }}
-                  >
-                    -
-                  </button>
-                  <span style={{ padding: '0 0.85rem', fontWeight: '800', fontSize: '0.95rem' }}>{quantity}</span>
-                  <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    style={{ padding: '0.5rem 0.85rem', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '1rem' }}
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              {/* Total Price Display */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1.5rem', borderTop: '1px solid var(--border-light)', paddingTop: '1rem' }}>
-                <span style={{ fontSize: '1.1rem', fontWeight: '700' }}>Total:</span>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--color-primary)' }}>
-                    {formatCurrency(totalPrice)}
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-                    {quantity > 1 ? `${formatCurrency(unitPrice)} por unidad` : 'IVA incluido'}
-                  </div>
-                </div>
-              </div>
-
-              {/* Add to Cart CTA */}
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <button className="btn btn-secondary" onClick={() => setActiveStep(3)}>
-                  <ArrowLeft size={16} />
-                  <span>Modificar</span>
-                </button>
 
                 <button
                   className="btn btn-primary btn-lg"
-                  style={{ flex: 1 }}
+                  style={{ width: '100%', fontWeight: '800' }}
                   onClick={handleAddToCart}
-                  disabled={isAdding}
                 >
-                  <ShoppingBag size={20} />
-                  <span>{isAdding ? 'Generando Render 3D...' : 'Añadir al Carrito'}</span>
+                  <ShoppingBag size={18} />
+                  <span>Añadir al Carrito ({formatCurrency(subtotal)})</span>
                 </button>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
