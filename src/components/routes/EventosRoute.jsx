@@ -1,235 +1,318 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { PRODUCTS, FILAMENT_MATERIALS } from '../../data/mockData';
+import { PRODUCTS } from '../../data/mockData';
+import { formatCurrency } from '../../utils/formatters';
 import {
   Heart,
-  Crown,
   Sparkles,
+  Calendar,
+  Gift,
+  ArrowRight,
+  CheckCircle2,
   Cake,
   GraduationCap,
-  Building,
-  Gift,
-  Check,
+  Baby,
+  PartyPopper,
   Flame,
-  Tag,
-  ArrowRight,
-  ShieldCheck,
-  Clock
+  Camera,
+  Layers
 } from 'lucide-react';
-import { formatCurrency } from '../../utils/formatters';
 
 const EVENT_TYPES = [
-  { id: 'boda', label: 'Boda', icon: Heart, desc: 'Recuerdos inolvidables' },
-  { id: 'xv', label: 'XV Años', icon: Crown, desc: 'Elegancia y brillo' },
-  { id: 'bautizo', label: 'Bautizo & Baby', icon: Sparkles, desc: 'Detalles tiernos y únicos' },
-  { id: 'cumple', label: 'Cumpleaños', icon: Cake, desc: 'Fiestas temáticas' },
-  { id: 'graduacion', label: 'Graduación', icon: GraduationCap, desc: 'Celebración de logros' },
-  { id: 'corporativo', label: 'Evento Corporativo', icon: Building, desc: 'Cenas y aniversarios' },
-  { id: 'otro', label: 'Otro Evento', icon: Gift, desc: 'Diseño 100% a la medida' }
+  { id: 'boda', name: 'Bodas & Aniversarios', icon: Heart, desc: 'Litofanías fotográficas con luz, recuerdos grabados y toppers para pastel' },
+  { id: 'xv', name: 'XV Años & Fiestas', icon: Sparkles, desc: 'Llaveros personalizados para invitados, velas 3D y números gigantes' },
+  { id: 'bautizo', name: 'Bautizos & Primera Comunión', icon: Baby, desc: 'Cruces grabadas, ángeles y recuerdos tiernos con fecha especial' },
+  { id: 'cumple', name: 'Cumpleaños & Fiestas Temáticas', icon: Cake, desc: 'Artículos 3D con nombre de festejado y figuras exclusivas' },
+  { id: 'graduacion', name: 'Graduaciones & Académicos', icon: GraduationCap, desc: 'Birretes 3D, estatuillas conmemorativas y placas de generación' },
+  { id: 'corporativo', name: 'Cenas & Galas Especiales', icon: PartyPopper, desc: 'Identificadores de mesa, centros de mesa y souvenirs de agradecimiento' }
 ];
 
 const EventosRoute = () => {
-  const { navigateTo } = useApp();
-  const [selectedEventType, setSelectedEventType] = useState('boda');
-  const [activeStep, setActiveStep] = useState(1);
+  const { navigateTo, addToCart } = useApp();
 
-  const eventProducts = PRODUCTS.filter((p) => p.route === 'EVENTS' || p.isCustomizable);
+  const [activeStep, setActiveStep] = useState(1);
+  const [selectedEventType, setSelectedEventType] = useState('boda');
+  const [guestCount, setGuestCount] = useState(50);
+  const [eventDate, setEventDate] = useState('');
+  const [celebrantNames, setCelebrantNames] = useState('');
+
+  const STEPS = [
+    { num: 1, label: '1. Tipo de Evento' },
+    { num: 2, label: '2. Detalles' },
+    { num: 3, label: '3. Recuerdos 3D' },
+    { num: 4, label: '4. Personaliza' },
+    { num: 5, label: '5. Confirmación' }
+  ];
+
+  const EVENT_PRODUCTS = [
+    {
+      id: 'evt-01',
+      name: 'Lámpara Litofanía DecoGlow',
+      categoryName: 'Recuerdo Premium',
+      basePrice: 380.00,
+      description: 'Lámpara con relieve 3D que revela tu fotografía o nombres grabados al encenderse.',
+      isCustomizable: true,
+      modelType: 'lamp'
+    },
+    {
+      id: 'evt-02',
+      name: 'Llaveros Conmemorativos para Invitados (Pack)',
+      categoryName: 'Souvenir de Mesa',
+      basePrice: 45.00,
+      description: 'Llaveros de alta precisión con nombres de los festejados, fecha y argolla metálica.',
+      isCustomizable: true,
+      modelType: 'keychain'
+    },
+    {
+      id: 'evt-03',
+      name: 'Portavelas Geométrica Mandala',
+      categoryName: 'Decoración & Centro de Mesa',
+      basePrice: 120.00,
+      description: 'Portavelas calado en 3D que proyecta patrones de sombras cálidas en mesas.',
+      isCustomizable: false,
+      modelType: 'organizer'
+    }
+  ];
 
   return (
-    <div style={{ paddingBottom: '4rem', background: '#fdfbf9' }}>
-      {/* Top Route Pill Indicator (Warm Sand Theme) */}
-      <div style={{ background: '#f5efe6', borderBottom: '1px solid #e8dfd1', padding: '0.65rem 0' }}>
-        <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
-          <span style={{ background: '#c29d72', color: '#ffffff', fontSize: '0.75rem', fontWeight: '800', padding: '0.2rem 0.65rem', borderRadius: 'var(--radius-full)', letterSpacing: '0.04em' }}>
-            RUTA 3: EVENTOS
-          </span>
-          <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#5c4a36' }}>
-            Crea algo para recordar
-          </span>
-        </div>
-      </div>
-
-      {/* Stepper Bar (Matching Mockup 3) */}
-      <div className="container" style={{ paddingTop: '1.5rem', paddingBottom: '1rem' }}>
-        <div className="stepper-nav" style={{ maxWidth: '850px', margin: '0 auto' }}>
-          <div className="stepper-progress-bg" style={{ backgroundColor: '#e8dfd1' }} />
-          <div className="stepper-progress-fill" style={{ width: activeStep === 1 ? '10%' : activeStep === 2 ? '35%' : '80%', background: 'linear-gradient(90deg, #c29d72, #00828A)' }} />
-
-          {[
-            { num: 1, label: '1. Tipo de evento' },
-            { num: 2, label: '2. Detalles' },
-            { num: 3, label: '3. Productos' },
-            { num: 4, label: '4. Personaliza' },
-            { num: 5, label: '5. Confirmación' }
-          ].map((s) => (
-            <button
-              key={s.num}
-              className={`stepper-step ${activeStep === s.num ? 'active' : activeStep > s.num ? 'completed' : ''}`}
-              onClick={() => setActiveStep(s.num)}
+    <div style={{ background: '#FAF6F0', color: '#2C2217', minHeight: '85vh', paddingBottom: '5rem' }}>
+      
+      {/* 1. Header Banner (Clean without "RUTA 3:") */}
+      <div style={{ background: '#FFFFFF', borderBottom: '1px solid #E8DFD1', padding: '1.5rem 0' }}>
+        <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <span
+              style={{
+                background: '#C29D72',
+                color: '#ffffff',
+                fontWeight: '800',
+                fontSize: '0.82rem',
+                padding: '0.4rem 0.9rem',
+                borderRadius: 'var(--radius-full)',
+                letterSpacing: '0.04em'
+              }}
             >
-              <div className="stepper-circle" style={{ borderColor: activeStep === s.num ? '#c29d72' : '#e8dfd1', backgroundColor: activeStep === s.num ? '#c29d72' : '#ffffff' }}>
-                {activeStep > s.num ? <Check size={14} color="#c29d72" /> : s.num}
-              </div>
-              <span className="stepper-label">{s.label}</span>
-            </button>
-          ))}
+              EVENTOS
+            </span>
+            <span style={{ fontSize: '1.15rem', fontWeight: '700', color: '#2C2217' }}>
+              Crea algo para recordar
+            </span>
+          </div>
+
+          <div style={{ fontSize: '0.82rem', color: '#8C6D48', fontWeight: '600' }}>
+            ✨ Diseños únicos para celebraciones inolvidables
+          </div>
         </div>
       </div>
 
-      {/* Hero Section (Warm Aesthetic) */}
-      <section style={{ padding: '2.5rem 0 3.5rem 0' }}>
-        <div className="container" style={{ textAlign: 'center', maxWidth: '800px', margin: '0 auto' }}>
-          <div className="badge" style={{ background: '#f5efe6', color: '#8c6d48', border: '1px solid #e8dfd1', marginBottom: '0.85rem' }}>
-            ✨ RECUERDOS & CELEBRACIONES
-          </div>
-          <h1 style={{ fontSize: '2.6rem', fontWeight: '800', color: '#2c2217', marginBottom: '0.85rem' }}>
-            Crea algo para recordar.
-          </h1>
-          <p style={{ fontSize: '1.1rem', color: '#6e5d4b', lineHeight: '1.6' }}>
-            Artículos personalizados con tecnología 3D para hacer de cada boda, graduación o fiesta un momento inolvidable.
-          </p>
-        </div>
-      </section>
+      {/* 2. Interactive Stepper Bar */}
+      <div className="container" style={{ paddingTop: '2.5rem', paddingBottom: '1.5rem' }}>
+        <div className="stepper-nav" style={{ maxWidth: '750px', margin: '0 auto 3rem auto' }}>
+          <div className="stepper-progress-bg" style={{ backgroundColor: '#E8DFD1' }} />
+          <div className="stepper-progress-fill" style={{ background: 'linear-gradient(90deg, #C29D72, #FFC84D)', width: `${((activeStep - 1) / (STEPS.length - 1)) * 88}%` }} />
 
-      {/* Event Type Grid ("¿Qué tipo de evento estás organizando?") */}
-      <section style={{ padding: '2.5rem 0', background: '#ffffff', borderTop: '1px solid #f0e8dc', borderBottom: '1px solid #f0e8dc' }}>
-        <div className="container">
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: '800', color: '#2c2217', marginBottom: '0.25rem' }}>
-              ¿Qué tipo de evento estás organizando?
-            </h2>
-            <p style={{ fontSize: '0.9rem', color: '#8c7b6b' }}>Selecciona tu celebración para ver recuerdos sugeridos.</p>
-          </div>
+          {STEPS.map((s) => {
+            const isCompleted = activeStep > s.num;
+            const isActive = activeStep === s.num;
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-            {EVENT_TYPES.map((ev) => {
-              const IconComp = ev.icon;
-              const isSelected = selectedEventType === ev.id;
-
-              return (
+            return (
+              <button
+                key={s.num}
+                className={`stepper-step ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
+                onClick={() => setActiveStep(s.num)}
+              >
                 <div
-                  key={ev.id}
-                  onClick={() => {
-                    setSelectedEventType(ev.id);
-                    setActiveStep(2);
-                  }}
-                  className="card"
+                  className="stepper-circle"
                   style={{
-                    padding: '1.25rem 0.75rem',
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    borderRadius: 'var(--radius-lg)',
-                    border: isSelected ? '2px solid #c29d72' : '1px solid #e8dfd1',
-                    background: isSelected ? '#fbf8f4' : '#ffffff',
-                    transition: 'all 0.2s ease'
+                    backgroundColor: isActive ? '#C29D72' : isCompleted ? '#FAF6F0' : '#FFFFFF',
+                    borderColor: isActive ? '#C29D72' : isCompleted ? '#C29D72' : '#E8DFD1',
+                    color: isActive ? '#FFFFFF' : isCompleted ? '#8C6D48' : '#A89279'
                   }}
                 >
-                  <div
-                    style={{
-                      width: '42px',
-                      height: '42px',
-                      borderRadius: '50%',
-                      background: isSelected ? '#c29d72' : '#f5efe6',
-                      color: isSelected ? '#ffffff' : '#8c6d48',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      margin: '0 auto 0.65rem auto'
-                    }}
-                  >
-                    <IconComp size={20} />
-                  </div>
-                  <h4 style={{ fontSize: '0.92rem', fontWeight: '800', color: '#2c2217', marginBottom: '0.2rem' }}>{ev.label}</h4>
-                  <p style={{ fontSize: '0.72rem', color: '#8c7b6b' }}>{ev.desc}</p>
+                  {isCompleted ? <CheckCircle2 size={16} color="#8C6D48" /> : s.num}
                 </div>
-              );
-            })}
-          </div>
+                <div className="stepper-label" style={{ color: isActive ? '#2C2217' : '#8C6D48' }}>
+                  {s.label}
+                </div>
+              </button>
+            );
+          })}
         </div>
-      </section>
 
-      {/* Ideas que encantan (Featured 3D Event Items) */}
-      <section style={{ padding: '3.5rem 0' }}>
-        <div className="container">
-          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: '800', color: '#2c2217', marginBottom: '0.25rem' }}>Ideas que encantan</h2>
-            <p style={{ fontSize: '0.9rem', color: '#8c7b6b' }}>Recuerdos y detalles personalizados con los nombres de los festejados y la fecha del evento.</p>
-          </div>
-
-          <div className="grid-responsive">
-            {eventProducts.map((prod) => (
-              <div
-                key={prod.id}
-                className="card"
-                style={{
-                  padding: '1.5rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  background: '#ffffff',
-                  border: '1px solid #e8dfd1'
-                }}
-              >
-                <div>
-                  <span className="badge badge-primary" style={{ marginBottom: '0.75rem', background: '#f5efe6', color: '#8c6d48', border: '1px solid #e8dfd1' }}>
-                    ✨ Grabado con Nombres & Fecha
-                  </span>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#2c2217', marginBottom: '0.35rem' }}>{prod.name}</h3>
-                  <p style={{ fontSize: '0.85rem', color: '#6e5d4b', marginBottom: '1rem', lineHeight: '1.5' }}>{prod.description}</p>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f0e8dc', paddingTop: '0.85rem' }}>
-                  <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#00828A' }}>
-                    {formatCurrency(prod.basePrice)}
-                  </div>
-                  <button
-                    className="btn btn-primary btn-sm"
-                    onClick={() => navigateTo('customizer', { productId: prod.id })}
-                  >
-                    <span>Personalizar 3D</span>
-                    <ArrowRight size={14} />
-                  </button>
-                </div>
+        {/* STEP 1: EVENT TYPE SELECTOR */}
+        {activeStep === 1 && (
+          <div>
+            <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+              <div style={{ color: '#8C6D48', fontWeight: '700', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
+                CELEBRACIÓN ESPECIAL
               </div>
-            ))}
-          </div>
-
-          {/* Special Custom Event Proposal Box */}
-          <div
-            className="card"
-            style={{
-              marginTop: '3rem',
-              padding: '2.5rem',
-              background: 'linear-gradient(135deg, #2c2217 0%, #423424 100%)',
-              color: '#ffffff',
-              borderRadius: 'var(--radius-xl)',
-              display: 'flex',
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '1.5rem'
-            }}
-          >
-            <div style={{ maxWidth: '550px' }}>
-              <h3 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#ffffff', marginBottom: '0.5rem' }}>
-                Hagamos de tu evento algo inolvidable.
-              </h3>
-              <p style={{ fontSize: '0.95rem', color: '#d4c7b8', lineHeight: '1.6' }}>
-                Cuéntanos los detalles de tu celebración y te ayudamos a crear los recuerdos 3D perfectos con empaque de regalo y envío prioritario.
+              <h2 style={{ fontSize: '1.85rem', fontWeight: '800', color: '#2C2217' }}>
+                ¿Qué tipo de evento estás organizando?
+              </h2>
+              <p style={{ color: '#6E5D4B' }}>
+                Crea recuerdos duraderos fabricados con tecnología 3D de alta definición.
               </p>
             </div>
 
-            <button
-              className="btn btn-lg"
-              style={{ background: '#c29d72', color: '#ffffff', fontWeight: '800', border: 'none' }}
-              onClick={() => navigateTo('b2b')}
-            >
-              <span>Solicitar Cotización de Evento</span>
-              <ArrowRight size={18} />
-            </button>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
+              {EVENT_TYPES.map((evt) => {
+                const IconComponent = evt.icon;
+                const isSelected = selectedEventType === evt.id;
+
+                return (
+                  <div
+                    key={evt.id}
+                    onClick={() => {
+                      setSelectedEventType(evt.id);
+                      setActiveStep(2);
+                    }}
+                    style={{
+                      background: isSelected ? 'rgba(194, 157, 114, 0.15)' : '#FFFFFF',
+                      border: isSelected ? '2px solid #C29D72' : '1px solid #E8DFD1',
+                      borderRadius: 'var(--radius-xl)',
+                      padding: '2rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      boxShadow: 'var(--shadow-sm)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-3px)';
+                      e.currentTarget.style.borderColor = '#C29D72';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      if (!isSelected) e.currentTarget.style.borderColor = '#E8DFD1';
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '50%',
+                        background: isSelected ? '#C29D72' : 'rgba(194, 157, 114, 0.2)',
+                        color: isSelected ? '#FFFFFF' : '#8C6D48',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: '1.25rem'
+                      }}
+                    >
+                      <IconComponent size={24} />
+                    </div>
+
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#2C2217', marginBottom: '0.4rem' }}>
+                      {evt.name}
+                    </h3>
+                    <p style={{ fontSize: '0.85rem', color: '#6E5D4B', lineHeight: '1.5', marginBottom: '1.25rem' }}>
+                      {evt.desc}
+                    </p>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#8C6D48', fontWeight: '700', fontSize: '0.82rem' }}>
+                      <span>Elegir recuerdos</span>
+                      <ArrowRight size={14} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      </section>
+        )}
+
+        {/* STEP 2 & 3: PRODUCTS SELECTION */}
+        {activeStep >= 2 && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <h2 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#2C2217' }}>
+                  Recuerdos 3D para {EVENT_TYPES.find((e) => e.id === selectedEventType)?.name || 'Eventos'}
+                </h2>
+                <p style={{ color: '#6E5D4B', fontSize: '0.9rem' }}>
+                  Personaliza nombres, fechas y colores para tus invitados.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setActiveStep(1)}
+                  style={{ background: '#FFFFFF', borderColor: '#E8DFD1', color: '#6E5D4B' }}
+                >
+                  Cambiar Evento
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+              {EVENT_PRODUCTS.map((prod) => (
+                <div
+                  key={prod.id}
+                  className="card card-elevated"
+                  style={{
+                    background: '#FFFFFF',
+                    border: '1px solid #E8DFD1',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: '1.5rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between'
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                      <span className="badge" style={{ background: '#FAF6F0', color: '#8C6D48', border: '1px solid #E8DFD1' }}>
+                        {prod.categoryName}
+                      </span>
+                    </div>
+
+                    <div
+                      style={{
+                        height: '180px',
+                        background: 'linear-gradient(135deg, #FAF6F0 0%, #E8DFD1 100%)',
+                        borderRadius: 'var(--radius-md)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: '1rem'
+                      }}
+                    >
+                      <Sparkles size={40} color="#C29D72" />
+                      <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#8C6D48', marginTop: '0.5rem' }}>
+                        Acabado Seda & Grabado 3D
+                      </span>
+                    </div>
+
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#2C2217', marginBottom: '0.35rem' }}>
+                      {prod.name}
+                    </h3>
+                    <p style={{ fontSize: '0.82rem', color: '#6E5D4B', lineHeight: '1.5', marginBottom: '1rem' }}>
+                      {prod.description}
+                    </p>
+                  </div>
+
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1rem', borderTop: '1px solid #E8DFD1', paddingTop: '0.75rem' }}>
+                      <span style={{ fontSize: '0.78rem', color: '#8C6D48' }}>Desde:</span>
+                      <span style={{ fontSize: '1.3rem', fontWeight: '800', color: '#8C6D48' }}>
+                        {formatCurrency(prod.basePrice)}
+                      </span>
+                    </div>
+
+                    <button
+                      className="btn"
+                      style={{ width: '100%', background: '#C29D72', color: '#FFFFFF', fontWeight: '700' }}
+                      onClick={() => navigateTo('customizer', { modelType: prod.modelType, customText: 'NUESTRA BODA' })}
+                    >
+                      <Sparkles size={15} />
+                      <span>Personalizar Nombres en 3D</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

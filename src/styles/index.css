@@ -1,46 +1,54 @@
 /* ==========================================================================
    IDEAFORM - DESIGN SYSTEM & GLOBAL CSS
+   Basado en el Manual de Identidad Visual Oficial (Brand Book Fase 2)
    ========================================================================== */
 
 :root {
-  /* Color Palette - HSL Tailored */
-  --primary-h: 184;
-  --primary-s: 100%;
-  --primary-l: 27%; /* #00828A */
-  --color-primary: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
-  --color-primary-light: hsl(184, 90%, 38%);
-  --color-primary-dark: hsl(184, 100%, 18%);
-  --color-primary-glow: hsla(184, 100%, 35%, 0.25);
+  /* Color Corporativo Principal */
+  --color-primary: #0F5F6D; /* Teal IdeaForm (Pantone 7712 C) */
+  --color-primary-light: #20A39E; /* Teal Claro */
+  --color-primary-dark: #0A3E47;
+  --color-primary-glow: rgba(15, 95, 109, 0.25);
   
-  --accent-cyan: #00e5ff;
-  --accent-cyan-glow: rgba(0, 229, 255, 0.3);
-  --accent-amber: #f59e0b;
-  --accent-emerald: #10b981;
-  --accent-rose: #f43f5e;
+  /* Paleta Secundaria del Manual */
+  --color-carbon: #1A1A1A;
+  --color-blue-deep: #1D3557; /* Azul Profundo Corporativo */
+  --color-blue-gray: #607D8B; /* Azul Grisáceo */
+  --color-gray-light: #E6E8EA; /* Gris Claro */
+  --color-sand: #E9D8B6; /* Arena Eventos */
+  --color-mustard: #FFC84D; /* Amarillo Mostaza */
+  --color-coral: #FF7F6E; /* Coral Suave */
+  --color-lavender: #B8A9E6; /* Lavanda */
   
-  /* Neutrals & Surfaces */
-  --bg-main: #f8fafc;
-  --bg-surface: #ffffff;
-  --bg-surface-elevated: #ffffff;
-  --bg-surface-alt: #f1f5f9;
-  --bg-dark: #090e17;
-  --bg-dark-card: #131b2b;
-  --bg-dark-border: #1e293b;
+  /* Neutros & Superficies */
+  --bg-main: #F8FAFC;
+  --bg-surface: #FFFFFF;
+  --bg-surface-alt: #F1F5F9;
+  
+  /* B2B Empresas Theme Colors */
+  --bg-b2b-dark: #0e1927;
+  --bg-b2b-card: #142236;
+  --border-b2b: #233752;
+  
+  /* Eventos Theme Colors */
+  --bg-events-main: #FAF6F0;
+  --bg-events-surface: #FFFFFF;
+  --border-events: #E8DFD1;
+  --text-events-primary: #2C2217;
+  --text-events-secondary: #6E5D4B;
   
   /* Text Colors */
-  --text-primary: #0f172a;
+  --text-primary: #1A1A1A;
   --text-secondary: #475569;
-  --text-tertiary: #94a3b8;
-  --text-inverse: #ffffff;
+  --text-tertiary: #94A3B8;
+  --text-inverse: #FFFFFF;
   
   /* Borders & Shadows */
-  --border-light: #e2e8f0;
-  --border-subtle: #f1f5f9;
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 25px -3px rgba(0, 130, 138, 0.12), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 30px -6px rgba(0, 0, 0, 0.12), 0 10px 15px -5px rgba(0, 0, 0, 0.08);
-  --shadow-glow: 0 0 25px var(--color-primary-glow);
+  --border-light: #E2E8F0;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 10px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 12px 28px -4px rgba(15, 95, 109, 0.12);
+  --shadow-xl: 0 20px 35px -6px rgba(0, 0, 0, 0.14);
   
   /* Radii */
   --radius-sm: 8px;
@@ -49,9 +57,10 @@
   --radius-xl: 24px;
   --radius-full: 9999px;
   
-  /* Typography */
-  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'Space Grotesk', ui-monospace, SFMono-Regular, monospace;
+  /* Typography - Poppins para Títulos & Inter para Cuerpos */
+  --font-heading: 'Poppins', system-ui, -apple-system, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Space Grotesk', ui-monospace, monospace;
 }
 
 /* Reset & Base */
@@ -69,7 +78,7 @@ html {
 }
 
 body {
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   background-color: var(--bg-main);
   color: var(--text-primary);
   line-height: 1.5;
@@ -77,20 +86,36 @@ body {
   min-height: 100vh;
 }
 
-/* Typography Helpers */
+/* Typography Hierarchy (Manual de Marca - Página 10) */
 h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
   color: var(--text-primary);
-  font-weight: 700;
-  line-height: 1.25;
   letter-spacing: -0.02em;
 }
 
-h1 { font-size: clamp(2rem, 4vw + 1rem, 3.25rem); }
-h2 { font-size: clamp(1.5rem, 3vw + 0.5rem, 2.25rem); }
-h3 { font-size: clamp(1.2rem, 2vw + 0.3rem, 1.5rem); }
+h1 {
+  font-size: clamp(2rem, 3.5vw + 1rem, 3.2rem);
+  font-weight: 800; /* Poppins ExtraBold */
+  line-height: 1.15;
+}
+
+h2 {
+  font-size: clamp(1.5rem, 2.5vw + 0.5rem, 2.2rem);
+  font-weight: 700; /* Poppins SemiBold / Bold */
+  line-height: 1.25;
+}
+
+h3 {
+  font-size: clamp(1.15rem, 1.8vw + 0.3rem, 1.45rem);
+  font-weight: 600; /* Poppins SemiBold */
+  line-height: 1.3;
+}
 
 p {
   color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-weight: 400; /* Inter Regular */
+  line-height: 1.6;
 }
 
 a {
@@ -113,24 +138,9 @@ button, input, select, textarea {
   padding-right: 1.5rem;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
 /* Global Buttons */
 .btn {
+  font-family: var(--font-heading);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -142,7 +152,6 @@ button, input, select, textarea {
   border: 1px solid transparent;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  text-decoration: none;
   line-height: 1.2;
 }
 
@@ -171,37 +180,28 @@ button, input, select, textarea {
   border-color: #cbd5e1;
 }
 
-.btn-accent {
-  background: linear-gradient(135deg, var(--color-primary) 0%, #00a4af 100%);
-  color: #ffffff;
-  box-shadow: 0 4px 15px rgba(0, 130, 138, 0.3);
+.btn-b2b {
+  background: linear-gradient(135deg, #1D3557 0%, #0F5F6D 100%);
+  color: #FFFFFF;
+  border: 1px solid #20A39E;
+  box-shadow: 0 4px 15px rgba(32, 163, 158, 0.25);
 }
-.btn-accent:hover {
-  filter: brightness(1.08);
-  box-shadow: 0 6px 22px rgba(0, 130, 138, 0.45);
+.btn-b2b:hover {
+  background: linear-gradient(135deg, #25446e 0%, #15798b 100%);
   transform: translateY(-1px);
 }
 
 .btn-dark {
-  background-color: #0f172a;
+  background-color: var(--color-carbon);
   color: #ffffff;
 }
 .btn-dark:hover {
-  background-color: #1e293b;
-}
-
-.btn-outline-primary {
-  background: transparent;
-  color: var(--color-primary);
-  border-color: var(--color-primary);
-}
-.btn-outline-primary:hover {
-  background: rgba(0, 130, 138, 0.08);
+  background-color: #2a2a2a;
 }
 
 .btn-sm {
   padding: 0.45rem 0.85rem;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   border-radius: var(--radius-sm);
 }
 
@@ -213,21 +213,20 @@ button, input, select, textarea {
 
 /* Badges */
 .badge {
+  font-family: var(--font-heading);
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   padding: 0.25rem 0.65rem;
   font-size: 0.75rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   border-radius: var(--radius-full);
 }
 
 .badge-primary {
-  background-color: rgba(0, 130, 138, 0.12);
+  background-color: rgba(15, 95, 109, 0.1);
   color: var(--color-primary);
-  border: 1px solid rgba(0, 130, 138, 0.2);
+  border: 1px solid rgba(15, 95, 109, 0.2);
 }
 
 .badge-success {
@@ -240,12 +239,6 @@ button, input, select, textarea {
   background-color: #fffbeb;
   color: #d97706;
   border: 1px solid #fde68a;
-}
-
-.badge-cyan {
-  background-color: rgba(0, 229, 255, 0.1);
-  color: #00828A;
-  border: 1px solid rgba(0, 229, 255, 0.3);
 }
 
 /* Cards */
@@ -265,7 +258,7 @@ button, input, select, textarea {
 
 .card-elevated {
   box-shadow: var(--shadow-lg);
-  border-color: rgba(0, 130, 138, 0.1);
+  border-color: rgba(15, 95, 109, 0.12);
 }
 
 /* Stepper Component */
@@ -294,7 +287,7 @@ button, input, select, textarea {
   top: 50%;
   left: 3rem;
   height: 3px;
-  background: linear-gradient(90deg, var(--color-primary), #00c4d0);
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
   transform: translateY(-50%);
   z-index: 2;
   transition: width 0.35s ease;
@@ -313,6 +306,7 @@ button, input, select, textarea {
 }
 
 .stepper-circle {
+  font-family: var(--font-heading);
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 50%;
@@ -336,11 +330,12 @@ button, input, select, textarea {
 
 .stepper-step.completed .stepper-circle {
   border-color: var(--color-primary);
-  background-color: #e6f7f8;
+  background-color: #eaf5f6;
   color: var(--color-primary);
 }
 
 .stepper-label {
+  font-family: var(--font-heading);
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-tertiary);
@@ -370,40 +365,33 @@ button, input, select, textarea {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: #0f172a;
+  background: #1A1A1A;
   color: #ffffff;
   padding: 0.9rem 1.25rem;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-xl);
-  border-left: 4px solid var(--accent-cyan);
+  border-left: 4px solid var(--color-primary-light);
   min-width: 300px;
   max-width: 420px;
   animation: slideInRight 0.3s ease;
 }
 
 @keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(100%);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
-/* Modal Backdrop */
+/* Modals */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(26, 26, 26, 0.65);
   backdrop-filter: blur(4px);
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  animation: fadeIn 0.2s ease;
 }
 
 .modal-content {
@@ -414,17 +402,6 @@ button, input, select, textarea {
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  animation: zoomIn 0.25s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes zoomIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
 }
 
 /* Grid Layouts */
@@ -434,7 +411,7 @@ button, input, select, textarea {
   gap: 1.5rem;
 }
 
-/* Swatch Circles */
+/* Swatches */
 .swatch-btn {
   width: 2.25rem;
   height: 2.25rem;
@@ -442,34 +419,13 @@ button, input, select, textarea {
   border: 2px solid transparent;
   cursor: pointer;
   transition: all 0.2s ease;
-  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
 .swatch-btn.selected {
-  border-color: #0f172a;
+  border-color: #1A1A1A;
   transform: scale(1.15);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-}
-
-.swatch-btn::after {
-  content: '';
-  position: absolute;
-  inset: 2px;
-  border-radius: 50%;
-  background: inherit;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .stepper-label {
-    display: none;
-  }
-  .stepper-circle {
-    width: 2rem;
-    height: 2rem;
-    font-size: 0.8rem;
-  }
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 }
