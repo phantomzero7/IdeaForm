@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { PRODUCTS, FILAMENT_MATERIALS, FAQS } from '../../data/mockData';
+import { FAQS } from '../../data/mockData';
 import ThreeViewer from '../3d/ThreeViewer';
 import {
   Sparkles,
@@ -18,7 +18,6 @@ import {
   PackageCheck,
   UserCheck
 } from 'lucide-react';
-import { formatCurrency } from '../../utils/formatters';
 
 const HomeView = () => {
   const { navigateTo, showToast } = useApp();
@@ -70,14 +69,14 @@ const HomeView = () => {
               </p>
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
-                <button className="btn btn-primary btn-lg" onClick={() => navigateTo('customizer')}>
+                <button className="btn btn-primary btn-lg" onClick={() => navigateTo('colecciones')}>
                   <span>Explora lo que podemos crear</span>
                   <ArrowRight size={18} />
                 </button>
               </div>
             </div>
 
-            {/* Right Hero Visual: 3D Stage */}
+            {/* Right Hero Visual: 3D Stage with Official IdeaForm Brand Emblem */}
             <div className="card card-elevated" style={{ padding: '1rem', background: '#ffffff', position: 'relative' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem 0.75rem 0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', fontWeight: '700', color: '#1A1A1A' }}>
@@ -92,8 +91,8 @@ const HomeView = () => {
                       key={hex}
                       onClick={() => setTeaserColor(hex)}
                       style={{
-                        width: '18px',
-                        height: '18px',
+                        width: '20px',
+                        height: '20px',
                         borderRadius: '50%',
                         background: hex,
                         border: teaserColor === hex ? '2px solid #1A1A1A' : '1px solid #cbd5e1',
@@ -118,9 +117,9 @@ const HomeView = () => {
                 <button
                   className="btn btn-primary btn-sm"
                   style={{ width: '100%' }}
-                  onClick={() => navigateTo('customizer', { productId: 'prod-01' })}
+                  onClick={() => navigateTo('colecciones')}
                 >
-                  <span>Abrir en Personalizador Completo</span>
+                  <span>Explorar y Personalizar en Colecciones</span>
                   <ArrowRight size={14} />
                 </button>
               </div>
@@ -174,7 +173,7 @@ const HomeView = () => {
                   Diseña algo que sea tuyo.
                 </div>
                 <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '1.75rem' }}>
-                  Productos personalizados para escuela, oficina, regalos y uso diario listos para ordenar o diseñar.
+                  Productos personalizados para escuela, oficina, regalos y uso diario listos para ordenar o diseñar en 6 pasos.
                 </p>
               </div>
 

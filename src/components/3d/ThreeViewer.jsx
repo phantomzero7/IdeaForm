@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef, useCallback } from 'react';
 import * as THREE from 'three';
-import { RotateCw, Eye, RefreshCw } from 'lucide-react';
+import { RotateCw, Eye } from 'lucide-react';
 
 const ThreeViewer = forwardRef(({
   modelType = 'keychain', // keychain | organizer | lamp | trophy
@@ -64,39 +64,12 @@ const ThreeViewer = forwardRef(({
       group.remove(obj);
     }
 
-    // Determine Material Properties based on polymer
-    let roughness = 0.4;
-    let metalness = 0.1;
-    let transmission = 0.0;
-    let opacity = 1.0;
-    let transparent = false;
-
-    if (materialType === 'PLA_SILK') {
-      roughness = 0.2;
-      metalness = 0.5;
-    } else if (materialType === 'PLA_STANDARD') {
-      roughness = 0.7;
-      metalness = 0.02;
-    } else if (materialType === 'PETG') {
-      roughness = 0.15;
-      metalness = 0.1;
-      transmission = 0.45;
-      transparent = true;
-      opacity = 0.85;
-    } else if (materialType === 'RESIN') {
-      roughness = 0.1;
-      metalness = 0.05;
-    }
-
     const mainMaterial = new THREE.MeshPhysicalMaterial({
       color: new THREE.Color(selectedColor),
-      roughness,
-      metalness,
-      transmission,
-      opacity,
-      transparent,
+      roughness: 0.25,
+      metalness: 0.35,
       wireframe: false,
-      clearcoat: materialType === 'PLA_SILK' || materialType === 'RESIN' ? 0.65 : 0.0,
+      clearcoat: 0.6,
       clearcoatRoughness: 0.1
     });
 
@@ -107,35 +80,110 @@ const ThreeViewer = forwardRef(({
     });
 
     const steelMaterial = new THREE.MeshStandardMaterial({
-      color: 0xcccccc,
-      metalness: 0.9,
+      color: 0xdde3ea,
+      metalness: 0.95,
       roughness: 0.1
     });
 
-    // Helper: Create Text Canvas Texture for Engraving
+    // Helper: Draw Official IdeaForm Bulb Vector Logo & Text Texture
     const createTextCanvasTexture = (text) => {
       const canvas = document.createElement('canvas');
-      canvas.width = 512;
-      canvas.height = 256;
+      canvas.width = 1024;
+      canvas.height = 512;
       const ctx = canvas.getContext('2d');
 
-      // Background matching selected color
-      ctx.fillStyle = selectedColor;
-      ctx.fillRect(0, 0, 512, 256);
+      // 1. Background in chosen filament color with subtle relief gradient
+      const grad = ctx.createLinearGradient(0, 0, 1024, 512);
+      grad.addColorStop(0, selectedColor);
+      grad.addColorStop(1, selectedColor);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 1024, 512);
 
-      // Engraved Text with bevel shadow
-      ctx.fillStyle = '#ffffff';
-      ctx.font = `bold 52px ${fontFamily}, 'Poppins', 'Plus Jakarta Sans', sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      // Subtle chamfer border in white
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 12;
+      ctx.strokeRect(20, 20, 984, 472);
 
-      // Soft shadow for 3D depth
-      ctx.shadowColor = 'rgba(0,0,0,0.55)';
-      ctx.shadowBlur = 8;
-      ctx.shadowOffsetX = 2;
-      ctx.shadowOffsetY = 3;
+      const isDefaultBrand = !text || text.toUpperCase() === 'IDEAFORM';
 
-      ctx.fillText((text || 'IDEAFORM').toUpperCase(), 256, 128);
+      if (isDefaultBrand) {
+        // DRAW OFFICIAL IDEAFORM BULB ICON + BRAND TYPOGRAPHY
+        ctx.save();
+        ctx.translate(140, 256);
+        ctx.scale(1.8, 1.8);
+
+        // Bulb Outer
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 7;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 3;
+        ctx.shadowOffsetY = 4;
+
+        // Rays
+        ctx.beginPath();
+        ctx.moveTo(-25, -25); ctx.lineTo(-38, -38);
+        ctx.moveTo(0, -35); ctx.lineTo(0, -50);
+        ctx.moveTo(25, -25); ctx.lineTo(38, -38);
+        ctx.stroke();
+
+        // Bulb Arc
+        ctx.beginPath();
+        ctx.arc(0, 0, 32, 0.75 * Math.PI, 2.25 * Math.PI, false);
+        ctx.lineTo(16, 32);
+        ctx.lineTo(-16, 32);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Filament Dot
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(-8, -4, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Filament 'i' & 'f' Loop
+        ctx.beginPath();
+        ctx.moveTo(-8, 6);
+        ctx.lineTo(-8, 26);
+        ctx.bezierCurveTo(-8, 32, 6, 34, 10, 26);
+        ctx.lineTo(10, -6);
+        ctx.bezierCurveTo(10, -16, 20, -16, 24, -10);
+        ctx.moveTo(-2, 12);
+        ctx.lineTo(18, 12);
+        ctx.stroke();
+        ctx.restore();
+
+        // Brand Text "ideaform"
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `800 84px ${fontFamily}, 'Space Grotesk', 'Poppins', sans-serif`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(0,0,0,0.55)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 4;
+        ctx.shadowOffsetY = 5;
+        ctx.fillText('ideaform', 310, 230);
+
+        // Subtitle "DISEÑO & IMPRESIÓN 3D"
+        ctx.font = `700 28px ${fontFamily}, 'Poppins', sans-serif`;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.letterSpacing = '0.2em';
+        ctx.fillText('DISEÑO & IMPRESIÓN 3D', 315, 305);
+
+      } else {
+        // CUSTOM USER TEXT IN EMBOSSED 3D
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold 82px ${fontFamily}, 'Poppins', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(0,0,0,0.6)';
+        ctx.shadowBlur = 12;
+        ctx.shadowOffsetX = 4;
+        ctx.shadowOffsetY = 6;
+        ctx.fillText(text.toUpperCase(), 512, 256);
+      }
 
       const texture = new THREE.CanvasTexture(canvas);
       texture.needsUpdate = true;
@@ -145,44 +193,44 @@ const ThreeViewer = forwardRef(({
     const textTexture = createTextCanvasTexture(customText);
     const textPlateMaterial = new THREE.MeshStandardMaterial({
       map: textTexture,
-      roughness: 0.4,
-      metalness: 0.1
+      roughness: 0.3,
+      metalness: 0.2
     });
 
-    // BUILD PROCEDURAL 3D MODELS
+    // BUILD 3D PROCEDURAL MODELS
     if (modelType === 'keychain') {
       // 1. Base Chamfered Hexagon Tag
-      const baseGeo = new THREE.CylinderGeometry(1.8, 1.8, 0.25, 6);
+      const baseGeo = new THREE.CylinderGeometry(1.9, 1.9, 0.22, 6);
       baseGeo.rotateX(Math.PI / 2);
       const baseMesh = new THREE.Mesh(baseGeo, mainMaterial);
       baseMesh.castShadow = true;
       baseMesh.receiveShadow = true;
       group.add(baseMesh);
 
-      // Inner Tag Plate with text texture
-      const plateGeo = new THREE.BoxGeometry(2.4, 1.2, 0.08);
+      // Inner Tag Plate Front
+      const plateGeo = new THREE.BoxGeometry(2.6, 1.35, 0.06);
       const plateMesh = new THREE.Mesh(plateGeo, textPlateMaterial);
-      plateMesh.position.z = 0.15;
+      plateMesh.position.z = 0.13;
       group.add(plateMesh);
 
       // Back Plate
       const backPlate = new THREE.Mesh(plateGeo, textPlateMaterial);
-      backPlate.position.z = -0.15;
+      backPlate.position.z = -0.13;
       backPlate.rotation.y = Math.PI;
       group.add(backPlate);
 
       // Keychain Metallic Ring
-      const ringGeo = new THREE.TorusGeometry(0.5, 0.06, 16, 32);
+      const ringGeo = new THREE.TorusGeometry(0.55, 0.07, 16, 32);
       const ringMesh = new THREE.Mesh(ringGeo, steelMaterial);
-      ringMesh.position.set(0, 1.9, 0);
+      ringMesh.position.set(0, 2.05, 0);
       ringMesh.rotation.y = Math.PI / 4;
       group.add(ringMesh);
 
-      // Hole ring
-      const holeGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.35, 16);
+      // Hole ring connector
+      const holeGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.32, 16);
       holeGeo.rotateX(Math.PI / 2);
       const holeMesh = new THREE.Mesh(holeGeo, accentMaterial);
-      holeMesh.position.set(0, 1.45, 0);
+      holeMesh.position.set(0, 1.52, 0);
       group.add(holeMesh);
 
     } else if (modelType === 'organizer') {
@@ -192,7 +240,6 @@ const ThreeViewer = forwardRef(({
       mainMesh.castShadow = true;
       group.add(mainMesh);
 
-      // Pen Slots
       for (let i = 0; i < 4; i++) {
         const angle = (i * Math.PI) / 2;
         const slotGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.8, 16);
@@ -201,13 +248,11 @@ const ThreeViewer = forwardRef(({
         group.add(slotMesh);
       }
 
-      // Phone Dock Plate Front
       const phoneTrayGeo = new THREE.BoxGeometry(2.2, 0.5, 0.8);
       const phoneTrayMesh = new THREE.Mesh(phoneTrayGeo, mainMaterial);
       phoneTrayMesh.position.set(0, -0.65, 1.3);
       group.add(phoneTrayMesh);
 
-      // Front Engraved Badge
       const badgeGeo = new THREE.BoxGeometry(2.0, 0.6, 0.05);
       const badgeMesh = new THREE.Mesh(badgeGeo, textPlateMaterial);
       badgeMesh.position.set(0, -0.2, 1.55);
@@ -215,19 +260,16 @@ const ThreeViewer = forwardRef(({
       group.add(badgeMesh);
 
     } else if (modelType === 'lamp') {
-      // Litofanía DecoGlow
       const lampBaseGeo = new THREE.CylinderGeometry(1.4, 1.6, 0.5, 32);
       const lampBaseMesh = new THREE.Mesh(lampBaseGeo, accentMaterial);
       lampBaseMesh.position.y = -1.2;
       group.add(lampBaseMesh);
 
-      // Lamp Shade
       const shadeGeo = new THREE.CylinderGeometry(1.3, 1.3, 2.4, 32, 1, true);
       const shadeMesh = new THREE.Mesh(shadeGeo, textPlateMaterial);
       shadeMesh.position.y = 0.2;
       group.add(shadeMesh);
 
-      // Internal Glow
       const bulbGeo = new THREE.SphereGeometry(0.4, 16, 16);
       const bulbMat = new THREE.MeshBasicMaterial({ color: 0xffe8b3 });
       const bulbMesh = new THREE.Mesh(bulbGeo, bulbMat);
@@ -239,7 +281,6 @@ const ThreeViewer = forwardRef(({
       group.add(pointLight);
 
     } else if (modelType === 'trophy') {
-      // Trofeo Prisma
       const base1Geo = new THREE.BoxGeometry(2.2, 0.4, 2.2);
       const base1Mesh = new THREE.Mesh(base1Geo, accentMaterial);
       base1Mesh.position.y = -1.3;
@@ -273,18 +314,15 @@ const ThreeViewer = forwardRef(({
     const width = container.clientWidth || 600;
     const height = container.clientHeight || 450;
 
-    // Scene with pure neutral studio background
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xf8fafc);
     sceneRef.current = scene;
 
-    // Camera
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
     camera.position.set(0, 3.2, 6.8);
     camera.lookAt(0, 0.2, 0);
     cameraRef.current = camera;
 
-    // Renderer
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       preserveDrawingBuffer: true,
@@ -301,18 +339,15 @@ const ThreeViewer = forwardRef(({
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.95);
     scene.add(ambientLight);
 
     const mainLight = new THREE.DirectionalLight(0xffffff, 1.8);
     mainLight.position.set(5, 8, 5);
     mainLight.castShadow = true;
-    mainLight.shadow.mapSize.width = 1024;
-    mainLight.shadow.mapSize.height = 1024;
     scene.add(mainLight);
 
-    const fillLight = new THREE.DirectionalLight(0x00e5ff, 0.5);
+    const fillLight = new THREE.DirectionalLight(0x00e5ff, 0.4);
     fillLight.position.set(-5, 3, -3);
     scene.add(fillLight);
 
@@ -320,21 +355,18 @@ const ThreeViewer = forwardRef(({
     rimLight.position.set(0, -4, -4);
     scene.add(rimLight);
 
-    // Subtle Grid Floor
     const gridHelper = new THREE.GridHelper(12, 24, 0x00828a, 0xe2e8f0);
     gridHelper.position.y = -1.2;
     scene.add(gridHelper);
 
-    // 3D Model Group
     const meshGroup = new THREE.Group();
     meshGroup.position.y = -0.2;
     scene.add(meshGroup);
     meshGroupRef.current = meshGroup;
 
-    // Initial build
     buildGeometry();
 
-    // Mouse & Touch Controls
+    // Mouse & Touch Orbit Controls
     let previousMousePosition = { x: 0, y: 0 };
 
     const onMouseDown = (e) => {
@@ -365,51 +397,12 @@ const ThreeViewer = forwardRef(({
       cameraRef.current.position.z = Math.max(3.5, Math.min(11, cameraRef.current.position.z + e.deltaY * zoomSpeed));
     };
 
-    let touchStartDist = 0;
-    const onTouchStart = (e) => {
-      if (e.touches.length === 1) {
-        isDraggingRef.current = true;
-        previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      } else if (e.touches.length === 2) {
-        touchStartDist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-      }
-    };
-
-    const onTouchMove = (e) => {
-      if (e.touches.length === 1 && isDraggingRef.current && meshGroupRef.current) {
-        const deltaX = e.touches[0].clientX - previousMousePosition.x;
-        const deltaY = e.touches[0].clientY - previousMousePosition.y;
-        meshGroupRef.current.rotation.y += deltaX * 0.008;
-        meshGroupRef.current.rotation.x += deltaY * 0.008;
-        previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      } else if (e.touches.length === 2 && cameraRef.current) {
-        const dist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        const diff = touchStartDist - dist;
-        cameraRef.current.position.z = Math.max(3.5, Math.min(11, cameraRef.current.position.z + diff * 0.01));
-        touchStartDist = dist;
-      }
-    };
-
-    const onTouchEnd = () => {
-      isDraggingRef.current = false;
-    };
-
     const domElement = renderer.domElement;
     domElement.addEventListener('mousedown', onMouseDown);
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
     domElement.addEventListener('wheel', onWheel, { passive: false });
-    domElement.addEventListener('touchstart', onTouchStart);
-    domElement.addEventListener('touchmove', onTouchMove);
-    domElement.addEventListener('touchend', onTouchEnd);
 
-    // Continuous Animation Loop
     const animate = () => {
       animFrameId.current = requestAnimationFrame(animate);
 
@@ -440,27 +433,22 @@ const ThreeViewer = forwardRef(({
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
       domElement.removeEventListener('wheel', onWheel);
-      domElement.removeEventListener('touchstart', onTouchStart);
-      domElement.removeEventListener('touchmove', onTouchMove);
-      domElement.removeEventListener('touchend', onTouchEnd);
       renderer.dispose();
     };
   }, []);
 
-  // Rebuild geometry whenever model properties change
   useEffect(() => {
     buildGeometry();
   }, [buildGeometry]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '440px' }}>
-      {/* 3D Canvas Mounting Node */}
+    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '400px' }}>
       <div
         ref={mountRef}
         style={{
           width: '100%',
           height: '100%',
-          minHeight: '440px',
+          minHeight: '400px',
           borderRadius: 'var(--radius-xl)',
           overflow: 'hidden',
           cursor: 'grab',
@@ -468,15 +456,11 @@ const ThreeViewer = forwardRef(({
         }}
       />
 
-      {/* Floating Rotation Control Button */}
       <div
         style={{
           position: 'absolute',
           top: '1rem',
           right: '1rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.5rem',
           zIndex: 10
         }}
       >
@@ -494,15 +478,13 @@ const ThreeViewer = forwardRef(({
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            boxShadow: 'var(--shadow-md)',
-            transition: 'all 0.2s ease'
+            boxShadow: 'var(--shadow-md)'
           }}
         >
           <RotateCw size={16} />
         </button>
       </div>
 
-      {/* Interaction Hint */}
       <div
         style={{
           position: 'absolute',
