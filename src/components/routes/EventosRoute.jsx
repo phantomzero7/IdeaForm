@@ -32,9 +32,6 @@ const EventosRoute = () => {
 
   const [activeStep, setActiveStep] = useState(1);
   const [selectedEventType, setSelectedEventType] = useState('boda');
-  const [guestCount, setGuestCount] = useState(50);
-  const [eventDate, setEventDate] = useState('');
-  const [celebrantNames, setCelebrantNames] = useState('');
 
   const STEPS = [
     { num: 1, label: '1. Tipo de Evento' },
@@ -75,15 +72,15 @@ const EventosRoute = () => {
   ];
 
   return (
-    <div style={{ background: '#FAF6F0', color: '#2C2217', minHeight: '85vh', paddingBottom: '5rem' }}>
+    <div style={{ background: '#FBF4E8', color: '#1A1A1A', minHeight: '85vh', paddingBottom: '5rem' }}>
       
-      {/* 1. Header Banner (Clean without "RUTA 3:") */}
-      <div style={{ background: '#FFFFFF', borderBottom: '1px solid #E8DFD1', padding: '1.5rem 0' }}>
+      {/* 1. Header Banner */}
+      <div style={{ background: '#FFFFFF', borderBottom: '1px solid #EFE4D2', padding: '1.5rem 0' }}>
         <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             <span
               style={{
-                background: '#C29D72',
+                background: '#B77B21',
                 color: '#ffffff',
                 fontWeight: '800',
                 fontSize: '0.82rem',
@@ -94,12 +91,12 @@ const EventosRoute = () => {
             >
               EVENTOS
             </span>
-            <span style={{ fontSize: '1.15rem', fontWeight: '700', color: '#2C2217' }}>
+            <span style={{ fontSize: '1.15rem', fontWeight: '700', color: '#956016' }}>
               Crea algo para recordar
             </span>
           </div>
 
-          <div style={{ fontSize: '0.82rem', color: '#8C6D48', fontWeight: '600' }}>
+          <div style={{ fontSize: '0.82rem', color: '#956016', fontWeight: '600' }}>
             ✨ Diseños únicos para celebraciones inolvidables
           </div>
         </div>
@@ -108,8 +105,8 @@ const EventosRoute = () => {
       {/* 2. Interactive Stepper Bar */}
       <div className="container" style={{ paddingTop: '2.5rem', paddingBottom: '1.5rem' }}>
         <div className="stepper-nav" style={{ maxWidth: '750px', margin: '0 auto 3rem auto' }}>
-          <div className="stepper-progress-bg" style={{ backgroundColor: '#E8DFD1' }} />
-          <div className="stepper-progress-fill" style={{ background: 'linear-gradient(90deg, #C29D72, #FFC84D)', width: `${((activeStep - 1) / (STEPS.length - 1)) * 88}%` }} />
+          <div className="stepper-progress-bg" style={{ backgroundColor: '#EFE4D2' }} />
+          <div className="stepper-progress-fill" style={{ background: '#B77B21', width: `${((activeStep - 1) / (STEPS.length - 1)) * 88}%` }} />
 
           {STEPS.map((s) => {
             const isCompleted = activeStep > s.num;
@@ -124,14 +121,14 @@ const EventosRoute = () => {
                 <div
                   className="stepper-circle"
                   style={{
-                    backgroundColor: isActive ? '#C29D72' : isCompleted ? '#FAF6F0' : '#FFFFFF',
-                    borderColor: isActive ? '#C29D72' : isCompleted ? '#C29D72' : '#E8DFD1',
-                    color: isActive ? '#FFFFFF' : isCompleted ? '#8C6D48' : '#A89279'
+                    backgroundColor: isActive ? '#956016' : isCompleted ? '#FBF4E8' : '#FFFFFF',
+                    borderColor: isActive ? '#956016' : isCompleted ? '#B77B21' : '#EFE4D2',
+                    color: isActive ? '#FFFFFF' : isCompleted ? '#956016' : '#A89279'
                   }}
                 >
-                  {isCompleted ? <CheckCircle2 size={16} color="#8C6D48" /> : s.num}
+                  {isCompleted ? <CheckCircle2 size={16} color="#956016" /> : s.num}
                 </div>
-                <div className="stepper-label" style={{ color: isActive ? '#2C2217' : '#8C6D48' }}>
+                <div className="stepper-label" style={{ color: isActive ? '#956016' : '#777' }}>
                   {s.label}
                 </div>
               </button>
@@ -143,13 +140,13 @@ const EventosRoute = () => {
         {activeStep === 1 && (
           <div>
             <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-              <div style={{ color: '#8C6D48', fontWeight: '700', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
+              <div style={{ color: '#B77B21', fontWeight: '700', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
                 CELEBRACIÓN ESPECIAL
               </div>
-              <h2 style={{ fontSize: '1.85rem', fontWeight: '800', color: '#2C2217' }}>
+              <h2 style={{ fontSize: '1.85rem', fontWeight: '800', color: '#956016' }}>
                 ¿Qué tipo de evento estás organizando?
               </h2>
-              <p style={{ color: '#6E5D4B' }}>
+              <p style={{ color: 'var(--text-secondary)' }}>
                 Crea recuerdos duraderos fabricados con tecnología 3D de alta definición.
               </p>
             </div>
@@ -167,8 +164,8 @@ const EventosRoute = () => {
                       setActiveStep(2);
                     }}
                     style={{
-                      background: isSelected ? 'rgba(194, 157, 114, 0.15)' : '#FFFFFF',
-                      border: isSelected ? '2px solid #C29D72' : '1px solid #E8DFD1',
+                      background: isSelected ? '#FFFFFF' : '#FFFFFF',
+                      border: isSelected ? '2px solid #B77B21' : '1px solid #EFE4D2',
                       borderRadius: 'var(--radius-xl)',
                       padding: '2rem',
                       cursor: 'pointer',
@@ -177,11 +174,11 @@ const EventosRoute = () => {
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = 'translateY(-3px)';
-                      e.currentTarget.style.borderColor = '#C29D72';
+                      e.currentTarget.style.borderColor = '#B77B21';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = 'translateY(0)';
-                      if (!isSelected) e.currentTarget.style.borderColor = '#E8DFD1';
+                      if (!isSelected) e.currentTarget.style.borderColor = '#EFE4D2';
                     }}
                   >
                     <div
@@ -189,8 +186,8 @@ const EventosRoute = () => {
                         width: '48px',
                         height: '48px',
                         borderRadius: '50%',
-                        background: isSelected ? '#C29D72' : 'rgba(194, 157, 114, 0.2)',
-                        color: isSelected ? '#FFFFFF' : '#8C6D48',
+                        background: isSelected ? '#B77B21' : 'rgba(183, 123, 33, 0.15)',
+                        color: isSelected ? '#FFFFFF' : '#956016',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -200,14 +197,14 @@ const EventosRoute = () => {
                       <IconComponent size={24} />
                     </div>
 
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#2C2217', marginBottom: '0.4rem' }}>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#956016', marginBottom: '0.4rem' }}>
                       {evt.name}
                     </h3>
-                    <p style={{ fontSize: '0.85rem', color: '#6E5D4B', lineHeight: '1.5', marginBottom: '1.25rem' }}>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '1.25rem' }}>
                       {evt.desc}
                     </p>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#8C6D48', fontWeight: '700', fontSize: '0.82rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#B77B21', fontWeight: '700', fontSize: '0.82rem' }}>
                       <span>Elegir recuerdos</span>
                       <ArrowRight size={14} />
                     </div>
@@ -223,10 +220,10 @@ const EventosRoute = () => {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
-                <h2 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#2C2217' }}>
+                <h2 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#956016' }}>
                   Recuerdos 3D para {EVENT_TYPES.find((e) => e.id === selectedEventType)?.name || 'Eventos'}
                 </h2>
-                <p style={{ color: '#6E5D4B', fontSize: '0.9rem' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                   Personaliza nombres, fechas y colores para tus invitados.
                 </p>
               </div>
@@ -235,7 +232,7 @@ const EventosRoute = () => {
                 <button
                   className="btn btn-secondary btn-sm"
                   onClick={() => setActiveStep(1)}
-                  style={{ background: '#FFFFFF', borderColor: '#E8DFD1', color: '#6E5D4B' }}
+                  style={{ background: '#FFFFFF', borderColor: '#EFE4D2', color: '#956016' }}
                 >
                   Cambiar Evento
                 </button>
@@ -249,7 +246,7 @@ const EventosRoute = () => {
                   className="card card-elevated"
                   style={{
                     background: '#FFFFFF',
-                    border: '1px solid #E8DFD1',
+                    border: '1px solid #EFE4D2',
                     borderRadius: 'var(--radius-lg)',
                     padding: '1.5rem',
                     display: 'flex',
@@ -259,7 +256,7 @@ const EventosRoute = () => {
                 >
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                      <span className="badge" style={{ background: '#FAF6F0', color: '#8C6D48', border: '1px solid #E8DFD1' }}>
+                      <span className="badge" style={{ background: '#FBF4E8', color: '#956016', border: '1px solid #EFE4D2' }}>
                         {prod.categoryName}
                       </span>
                     </div>
@@ -267,7 +264,7 @@ const EventosRoute = () => {
                     <div
                       style={{
                         height: '180px',
-                        background: 'linear-gradient(135deg, #FAF6F0 0%, #E8DFD1 100%)',
+                        background: 'linear-gradient(135deg, #FBF4E8 0%, #F5E8D2 100%)',
                         borderRadius: 'var(--radius-md)',
                         display: 'flex',
                         flexDirection: 'column',
@@ -276,31 +273,31 @@ const EventosRoute = () => {
                         marginBottom: '1rem'
                       }}
                     >
-                      <Sparkles size={40} color="#C29D72" />
-                      <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#8C6D48', marginTop: '0.5rem' }}>
+                      <Sparkles size={40} color="#B77B21" />
+                      <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#956016', marginTop: '0.5rem' }}>
                         Acabado Seda & Grabado 3D
                       </span>
                     </div>
 
-                    <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#2C2217', marginBottom: '0.35rem' }}>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#956016', marginBottom: '0.35rem' }}>
                       {prod.name}
                     </h3>
-                    <p style={{ fontSize: '0.82rem', color: '#6E5D4B', lineHeight: '1.5', marginBottom: '1rem' }}>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '1rem' }}>
                       {prod.description}
                     </p>
                   </div>
 
                   <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1rem', borderTop: '1px solid #E8DFD1', paddingTop: '0.75rem' }}>
-                      <span style={{ fontSize: '0.78rem', color: '#8C6D48' }}>Desde:</span>
-                      <span style={{ fontSize: '1.3rem', fontWeight: '800', color: '#8C6D48' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1rem', borderTop: '1px solid #EFE4D2', paddingTop: '0.75rem' }}>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)' }}>Desde:</span>
+                      <span style={{ fontSize: '1.3rem', fontWeight: '800', color: '#956016' }}>
                         {formatCurrency(prod.basePrice)}
                       </span>
                     </div>
 
                     <button
-                      className="btn"
-                      style={{ width: '100%', background: '#C29D72', color: '#FFFFFF', fontWeight: '700' }}
+                      className="btn btn-eventos"
+                      style={{ width: '100%' }}
                       onClick={() => navigateTo('customizer', { modelType: prod.modelType, customText: 'NUESTRA BODA' })}
                     >
                       <Sparkles size={15} />

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { PRODUCTS, FILAMENT_MATERIALS, TESTIMONIALS, FAQS } from '../../data/mockData';
+import { PRODUCTS, FILAMENT_MATERIALS, FAQS } from '../../data/mockData';
 import ThreeViewer from '../3d/ThreeViewer';
 import {
   Sparkles,
@@ -10,10 +10,6 @@ import {
   ShieldCheck,
   Truck,
   Heart,
-  Layers,
-  Star,
-  CheckCircle2,
-  Clock,
   ChevronDown,
   ChevronUp,
   Mail,
@@ -25,23 +21,23 @@ import {
 import { formatCurrency } from '../../utils/formatters';
 
 const HomeView = () => {
-  const { navigateTo, addToCart, showToast } = useApp();
+  const { navigateTo, showToast } = useApp();
 
-  const [teaserColor, setTeaserColor] = useState('#00828A');
+  const [teaserColor, setTeaserColor] = useState('#C9685B');
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
   const [newsletterEmail, setNewsletterEmail] = useState('');
 
   const handleNewsletterSubmit = (e) => {
     e.preventDefault();
     if (newsletterEmail.trim()) {
-      showToast(`¡Gracias! Hemos enviado tu código IDEAFORM10 (10% OFF) a ${newsletterEmail}`, 'success');
+      showToast(`¡Gracias! Código IDEAFORM10 enviado a ${newsletterEmail}`, 'success');
       setNewsletterEmail('');
     }
   };
 
   return (
     <div>
-      {/* 1. HERO SECTION (Matching Mockup 4) */}
+      {/* 1. HERO SECTION */}
       <section style={{ background: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)', padding: '3.5rem 0 4rem 0', borderBottom: '1px solid var(--border-light)' }}>
         <div className="container">
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1.15fr) minmax(320px, 0.85fr)', gap: '3rem', alignItems: 'center' }} className="hero-split">
@@ -51,20 +47,20 @@ const HomeView = () => {
               <div
                 style={{
                   display: 'inline-block',
-                  background: '#f1f5f9',
-                  color: 'var(--text-secondary)',
+                  background: 'rgba(15, 95, 109, 0.1)',
+                  color: 'var(--color-primary)',
                   fontSize: '0.75rem',
-                  fontWeight: '700',
-                  padding: '0.3rem 0.75rem',
+                  fontWeight: '800',
+                  padding: '0.35rem 0.85rem',
                   borderRadius: 'var(--radius-full)',
                   letterSpacing: '0.05em',
                   marginBottom: '1.25rem'
                 }}
               >
-                PERSONALIZAMOS TUS IDEAS
+                PERSONALIZAMOS TUS IDEAS EN 3D
               </div>
 
-              <h1 style={{ fontWeight: '800', lineHeight: '1.15', marginBottom: '1.25rem', color: '#0f172a' }}>
+              <h1 style={{ fontWeight: '800', lineHeight: '1.15', marginBottom: '1.25rem', color: '#1A1A1A' }}>
                 Ideas que <br />
                 <span style={{ color: 'var(--color-primary)' }}>toman forma.</span>
               </h1>
@@ -81,17 +77,17 @@ const HomeView = () => {
               </div>
             </div>
 
-            {/* Right Hero Visual: 3D Interactive Stage */}
+            {/* Right Hero Visual: 3D Stage */}
             <div className="card card-elevated" style={{ padding: '1rem', background: '#ffffff', position: 'relative' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem 0.75rem 0.75rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', fontWeight: '700', color: '#0f172a' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', fontWeight: '700', color: '#1A1A1A' }}>
                   <Sparkles size={16} color="var(--color-primary)" />
                   <span>Configurador 3D en Vivo</span>
                 </div>
 
-                {/* Swatches */}
+                {/* Swatches matching official section colors */}
                 <div style={{ display: 'flex', gap: '0.4rem' }}>
-                  {['#00828A', '#D4AF37', '#1E293B', '#EA580C'].map((hex) => (
+                  {['#C9685B', '#21658A', '#B77B21', '#1A1A1A'].map((hex) => (
                     <button
                       key={hex}
                       onClick={() => setTeaserColor(hex)}
@@ -100,7 +96,7 @@ const HomeView = () => {
                         height: '18px',
                         borderRadius: '50%',
                         background: hex,
-                        border: teaserColor === hex ? '2px solid #0f172a' : '1px solid #cbd5e1',
+                        border: teaserColor === hex ? '2px solid #1A1A1A' : '1px solid #cbd5e1',
                         cursor: 'pointer'
                       }}
                     />
@@ -133,31 +129,31 @@ const HomeView = () => {
         </div>
       </section>
 
-      {/* 2. ¿QUÉ QUIERES CREAR HOY? (3 Rutas Principales - Matching Mockup 4) */}
-      <section style={{ padding: '4rem 0', background: '#ffffff', borderBottom: '1px solid var(--border-light)' }}>
+      {/* 2. ¿QUÉ QUIERES CREAR HOY? (3 Secciones con sus Colores Oficiales Pantone) */}
+      <section style={{ padding: '4.5rem 0', background: '#ffffff', borderBottom: '1px solid var(--border-light)' }}>
         <div className="container">
           <div style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto 3rem auto' }}>
-            <div style={{ fontSize: '0.9rem', color: 'var(--color-primary)', fontWeight: '700', marginBottom: '0.25rem' }}>
-              ✨ ¿Qué quieres crear hoy? ✨
+            <div style={{ fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: '800', marginBottom: '0.35rem', letterSpacing: '0.04em' }}>
+              ✨ ¿QUÉ QUIERES CREAR HOY? ✨
             </div>
-            <h2 style={{ fontSize: '2rem', fontWeight: '800', color: '#0f172a' }}>
-              Elige la ruta que mejor se adapte a lo que necesitas.
+            <h2 style={{ fontSize: '2.1rem', fontWeight: '800', color: '#1A1A1A' }}>
+              Elige la categoría que mejor se adapte a lo que necesitas
             </h2>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
             
-            {/* Card 1: Colecciones */}
+            {/* Card 1: Colecciones (Coral Terracotta: #C9685B / #FAEEEB / #A94D43) */}
             <div
               className="card"
               style={{
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
-                padding: '2rem',
+                padding: '2.25rem',
                 borderRadius: 'var(--radius-xl)',
-                border: '1px solid var(--border-light)',
-                background: '#ffffff',
+                border: '1px solid #F0D7D2',
+                background: '#FAEEEB',
                 transition: 'all 0.25s ease'
               }}
               onMouseEnter={(e) => {
@@ -170,35 +166,35 @@ const HomeView = () => {
               }}
             >
               <div>
-                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0, 130, 138, 0.1)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
-                  <Box size={24} />
+                <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'rgba(201, 104, 91, 0.2)', color: '#A94D43', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
+                  <Box size={26} />
                 </div>
-                <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.25rem' }}>Colecciones</h3>
-                <div style={{ fontSize: '0.88rem', fontWeight: '700', color: 'var(--color-primary)', marginBottom: '0.75rem' }}>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#A94D43', marginBottom: '0.3rem' }}>Colecciones</h3>
+                <div style={{ fontSize: '0.9rem', fontWeight: '700', color: '#C9685B', marginBottom: '0.85rem' }}>
                   Diseña algo que sea tuyo.
                 </div>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '1.5rem' }}>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '1.75rem' }}>
                   Productos personalizados para escuela, oficina, regalos y uso diario listos para ordenar o diseñar.
                 </p>
               </div>
 
-              <button className="btn btn-primary" onClick={() => navigateTo('colecciones')}>
-                <span>Explorar colecciones</span>
+              <button className="btn btn-colecciones" onClick={() => navigateTo('colecciones')}>
+                <span>Explorar Colecciones</span>
                 <ArrowRight size={16} />
               </button>
             </div>
 
-            {/* Card 2: Empresas */}
+            {/* Card 2: Empresas (Ocean Navy: #21658A / #EDF4F8 / #104F75) */}
             <div
               className="card"
               style={{
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
-                padding: '2rem',
+                padding: '2.25rem',
                 borderRadius: 'var(--radius-xl)',
-                border: '1px solid var(--border-light)',
-                background: '#ffffff',
+                border: '1px solid #D5E4ED',
+                background: '#EDF4F8',
                 transition: 'all 0.25s ease'
               }}
               onMouseEnter={(e) => {
@@ -211,35 +207,35 @@ const HomeView = () => {
               }}
             >
               <div>
-                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#f1f5f9', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
-                  <Building2 size={24} />
+                <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'rgba(33, 101, 138, 0.2)', color: '#104F75', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
+                  <Building2 size={26} />
                 </div>
-                <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.25rem' }}>Empresas</h3>
-                <div style={{ fontSize: '0.88rem', fontWeight: '700', color: '#0f172a', marginBottom: '0.75rem' }}>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#104F75', marginBottom: '0.3rem' }}>Empresas</h3>
+                <div style={{ fontSize: '0.9rem', fontWeight: '700', color: '#21658A', marginBottom: '0.85rem' }}>
                   Haz tangible tu marca.
                 </div>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '1.5rem' }}>
-                  Productos personalizados para promover tu negocio, fortalecer tu identidad corporativa y cotizar por mayoreo.
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '1.75rem' }}>
+                  Productos corporativos para promover tu negocio, fortalecer tu identidad y cotizar mayoreo con CFDI 4.0.
                 </p>
               </div>
 
-              <button className="btn btn-dark" onClick={() => navigateTo('empresas')}>
-                <span>Ver soluciones para empresas</span>
+              <button className="btn btn-empresas" onClick={() => navigateTo('empresas')}>
+                <span>Ver Soluciones para Empresas</span>
                 <ArrowRight size={16} />
               </button>
             </div>
 
-            {/* Card 3: Eventos */}
+            {/* Card 3: Eventos (Golden Ochre: #B77B21 / #FBF4E8 / #956016) */}
             <div
               className="card"
               style={{
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
-                padding: '2rem',
+                padding: '2.25rem',
                 borderRadius: 'var(--radius-xl)',
-                border: '1px solid #e8dfd1',
-                background: '#fdfbf9',
+                border: '1px solid #EFE4D2',
+                background: '#FBF4E8',
                 transition: 'all 0.25s ease'
               }}
               onMouseEnter={(e) => {
@@ -252,20 +248,20 @@ const HomeView = () => {
               }}
             >
               <div>
-                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#f5efe6', color: '#8c6d48', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
-                  <Heart size={24} />
+                <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'rgba(183, 123, 33, 0.2)', color: '#956016', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
+                  <Heart size={26} />
                 </div>
-                <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#2c2217', marginBottom: '0.25rem' }}>Eventos</h3>
-                <div style={{ fontSize: '0.88rem', fontWeight: '700', color: '#8c6d48', marginBottom: '0.75rem' }}>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#956016', marginBottom: '0.3rem' }}>Eventos</h3>
+                <div style={{ fontSize: '0.9rem', fontWeight: '700', color: '#B77B21', marginBottom: '0.85rem' }}>
                   Crea algo para recordar.
                 </div>
-                <p style={{ fontSize: '0.9rem', color: '#6e5d4b', lineHeight: '1.5', marginBottom: '1.5rem' }}>
-                  Recuerdos y artículos personalizados para bodas, XV años, graduaciones y celebraciones especiales.
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '1.75rem' }}>
+                  Recuerdos y artículos 3D personalizados para bodas, XV años, graduaciones y celebraciones especiales.
                 </p>
               </div>
 
-              <button className="btn" style={{ background: '#c29d72', color: '#ffffff', fontWeight: '700' }} onClick={() => navigateTo('eventos')}>
-                <span>Descubrir opciones para eventos</span>
+              <button className="btn btn-eventos" onClick={() => navigateTo('eventos')}>
+                <span>Descubrir Opciones para Eventos</span>
                 <ArrowRight size={16} />
               </button>
             </div>
@@ -273,7 +269,7 @@ const HomeView = () => {
         </div>
       </section>
 
-      {/* 3. TRUST BAR (Matching Mockup 4) */}
+      {/* 3. TRUST BAR */}
       <section style={{ background: '#f8fafc', borderBottom: '1px solid var(--border-light)', padding: '1.75rem 0' }}>
         <div className="container">
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-around', alignItems: 'center', gap: '1.5rem', fontSize: '0.85rem', fontWeight: '700', color: '#475569' }}>
@@ -301,133 +297,66 @@ const HomeView = () => {
         </div>
       </section>
 
-      {/* 4. ASÍ DE FÁCIL (3 Pasos Claros - Matching Mockup 4) */}
+      {/* 4. ASÍ DE FÁCIL */}
       <section style={{ padding: '4rem 0', background: '#ffffff', borderBottom: '1px solid var(--border-light)' }}>
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <div style={{ fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: '700', marginBottom: '0.25rem' }}>
-              ✨ Así de fácil ✨
+            <div style={{ fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: '800', marginBottom: '0.25rem' }}>
+              ✨ ASÍ DE FÁCIL ✨
             </div>
-            <h2 style={{ fontSize: '2rem', fontWeight: '800', color: '#0f172a' }}>Cómo funciona IdeaForm</h2>
+            <h2 style={{ fontSize: '2rem', fontWeight: '800', color: '#1A1A1A' }}>Cómo funciona IdeaForm</h2>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '2rem' }}>
-            
-            {/* Step 1 */}
             <div className="card" style={{ padding: '2rem', textAlign: 'center', borderRadius: 'var(--radius-lg)' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0, 130, 138, 0.1)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(15, 95, 109, 0.1)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto' }}>
                 <Box size={24} />
               </div>
-              <div style={{ display: 'inline-block', background: '#00828A', color: '#fff', fontSize: '0.75rem', fontWeight: '800', width: '22px', height: '22px', borderRadius: '50%', lineHeight: '22px', marginBottom: '0.5rem' }}>1</div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.4rem' }}>Elige</h3>
+              <div style={{ display: 'inline-block', background: 'var(--color-primary)', color: '#fff', fontSize: '0.75rem', fontWeight: '800', width: '22px', height: '22px', borderRadius: '50%', lineHeight: '22px', marginBottom: '0.5rem' }}>1</div>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#1A1A1A', marginBottom: '0.4rem' }}>Elige</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Escoge tu colección, producto o solución ideal.</p>
             </div>
 
-            {/* Step 2 */}
             <div className="card" style={{ padding: '2rem', textAlign: 'center', borderRadius: 'var(--radius-lg)' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0, 130, 138, 0.1)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(15, 95, 109, 0.1)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto' }}>
                 <PenTool size={24} />
               </div>
-              <div style={{ display: 'inline-block', background: '#00828A', color: '#fff', fontSize: '0.75rem', fontWeight: '800', width: '22px', height: '22px', borderRadius: '50%', lineHeight: '22px', marginBottom: '0.5rem' }}>2</div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.4rem' }}>Personaliza</h3>
+              <div style={{ display: 'inline-block', background: 'var(--color-primary)', color: '#fff', fontSize: '0.75rem', fontWeight: '800', width: '22px', height: '22px', borderRadius: '50%', lineHeight: '22px', marginBottom: '0.5rem' }}>2</div>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#1A1A1A', marginBottom: '0.4rem' }}>Personaliza</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Agrega nombres, colores, logos y detalles únicos.</p>
             </div>
 
-            {/* Step 3 */}
             <div className="card" style={{ padding: '2rem', textAlign: 'center', borderRadius: 'var(--radius-lg)' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0, 130, 138, 0.1)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(15, 95, 109, 0.1)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto' }}>
                 <PackageCheck size={24} />
               </div>
-              <div style={{ display: 'inline-block', background: '#00828A', color: '#fff', fontSize: '0.75rem', fontWeight: '800', width: '22px', height: '22px', borderRadius: '50%', lineHeight: '22px', marginBottom: '0.5rem' }}>3</div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.4rem' }}>Recibe</h3>
+              <div style={{ display: 'inline-block', background: 'var(--color-primary)', color: '#fff', fontSize: '0.75rem', fontWeight: '800', width: '22px', height: '22px', borderRadius: '50%', lineHeight: '22px', marginBottom: '0.5rem' }}>3</div>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#1A1A1A', marginBottom: '0.4rem' }}>Recibe</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Lo fabricamos con calidad y lo enviamos hasta ti.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 5. INSPÍRATE (UGC Showcase - Matching Mockup 4) */}
-      <section style={{ padding: '4rem 0', background: 'var(--bg-main)' }}>
-        <div className="container">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-            <div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: '700', marginBottom: '0.25rem' }}>
-                ✨ Inspírate ✨
-              </div>
-              <h2 style={{ fontSize: '2rem', fontWeight: '800' }}>Proyectos reales de nuestros clientes</h2>
-              <p style={{ color: 'var(--text-secondary)' }}>Descubre ideas, nuevos productos y piezas personalizadas terminadas.</p>
-            </div>
-            <button className="btn btn-secondary" onClick={() => navigateTo('customizer')}>
-              <span>Ver configurador 3D</span>
-              <ArrowRight size={16} />
-            </button>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem' }}>
-            {[
-              { name: 'Llavero Valentina', tag: 'Turquesa Seda', bg: '#00828A', text: 'Valentina' },
-              { name: 'Tag Corporativo', tag: 'Negro Obsidiana', bg: '#1E293B', text: 'IDEA' },
-              { name: 'Organizador de Ideas', tag: 'Arena Mate', bg: '#c29d72', text: 'Organiza tus ideas' },
-              { name: 'Portaplumas Emma', tag: 'Rosa Seda', bg: '#e11d48', text: 'Emma' },
-              { name: 'Taza Oficial IdeaForm', tag: 'Cerámica & PLA', bg: '#00828A', text: 'IdeaForm' }
-            ].map((item, idx) => (
-              <div
-                key={idx}
-                className="card"
-                style={{
-                  padding: '1.25rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  textAlign: 'center',
-                  borderRadius: 'var(--radius-lg)'
-                }}
-              >
-                <div
-                  style={{
-                    width: '100%',
-                    height: '140px',
-                    borderRadius: 'var(--radius-md)',
-                    background: item.bg,
-                    color: '#ffffff',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: '1rem',
-                    boxShadow: 'var(--shadow-sm)'
-                  }}
-                >
-                  <Sparkles size={24} style={{ marginBottom: '0.5rem', opacity: 0.8 }} />
-                  <span style={{ fontWeight: '800', fontSize: '0.95rem', letterSpacing: '0.04em' }}>"{item.text}"</span>
-                </div>
-                <div style={{ fontWeight: '700', fontSize: '0.9rem', color: '#0f172a' }}>{item.name}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{item.tag}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 6. NEWSLETTER / PROMO BOX (Matching Mockup 4) */}
+      {/* 5. NEWSLETTER BOX */}
       <section style={{ padding: '3.5rem 0', background: '#ffffff', borderTop: '1px solid var(--border-light)' }}>
         <div className="container" style={{ maxWidth: '800px' }}>
           <div
             className="card"
             style={{
               padding: '2.5rem',
-              background: 'linear-gradient(135deg, rgba(0, 130, 138, 0.08) 0%, rgba(0, 229, 255, 0.08) 100%)',
-              border: '1px solid rgba(0, 130, 138, 0.2)',
+              background: 'linear-gradient(135deg, rgba(15, 95, 109, 0.06) 0%, rgba(32, 163, 158, 0.08) 100%)',
+              border: '1px solid rgba(15, 95, 109, 0.2)',
               borderRadius: 'var(--radius-xl)',
               textAlign: 'center'
             }}
           >
             <Mail size={32} color="var(--color-primary)" style={{ margin: '0 auto 0.75rem auto' }} />
-            <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.4rem' }}>
+            <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#1A1A1A', marginBottom: '0.4rem' }}>
               Sé el primero en conocer novedades y promociones especiales
             </h3>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-              Suscríbete y recibe un 10% de descuento en tu primer pedido personalizado con código <strong>IDEAFORM10</strong>.
+              Suscríbete y recibe un 10% de descuento en tu primer pedido con código <strong>IDEAFORM10</strong>.
             </p>
 
             <form onSubmit={handleNewsletterSubmit} style={{ display: 'flex', gap: '0.5rem', maxWidth: '480px', margin: '0 auto' }}>
@@ -455,7 +384,7 @@ const HomeView = () => {
         </div>
       </section>
 
-      {/* 7. FAQ ACCORDION */}
+      {/* 6. FAQ ACCORDION */}
       <section style={{ padding: '4rem 0', background: 'var(--bg-main)', borderTop: '1px solid var(--border-light)' }}>
         <div className="container" style={{ maxWidth: '800px' }}>
           <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
@@ -475,7 +404,7 @@ const HomeView = () => {
                   onClick={() => setOpenFaqIndex(isOpen ? -1 : idx)}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#0f172a' }}>{faq.q}</h3>
+                    <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#1A1A1A' }}>{faq.q}</h3>
                     {isOpen ? <ChevronUp size={20} color="var(--color-primary)" /> : <ChevronDown size={20} color="var(--text-tertiary)" />}
                   </div>
                   {isOpen && (

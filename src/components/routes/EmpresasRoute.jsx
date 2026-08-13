@@ -14,11 +14,7 @@ import {
   FileDown,
   ArrowRight,
   CheckCircle2,
-  Layers,
-  ShieldCheck,
-  Percent,
-  Upload,
-  Receipt
+  Upload
 } from 'lucide-react';
 
 const OBJECTIVES = [
@@ -43,7 +39,6 @@ const EmpresasRoute = () => {
   const [rfc, setRfc] = useState('');
   const [logoFile, setLogoFile] = useState(null);
 
-  // Stepper Definition
   const STEPS = [
     { num: 1, label: '1. Objetivo' },
     { num: 2, label: '2. Producto' },
@@ -52,7 +47,6 @@ const EmpresasRoute = () => {
     { num: 5, label: '5. Confirmación' }
   ];
 
-  // Calculate Tier Discount
   const currentTier = B2B_PRICE_TIERS.find((t) => units >= t.minUnits && units <= t.maxUnits) || B2B_PRICE_TIERS[0];
   const discountPercent = currentTier.discountPercent;
   const baseUnitPrice = selectedProduct ? selectedProduct.basePrice : 150;
@@ -73,7 +67,7 @@ const EmpresasRoute = () => {
       contactName: contactName || 'Representante de Compras',
       email,
       rfc: rfc || 'XAXX010101000',
-      productName: selectedProduct ? selectedProduct.name : 'Artículo 3D Personalizado',
+      productName: selectedProduct ? selectedProduct.name : 'Artículo 3D Corporativo',
       quantity: units,
       units: units,
       unitPrice: baseUnitPrice,
@@ -92,32 +86,31 @@ const EmpresasRoute = () => {
   };
 
   return (
-    <div style={{ background: '#0e1927', color: '#ffffff', minHeight: '85vh', paddingBottom: '5rem' }}>
+    <div style={{ background: '#EDF4F8', color: '#1A1A1A', minHeight: '85vh', paddingBottom: '5rem' }}>
       
-      {/* 1. Header Banner (Clean without "RUTA 2:") */}
-      <div style={{ background: '#142236', borderBottom: '1px solid #233752', padding: '1.5rem 0' }}>
+      {/* 1. Header Banner */}
+      <div style={{ background: '#FFFFFF', borderBottom: '1px solid #D5E4ED', padding: '1.5rem 0' }}>
         <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             <span
               style={{
-                background: 'linear-gradient(135deg, #1D3557 0%, #20A39E 100%)',
+                background: '#21658A',
                 color: '#ffffff',
                 fontWeight: '800',
                 fontSize: '0.82rem',
                 padding: '0.4rem 0.9rem',
                 borderRadius: 'var(--radius-full)',
-                letterSpacing: '0.04em',
-                border: '1px solid #20A39E'
+                letterSpacing: '0.04em'
               }}
             >
               EMPRESAS
             </span>
-            <span style={{ fontSize: '1.15rem', fontWeight: '700', color: '#ffffff' }}>
+            <span style={{ fontSize: '1.15rem', fontWeight: '700', color: '#104F75' }}>
               Haz tangible tu marca
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.82rem', color: '#94a3b8' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.82rem', color: '#21658A', fontWeight: '600' }}>
             <span>📄 Facturación CFDI 4.0</span>
             <span style={{ opacity: 0.3 }}>|</span>
             <span>⚡ Descuentos por volumen hasta 40%</span>
@@ -128,8 +121,8 @@ const EmpresasRoute = () => {
       {/* 2. Interactive Stepper Bar */}
       <div className="container" style={{ paddingTop: '2.5rem', paddingBottom: '1.5rem' }}>
         <div className="stepper-nav" style={{ maxWidth: '750px', margin: '0 auto 3rem auto' }}>
-          <div className="stepper-progress-bg" style={{ backgroundColor: '#233752' }} />
-          <div className="stepper-progress-fill" style={{ background: 'linear-gradient(90deg, #1D3557, #20A39E)', width: `${((activeStep - 1) / (STEPS.length - 1)) * 88}%` }} />
+          <div className="stepper-progress-bg" style={{ backgroundColor: '#D5E4ED' }} />
+          <div className="stepper-progress-fill" style={{ background: '#21658A', width: `${((activeStep - 1) / (STEPS.length - 1)) * 88}%` }} />
 
           {STEPS.map((s) => {
             const isCompleted = activeStep > s.num;
@@ -144,14 +137,14 @@ const EmpresasRoute = () => {
                 <div
                   className="stepper-circle"
                   style={{
-                    backgroundColor: isActive ? '#20A39E' : isCompleted ? '#1D3557' : '#142236',
-                    borderColor: isActive ? '#20A39E' : isCompleted ? '#20A39E' : '#233752',
-                    color: '#ffffff'
+                    backgroundColor: isActive ? '#104F75' : isCompleted ? '#EDF4F8' : '#FFFFFF',
+                    borderColor: isActive ? '#104F75' : isCompleted ? '#21658A' : '#D5E4ED',
+                    color: isActive ? '#FFFFFF' : isCompleted ? '#104F75' : '#718096'
                   }}
                 >
-                  {isCompleted ? <CheckCircle2 size={16} color="#20A39E" /> : s.num}
+                  {isCompleted ? <CheckCircle2 size={16} color="#104F75" /> : s.num}
                 </div>
-                <div className="stepper-label" style={{ color: isActive ? '#ffffff' : '#94a3b8' }}>
+                <div className="stepper-label" style={{ color: isActive ? '#104F75' : '#718096' }}>
                   {s.label}
                 </div>
               </button>
@@ -163,11 +156,11 @@ const EmpresasRoute = () => {
         {activeStep === 1 && (
           <div>
             <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-              <div style={{ color: '#20A39E', fontWeight: '700', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
+              <div style={{ color: '#21658A', fontWeight: '700', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
                 OBJETIVO ESTRATÉGICO
               </div>
-              <h2 style={{ fontSize: '1.85rem', fontWeight: '800', color: '#ffffff' }}>¿Qué quieres lograr con tu empresa?</h2>
-              <p style={{ color: '#94a3b8' }}>Selecciona tu meta para recomendarte las soluciones y piezas 3D más efectivas.</p>
+              <h2 style={{ fontSize: '1.85rem', fontWeight: '800', color: '#104F75' }}>¿Qué quieres lograr con tu empresa?</h2>
+              <p style={{ color: 'var(--text-secondary)' }}>Selecciona tu meta para recomendarte las piezas 3D más efectivas.</p>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
@@ -183,21 +176,21 @@ const EmpresasRoute = () => {
                       setActiveStep(2);
                     }}
                     style={{
-                      background: isSelected ? 'rgba(32, 163, 158, 0.12)' : '#142236',
-                      border: isSelected ? '2px solid #20A39E' : '1px solid #233752',
+                      background: isSelected ? '#FFFFFF' : '#FFFFFF',
+                      border: isSelected ? '2px solid #21658A' : '1px solid #D5E4ED',
                       borderRadius: 'var(--radius-xl)',
                       padding: '2rem',
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
-                      boxShadow: isSelected ? '0 8px 24px rgba(32, 163, 158, 0.2)' : 'none'
+                      boxShadow: 'var(--shadow-sm)'
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = 'translateY(-3px)';
-                      e.currentTarget.style.borderColor = '#20A39E';
+                      e.currentTarget.style.borderColor = '#21658A';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = 'translateY(0)';
-                      if (!isSelected) e.currentTarget.style.borderColor = '#233752';
+                      if (!isSelected) e.currentTarget.style.borderColor = '#D5E4ED';
                     }}
                   >
                     <div
@@ -205,8 +198,8 @@ const EmpresasRoute = () => {
                         width: '48px',
                         height: '48px',
                         borderRadius: '50%',
-                        background: isSelected ? '#20A39E' : 'rgba(32, 163, 158, 0.15)',
-                        color: isSelected ? '#0e1927' : '#20A39E',
+                        background: isSelected ? '#21658A' : 'rgba(33, 101, 138, 0.15)',
+                        color: isSelected ? '#FFFFFF' : '#104F75',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -216,14 +209,14 @@ const EmpresasRoute = () => {
                       <IconComponent size={24} />
                     </div>
 
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#ffffff', marginBottom: '0.4rem' }}>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#104F75', marginBottom: '0.4rem' }}>
                       {obj.name}
                     </h3>
-                    <p style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: '1.5', marginBottom: '1.25rem' }}>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '1.25rem' }}>
                       {obj.desc}
                     </p>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#20A39E', fontWeight: '700', fontSize: '0.82rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#21658A', fontWeight: '700', fontSize: '0.82rem' }}>
                       <span>Configurar solución</span>
                       <ArrowRight size={14} />
                     </div>
@@ -234,20 +227,19 @@ const EmpresasRoute = () => {
           </div>
         )}
 
-        {/* STEP 2 & 3 & 4: CALCULATOR & B2B QUOTE GENERATOR */}
+        {/* STEP 2 & 3 & 4: CALCULATOR */}
         {activeStep >= 2 && (
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1.2fr) minmax(300px, 0.8fr)', gap: '2rem' }}>
             
-            {/* Left: Configuration Form */}
-            <div style={{ background: '#142236', border: '1px solid #233752', borderRadius: 'var(--radius-xl)', padding: '2rem' }}>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#ffffff', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Building2 size={22} color="#20A39E" />
+            {/* Left Form */}
+            <div style={{ background: '#FFFFFF', border: '1px solid #D5E4ED', borderRadius: 'var(--radius-xl)', padding: '2rem' }}>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#104F75', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Building2 size={22} color="#21658A" />
                 <span>Datos Corporativos & Configuración</span>
               </h2>
 
-              {/* Product Selector */}
               <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ fontSize: '0.78rem', fontWeight: '700', color: '#94a3b8', display: 'block', marginBottom: '0.4rem' }}>
+                <label style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>
                   ARTÍCULO 3D BASE
                 </label>
                 <select
@@ -260,11 +252,12 @@ const EmpresasRoute = () => {
                     width: '100%',
                     padding: '0.75rem',
                     borderRadius: 'var(--radius-md)',
-                    background: '#0e1927',
-                    border: '1px solid #233752',
-                    color: '#ffffff',
+                    background: '#EDF4F8',
+                    border: '1px solid #D5E4ED',
+                    color: '#1A1A1A',
                     fontSize: '0.9rem',
-                    outline: 'none'
+                    outline: 'none',
+                    fontWeight: '600'
                   }}
                 >
                   {PRODUCTS.map((p) => (
@@ -273,13 +266,12 @@ const EmpresasRoute = () => {
                 </select>
               </div>
 
-              {/* Units Slider */}
               <div style={{ marginBottom: '1.75rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <label style={{ fontSize: '0.78rem', fontWeight: '700', color: '#94a3b8' }}>
+                  <label style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-secondary)' }}>
                     VOLUMEN DE PRODUCCIÓN
                   </label>
-                  <span style={{ fontSize: '1.25rem', fontWeight: '800', color: '#20A39E' }}>
+                  <span style={{ fontSize: '1.25rem', fontWeight: '800', color: '#104F75' }}>
                     {units} piezas
                   </span>
                 </div>
@@ -291,20 +283,19 @@ const EmpresasRoute = () => {
                   step="10"
                   value={units}
                   onChange={(e) => setUnits(Number(e.target.value))}
-                  style={{ width: '100%', accentColor: '#20A39E', cursor: 'pointer' }}
+                  style={{ width: '100%', accentColor: '#104F75', cursor: 'pointer' }}
                 />
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#64748b', marginTop: '0.35rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-tertiary)', marginTop: '0.35rem' }}>
                   <span>10 pzas (10% OFF)</span>
                   <span>100 pzas (25% OFF)</span>
                   <span>500+ pzas (40% OFF)</span>
                 </div>
               </div>
 
-              {/* Company Info Fields */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#94a3b8', display: 'block', marginBottom: '0.3rem' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
                     Razón Social / Empresa *
                   </label>
                   <input
@@ -313,12 +304,12 @@ const EmpresasRoute = () => {
                     placeholder="Ej. Grupo Expansión S.A."
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
-                    style={{ width: '100%', padding: '0.65rem', borderRadius: 'var(--radius-sm)', background: '#0e1927', border: '1px solid #233752', color: '#fff', fontSize: '0.85rem' }}
+                    style={{ width: '100%', padding: '0.65rem', borderRadius: 'var(--radius-sm)', background: '#EDF4F8', border: '1px solid #D5E4ED', color: '#1A1A1A', fontSize: '0.85rem' }}
                   />
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#94a3b8', display: 'block', marginBottom: '0.3rem' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
                     RFC (Para CFDI 4.0)
                   </label>
                   <input
@@ -326,14 +317,14 @@ const EmpresasRoute = () => {
                     placeholder="Ej. GEX180425ABC"
                     value={rfc}
                     onChange={(e) => setRfc(e.target.value.toUpperCase())}
-                    style={{ width: '100%', padding: '0.65rem', borderRadius: 'var(--radius-sm)', background: '#0e1927', border: '1px solid #233752', color: '#fff', fontSize: '0.85rem' }}
+                    style={{ width: '100%', padding: '0.65rem', borderRadius: 'var(--radius-sm)', background: '#EDF4F8', border: '1px solid #D5E4ED', color: '#1A1A1A', fontSize: '0.85rem' }}
                   />
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#94a3b8', display: 'block', marginBottom: '0.3rem' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
                     Contacto / Representante
                   </label>
                   <input
@@ -341,13 +332,13 @@ const EmpresasRoute = () => {
                     placeholder="Ej. Lic. Carlos Morales"
                     value={contactName}
                     onChange={(e) => setContactName(e.target.value)}
-                    style={{ width: '100%', padding: '0.65rem', borderRadius: 'var(--radius-sm)', background: '#0e1927', border: '1px solid #233752', color: '#fff', fontSize: '0.85rem' }}
+                    style={{ width: '100%', padding: '0.65rem', borderRadius: 'var(--radius-sm)', background: '#EDF4F8', border: '1px solid #D5E4ED', color: '#1A1A1A', fontSize: '0.85rem' }}
                   />
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#94a3b8', display: 'block', marginBottom: '0.3rem' }}>
-                    Correo de Facturación / Compras *
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                    Correo de Facturación *
                   </label>
                   <input
                     type="email"
@@ -355,16 +346,15 @@ const EmpresasRoute = () => {
                     placeholder="compras@empresa.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    style={{ width: '100%', padding: '0.65rem', borderRadius: 'var(--radius-sm)', background: '#0e1927', border: '1px solid #233752', color: '#fff', fontSize: '0.85rem' }}
+                    style={{ width: '100%', padding: '0.65rem', borderRadius: 'var(--radius-sm)', background: '#EDF4F8', border: '1px solid #D5E4ED', color: '#1A1A1A', fontSize: '0.85rem' }}
                   />
                 </div>
               </div>
 
-              {/* Logo Vector Uploader */}
-              <div style={{ border: '2px dashed #233752', borderRadius: 'var(--radius-md)', padding: '1.25rem', textAlign: 'center', background: '#0e1927' }}>
-                <Upload size={24} color="#20A39E" style={{ margin: '0 auto 0.5rem auto' }} />
-                <div style={{ fontSize: '0.82rem', fontWeight: '700', color: '#ffffff' }}>
-                  {logoFile ? `Logo cargado: ${logoFile.name}` : 'Sube tu logotipo para relieve 3D (.SVG, .AI, .PNG)'}
+              <div style={{ border: '2px dashed #D5E4ED', borderRadius: 'var(--radius-md)', padding: '1.25rem', textAlign: 'center', background: '#EDF4F8' }}>
+                <Upload size={24} color="#21658A" style={{ margin: '0 auto 0.5rem auto' }} />
+                <div style={{ fontSize: '0.82rem', fontWeight: '700', color: '#104F75' }}>
+                  {logoFile ? `Logo cargado: ${logoFile.name}` : 'Sube tu logotipo para grabado 3D (.SVG, .AI, .PNG)'}
                 </div>
                 <input
                   type="file"
@@ -372,69 +362,69 @@ const EmpresasRoute = () => {
                   onChange={(e) => {
                     if (e.target.files && e.target.files[0]) {
                       setLogoFile(e.target.files[0]);
-                      showToast(`Logotipo "${e.target.files[0].name}" cargado`, 'success');
+                      showToast(`Logotipo cargado`, 'success');
                     }
                   }}
-                  style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#94a3b8' }}
+                  style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}
                 />
               </div>
             </div>
 
-            {/* Right: Real-time Budget & PDF Summary */}
-            <div style={{ background: '#142236', border: '1px solid #20A39E', borderRadius: 'var(--radius-xl)', padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            {/* Right Summary */}
+            <div style={{ background: '#FFFFFF', border: '1px solid #21658A', borderRadius: 'var(--radius-xl)', padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: '800', color: '#20A39E', letterSpacing: '0.04em' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: '800', color: '#104F75', letterSpacing: '0.04em' }}>
                     PRESUPUESTO ESTIMADO
                   </span>
-                  <span style={{ background: 'rgba(32, 163, 158, 0.15)', color: '#20A39E', fontSize: '0.75rem', fontWeight: '800', padding: '0.25rem 0.6rem', borderRadius: 'var(--radius-full)' }}>
+                  <span style={{ background: 'rgba(33, 101, 138, 0.15)', color: '#104F75', fontSize: '0.75rem', fontWeight: '800', padding: '0.25rem 0.6rem', borderRadius: 'var(--radius-full)' }}>
                     {discountPercent}% OFF MAYOREO
                   </span>
                 </div>
 
-                <div style={{ borderBottom: '1px solid #233752', paddingBottom: '1rem', marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', color: '#94a3b8', marginBottom: '0.4rem' }}>
+                <div style={{ borderBottom: '1px solid #D5E4ED', paddingBottom: '1rem', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
                     <span>Precio Unitario Normal:</span>
                     <span>{formatCurrency(baseUnitPrice)}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', color: '#20A39E', fontWeight: '700', marginBottom: '0.4rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', color: '#104F75', fontWeight: '700', marginBottom: '0.4rem' }}>
                     <span>Precio Unitario por Volumen:</span>
                     <span>{formatCurrency(unitPriceAfterDiscount)}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
                     <span>Unidades a fabricar:</span>
                     <span>{units} piezas</span>
                   </div>
                 </div>
 
-                <div style={{ borderBottom: '1px solid #233752', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem', color: '#ffffff', marginBottom: '0.4rem' }}>
+                <div style={{ borderBottom: '1px solid #D5E4ED', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem', color: '#1A1A1A', marginBottom: '0.4rem' }}>
                     <span>Subtotal:</span>
                     <span style={{ fontWeight: '700' }}>{formatCurrency(subtotal)}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem', color: '#94a3b8', marginBottom: '0.4rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
                     <span>IVA (16% CFDI 4.0):</span>
                     <span>{formatCurrency(iva)}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.4rem', color: '#ffffff', fontWeight: '800', marginTop: '0.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.4rem', color: '#104F75', fontWeight: '800', marginTop: '0.5rem' }}>
                     <span>Total Neto:</span>
-                    <span style={{ color: '#20A39E' }}>{formatCurrency(total)}</span>
+                    <span>{formatCurrency(total)}</span>
                   </div>
                 </div>
               </div>
 
               <div>
                 <button
-                  className="btn btn-primary btn-lg"
-                  style={{ width: '100%', background: 'linear-gradient(135deg, #0F5F6D 0%, #20A39E 100%)', border: 'none', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}
+                  className="btn btn-empresas btn-lg"
+                  style={{ width: '100%', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}
                   onClick={handleGenerateQuote}
                 >
                   <FileDown size={20} />
                   <span>Generar & Descargar Cotización PDF</span>
                 </button>
 
-                <div style={{ textAlign: 'center', fontSize: '0.75rem', color: '#64748b' }}>
-                  Emitida al instante con datos fiscales y cuenta CLABE para transferencia SPEI.
+                <div style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                  Emitida al instante con desglose SAT y cuenta CLABE para SPEI.
                 </div>
               </div>
             </div>
@@ -443,23 +433,22 @@ const EmpresasRoute = () => {
 
         {/* STEP 5: CONFIRMATION SUCCESS */}
         {activeStep === 5 && (
-          <div style={{ maxWidth: '650px', margin: '0 auto', textAlign: 'center', background: '#142236', border: '1px solid #20A39E', borderRadius: 'var(--radius-xl)', padding: '3rem 2rem' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(32, 163, 158, 0.2)', color: '#20A39E', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
+          <div style={{ maxWidth: '650px', margin: '0 auto', textAlign: 'center', background: '#FFFFFF', border: '1px solid #21658A', borderRadius: 'var(--radius-xl)', padding: '3rem 2rem' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(33, 101, 138, 0.15)', color: '#104F75', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
               <CheckCircle2 size={36} />
             </div>
 
-            <h2 style={{ fontSize: '1.8rem', fontWeight: '800', color: '#ffffff', marginBottom: '0.5rem' }}>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: '800', color: '#104F75', marginBottom: '0.5rem' }}>
               ¡Cotización B2B Generada con Éxito!
             </h2>
 
-            <p style={{ color: '#94a3b8', fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '2rem' }}>
-              Hemos descargado tu archivo PDF con desglose fiscal y enviado una copia a <strong>{email}</strong>. Un asesor técnico de IdeaForm revisará tu archivo y se pondrá en contacto contigo.
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '2rem' }}>
+              Hemos descargado tu archivo PDF con validez fiscal y enviado una copia a <strong>{email}</strong>.
             </p>
 
             <button
-              className="btn btn-secondary"
+              className="btn btn-empresas"
               onClick={() => setActiveStep(1)}
-              style={{ background: '#0e1927', borderColor: '#233752', color: '#fff' }}
             >
               Crear Otra Cotización
             </button>

@@ -10,7 +10,6 @@ import {
   Type,
   Maximize2,
   Download,
-  Share2,
   ShoppingBag,
   CheckCircle2,
   ArrowRight,
@@ -23,7 +22,8 @@ import {
   GraduationCap,
   Building2,
   Heart,
-  HelpCircle
+  ImageIcon,
+  Box
 } from 'lucide-react';
 
 const PRESETS = [
@@ -32,7 +32,7 @@ const PRESETS = [
     name: '🎒 Escolar / Mochila',
     text: 'VALENTINA',
     modelType: 'keychain',
-    colorHex: '#00828A',
+    colorHex: '#C9685B',
     materialId: 'mat-02',
     font: 'Poppins'
   },
@@ -41,7 +41,7 @@ const PRESETS = [
     name: '🏢 Oficina Ejecutiva',
     text: 'IDEA TECH',
     modelType: 'organizer',
-    colorHex: '#1A1A1A',
+    colorHex: '#21658A',
     materialId: 'mat-01',
     font: 'Space Grotesk'
   },
@@ -50,7 +50,7 @@ const PRESETS = [
     name: '🏆 Reconocimiento',
     text: 'LÍDER 2026',
     modelType: 'trophy',
-    colorHex: '#D4AF37',
+    colorHex: '#B77B21',
     materialId: 'mat-02',
     font: 'Poppins'
   },
@@ -59,7 +59,7 @@ const PRESETS = [
     name: '💍 Boda / Aniversario',
     text: 'CARLOS & SOFÍA',
     modelType: 'lamp',
-    colorHex: '#E6E8EA',
+    colorHex: '#FAEEEB',
     materialId: 'mat-02',
     font: 'Dancing Script'
   },
@@ -85,19 +85,18 @@ const CustomizerView = () => {
   const { viewParams, addToCart, navigateTo, showToast } = useApp();
   const viewerRef = useRef(null);
 
-  // 1. Initial State from Navigation Params or Default
   const initialProduct = PRODUCTS.find((p) => p.id === viewParams?.productId) || PRODUCTS[0];
 
   const [selectedProduct, setSelectedProduct] = useState(initialProduct);
   const [modelType, setModelType] = useState(viewParams?.modelType || initialProduct.modelType || 'keychain');
-  const [selectedMaterial, setSelectedMaterial] = useState(FILAMENT_MATERIALS[1]); // Default Silk PLA
+  const [selectedMaterial, setSelectedMaterial] = useState(FILAMENT_MATERIALS[1]); // Silk PLA
   const [selectedColor, setSelectedColor] = useState(FILAMENT_MATERIALS[1].colors[0]);
   const [customText, setCustomText] = useState(viewParams?.customText || 'IDEAFORM');
   const [selectedFont, setSelectedFont] = useState('Poppins');
   const [quantity, setQuantity] = useState(1);
+  const [viewMode, setViewMode] = useState('3D'); // '3D' | '2D'
   const [showScaleReference, setShowScaleReference] = useState(false);
 
-  // Sync if viewParams change
   useEffect(() => {
     if (viewParams?.productId) {
       const prod = PRODUCTS.find((p) => p.id === viewParams.productId);
@@ -116,7 +115,7 @@ const CustomizerView = () => {
   const unitPrice = basePrice * materialMultiplier;
   const subtotal = unitPrice * quantity;
 
-  // Apply Quick Preset
+  // Apply Preset
   const handleApplyPreset = (preset) => {
     setModelType(preset.modelType);
     setCustomText(preset.text);
@@ -128,12 +127,12 @@ const CustomizerView = () => {
     const col = mat.colors.find((c) => c.hex.toLowerCase() === preset.colorHex.toLowerCase()) || mat.colors[0];
     setSelectedColor(col);
 
-    showToast(`Plantilla "${preset.name}" aplicada al configurador 3D ✨`, 'info');
+    showToast(`Plantilla "${preset.name}" aplicada ✨`, 'info');
   };
 
-  // Download High-Res 3D Render
+  // Download High-Res Snapshot
   const handleDownloadSnapshot = () => {
-    if (viewerRef.current) {
+    if (viewerRef.current && viewMode === '3D') {
       const dataUrl = viewerRef.current.getSnapshot();
       if (dataUrl) {
         const link = document.createElement('a');
@@ -142,13 +141,15 @@ const CustomizerView = () => {
         link.click();
         showToast('¡Imagen 3D descargada en alta resolución!', 'success');
       }
+    } else {
+      showToast('Descarga disponible en vista 3D', 'info');
     }
   };
 
-  // Add to Cart with snapshot
+  // Add to Cart
   const handleAddToCart = () => {
     let snapshotUrl = null;
-    if (viewerRef.current) {
+    if (viewerRef.current && viewMode === '3D') {
       snapshotUrl = viewerRef.current.getSnapshot();
     }
 
@@ -188,21 +189,21 @@ const CustomizerView = () => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
               <span className="badge badge-primary">
-                <Sparkles size={13} /> CONFIGURADOR EN TIEMPO REAL
+                <Sparkles size={13} /> PERSONALIZADOR DE PRODUCTOS
               </span>
               <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
-                Render WebGL Three.js a 60 FPS
+                Visualización Dual 2D & 3D
               </span>
             </div>
             <h1 style={{ fontSize: '1.65rem', fontWeight: '800', color: '#0f172a' }}>
-              Personaliza tu Pieza 3D
+              Personaliza tu Pieza
             </h1>
           </div>
 
-          {/* Preset Buttons Quick Hub */}
+          {/* Preset Buttons Hub */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--text-tertiary)', marginRight: '0.25rem' }}>
-              PLANTILLAS RÁPIDAS:
+              PLANTILLAS:
             </span>
             {PRESETS.map((pr) => (
               <button
@@ -218,22 +219,105 @@ const CustomizerView = () => {
         </div>
       </div>
 
-      {/* 2. Main Studio Split Grid */}
+      {/* 2. Main Studio Split */}
       <div className="container" style={{ paddingTop: '2rem' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 1.25fr) minmax(320px, 0.75fr)', gap: '2rem' }} className="customizer-split">
           
-          {/* Left: 3D Stage Viewport */}
+          {/* Left: Dual 2D / 3D Stage */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div className="card card-elevated" style={{ padding: '0', background: '#ffffff', position: 'relative', overflow: 'hidden', height: '520px' }}>
-              <ThreeViewer
-                ref={viewerRef}
-                modelType={modelType}
-                selectedColor={selectedColor.hex}
-                materialType={selectedMaterial.typeCode}
-                customText={customText}
-                fontFamily={selectedFont}
-                showDimensions={true}
-              />
+              
+              {/* 2D / 3D Mode Toggle Tabs */}
+              <div style={{ position: 'absolute', top: '1rem', right: '1rem', zIndex: 30, display: 'flex', background: 'rgba(255,255,255,0.95)', padding: '0.25rem', borderRadius: 'var(--radius-full)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--border-light)' }}>
+                <button
+                  onClick={() => setViewMode('3D')}
+                  style={{
+                    padding: '0.35rem 0.85rem',
+                    borderRadius: 'var(--radius-full)',
+                    border: 'none',
+                    background: viewMode === '3D' ? '#0F5F6D' : 'transparent',
+                    color: viewMode === '3D' ? '#ffffff' : 'var(--text-secondary)',
+                    fontWeight: '700',
+                    fontSize: '0.78rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem'
+                  }}
+                >
+                  <Box size={14} />
+                  <span>Vista 3D</span>
+                </button>
+
+                <button
+                  onClick={() => setViewMode('2D')}
+                  style={{
+                    padding: '0.35rem 0.85rem',
+                    borderRadius: 'var(--radius-full)',
+                    border: 'none',
+                    background: viewMode === '2D' ? '#0F5F6D' : 'transparent',
+                    color: viewMode === '2D' ? '#ffffff' : 'var(--text-secondary)',
+                    fontWeight: '700',
+                    fontSize: '0.78rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem'
+                  }}
+                >
+                  <ImageIcon size={14} />
+                  <span>Foto 2D</span>
+                </button>
+              </div>
+
+              {/* RENDER 3D STAGE */}
+              {viewMode === '3D' ? (
+                <ThreeViewer
+                  ref={viewerRef}
+                  modelType={modelType}
+                  selectedColor={selectedColor.hex}
+                  materialType={selectedMaterial.typeCode}
+                  customText={customText}
+                  fontFamily={selectedFont}
+                  showDimensions={true}
+                />
+              ) : (
+                /* RENDER 2D GALLERY & FALLBACK */
+                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#FAEEEB', padding: '2rem', textAlign: 'center' }}>
+                  <div
+                    style={{
+                      width: '240px',
+                      height: '240px',
+                      borderRadius: 'var(--radius-xl)',
+                      background: selectedColor.hex,
+                      color: '#ffffff',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: 'var(--shadow-xl)',
+                      border: '4px solid #ffffff',
+                      marginBottom: '1.5rem',
+                      position: 'relative'
+                    }}
+                  >
+                    <Sparkles size={36} style={{ marginBottom: '0.75rem', opacity: 0.9 }} />
+                    <span style={{ fontWeight: '800', fontSize: '1.25rem', letterSpacing: '0.04em', fontFamily: selectedFont, padding: '0 1rem' }}>
+                      {customText || 'IDEAFORM'}
+                    </span>
+                    <span style={{ fontSize: '0.75rem', opacity: 0.8, marginTop: '0.4rem' }}>
+                      {selectedMaterial.name}
+                    </span>
+                  </div>
+
+                  <div style={{ fontWeight: '800', fontSize: '1.1rem', color: '#1A1A1A' }}>
+                    {selectedProduct.name}
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                    Color: {selectedColor.name} ({selectedColor.hex})
+                  </div>
+                </div>
+              )}
 
               {/* Real-scale Coin Comparison Overlay */}
               {showScaleReference && (
@@ -276,15 +360,17 @@ const CustomizerView = () => {
                   <span>{showScaleReference ? 'Ocultar Escala' : '📏 Ver Escala Real'}</span>
                 </button>
 
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={handleDownloadSnapshot}
-                  style={{ background: 'rgba(255, 255, 255, 0.95)', color: '#0f172a', fontWeight: '700' }}
-                  title="Descargar captura 3D en alta resolución"
-                >
-                  <Download size={14} />
-                  <span>Guardar Imagen 3D</span>
-                </button>
+                {viewMode === '3D' && (
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={handleDownloadSnapshot}
+                    style={{ background: 'rgba(255, 255, 255, 0.95)', color: '#0f172a', fontWeight: '700' }}
+                    title="Descargar captura 3D en alta resolución"
+                  >
+                    <Download size={14} />
+                    <span>Guardar Imagen 3D</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -305,7 +391,7 @@ const CustomizerView = () => {
               {/* 1. Model Type Selector */}
               <div style={{ marginBottom: '1.5rem' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--text-tertiary)', letterSpacing: '0.04em', display: 'block', marginBottom: '0.5rem' }}>
-                  1. TIPO DE OBJETO 3D
+                  1. TIPO DE OBJETO
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                   {[
@@ -343,7 +429,7 @@ const CustomizerView = () => {
               {/* 2. Text Engraving & Font Selector */}
               <div style={{ marginBottom: '1.5rem' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--text-tertiary)', letterSpacing: '0.04em', display: 'block', marginBottom: '0.5rem' }}>
-                  2. TEXTO EN RELIEVE 3D
+                  2. TEXTO EN RELIEVE
                 </label>
                 <input
                   type="text"
