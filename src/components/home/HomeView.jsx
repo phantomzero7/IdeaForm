@@ -9,130 +9,87 @@ import {
   ArrowRight,
   ShieldCheck,
   Truck,
-  Leaf,
+  Heart,
   Layers,
   Star,
   CheckCircle2,
   Clock,
   ChevronDown,
   ChevronUp,
-  Percent
+  Mail,
+  Send,
+  PenTool,
+  PackageCheck,
+  UserCheck
 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
 const HomeView = () => {
-  const { navigateTo, addToCart } = useApp();
+  const { navigateTo, addToCart, showToast } = useApp();
 
-  // Interactive Teaser in Hero
   const [teaserColor, setTeaserColor] = useState('#00828A');
-  const [teaserMaterial, setTeaserMaterial] = useState('PLA_SILK');
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
 
-  const featuredProducts = PRODUCTS.slice(0, 4);
+  const handleNewsletterSubmit = (e) => {
+    e.preventDefault();
+    if (newsletterEmail.trim()) {
+      showToast(`¡Gracias! Hemos enviado tu código IDEAFORM10 (10% OFF) a ${newsletterEmail}`, 'success');
+      setNewsletterEmail('');
+    }
+  };
 
   return (
     <div>
-      {/* 1. HERO SECTION */}
+      {/* 1. HERO SECTION (Matching Mockup 4) */}
       <section style={{ background: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)', padding: '3.5rem 0 4rem 0', borderBottom: '1px solid var(--border-light)' }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1.1fr) minmax(320px, 0.9fr)', gap: '2.5rem', alignItems: 'center' }} className="hero-split">
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1.15fr) minmax(320px, 0.85fr)', gap: '3rem', alignItems: 'center' }} className="hero-split">
             
-            {/* Left Hero Content */}
+            {/* Left Content */}
             <div>
-              <div className="badge badge-primary" style={{ marginBottom: '1rem', fontSize: '0.8rem', padding: '0.35rem 0.8rem' }}>
-                <Sparkles size={14} /> MANUFACTURA ADITIVA 3D DE ALTA PRECISIÓN
+              <div
+                style={{
+                  display: 'inline-block',
+                  background: '#f1f5f9',
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.75rem',
+                  fontWeight: '700',
+                  padding: '0.3rem 0.75rem',
+                  borderRadius: 'var(--radius-full)',
+                  letterSpacing: '0.05em',
+                  marginBottom: '1.25rem'
+                }}
+              >
+                PERSONALIZAMOS TUS IDEAS
               </div>
 
               <h1 style={{ fontWeight: '800', lineHeight: '1.15', marginBottom: '1.25rem', color: '#0f172a' }}>
-                Ideas que toman <span style={{ color: 'var(--color-primary)' }}>forma tridimensional.</span>
+                Ideas que <br />
+                <span style={{ color: 'var(--color-primary)' }}>toman forma.</span>
               </h1>
 
-              <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '2rem' }}>
-                La primera plataforma e-commerce de impresión 3D en México con stock para envío inmediato, personalizador interactivo en tiempo real y cotizador corporativo por mayoreo.
+              <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '2rem', maxWidth: '520px' }}>
+                Del concepto al objeto. Diseñamos y creamos productos personalizados para acompañar tu día a día, hacer crecer tu marca y convertir momentos especiales en recuerdos.
               </p>
 
-              {/* 3 Pathway Action Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '2rem' }}>
-                <div
-                  onClick={() => navigateTo('catalog')}
-                  className="card"
-                  style={{
-                    padding: '1rem',
-                    cursor: 'pointer',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-light)',
-                    background: '#ffffff',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--color-primary)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border-light)')}
-                >
-                  <Box size={22} color="var(--color-primary)" style={{ marginBottom: '0.5rem' }} />
-                  <div style={{ fontWeight: '800', fontSize: '0.9rem', color: '#0f172a' }}>1. Catálogo Stock</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Despacho en 24h</div>
-                </div>
-
-                <div
-                  onClick={() => navigateTo('customizer')}
-                  className="card"
-                  style={{
-                    padding: '1rem',
-                    cursor: 'pointer',
-                    borderRadius: 'var(--radius-md)',
-                    border: '2px solid var(--color-primary)',
-                    background: 'rgba(0, 130, 138, 0.05)',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  <Sparkles size={22} color="var(--color-primary)" style={{ marginBottom: '0.5rem' }} />
-                  <div style={{ fontWeight: '800', fontSize: '0.9rem', color: '#0f172a' }}>2. Personalizador 3D</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: '700' }}>WebGL Interactivo</div>
-                </div>
-
-                <div
-                  onClick={() => navigateTo('b2b')}
-                  className="card"
-                  style={{
-                    padding: '1rem',
-                    cursor: 'pointer',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-light)',
-                    background: '#ffffff',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--color-primary)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border-light)')}
-                >
-                  <Building2 size={22} color="var(--color-primary)" style={{ marginBottom: '0.5rem' }} />
-                  <div style={{ fontWeight: '800', fontSize: '0.9rem', color: '#0f172a' }}>3. Empresas B2B</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Cotizador PDF SAT</div>
-                </div>
-              </div>
-
-              {/* CTA Buttons */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
                 <button className="btn btn-primary btn-lg" onClick={() => navigateTo('customizer')}>
-                  <Sparkles size={18} />
-                  <span>Personalizar mi Artículo 3D</span>
+                  <span>Explora lo que podemos crear</span>
                   <ArrowRight size={18} />
-                </button>
-
-                <button className="btn btn-secondary btn-lg" onClick={() => navigateTo('b2b')}>
-                  <Building2 size={18} />
-                  <span>Cotizar por Mayoreo</span>
                 </button>
               </div>
             </div>
 
-            {/* Right Hero: Live Interactive 3D Teaser */}
-            <div className="card card-elevated" style={{ padding: '1rem', background: '#ffffff' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.5rem 1rem 0.5rem' }}>
+            {/* Right Hero Visual: 3D Interactive Stage */}
+            <div className="card card-elevated" style={{ padding: '1rem', background: '#ffffff', position: 'relative' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem 0.75rem 0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', fontWeight: '700', color: '#0f172a' }}>
-                  <Box size={16} color="var(--color-primary)" />
-                  <span>Visor 3D en Vivo: Llavero Hexa</span>
+                  <Sparkles size={16} color="var(--color-primary)" />
+                  <span>Configurador 3D en Vivo</span>
                 </div>
 
-                {/* Color quick switch */}
+                {/* Swatches */}
                 <div style={{ display: 'flex', gap: '0.4rem' }}>
                   {['#00828A', '#D4AF37', '#1E293B', '#EA580C'].map((hex) => (
                     <button
@@ -151,11 +108,11 @@ const HomeView = () => {
                 </div>
               </div>
 
-              <div style={{ height: '360px', width: '100%' }}>
+              <div style={{ height: '340px', width: '100%' }}>
                 <ThreeViewer
                   modelType="keychain"
                   selectedColor={teaserColor}
-                  materialType={teaserMaterial}
+                  materialType="PLA_SILK"
                   customText="IDEAFORM"
                   showDimensions={false}
                 />
@@ -167,7 +124,7 @@ const HomeView = () => {
                   style={{ width: '100%' }}
                   onClick={() => navigateTo('customizer', { productId: 'prod-01' })}
                 >
-                  <span>Abrir en Configurador Completo</span>
+                  <span>Abrir en Personalizador Completo</span>
                   <ArrowRight size={14} />
                 </button>
               </div>
@@ -176,186 +133,330 @@ const HomeView = () => {
         </div>
       </section>
 
-      {/* 2. TRUST STATS & METRICS */}
-      <section style={{ padding: '3rem 0', background: '#ffffff', borderBottom: '1px solid var(--border-light)' }}>
+      {/* 2. ¿QUÉ QUIERES CREAR HOY? (3 Rutas Principales - Matching Mockup 4) */}
+      <section style={{ padding: '4rem 0', background: '#ffffff', borderBottom: '1px solid var(--border-light)' }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem', textAlign: 'center' }}>
-            <div>
-              <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)' }}>0.05mm</div>
-              <div style={{ fontWeight: '700', fontSize: '0.95rem', color: '#0f172a' }}>Resolución de Capa</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>Acabados lisos de alta fidelidad</div>
+          <div style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto 3rem auto' }}>
+            <div style={{ fontSize: '0.9rem', color: 'var(--color-primary)', fontWeight: '700', marginBottom: '0.25rem' }}>
+              ✨ ¿Qué quieres crear hoy? ✨
+            </div>
+            <h2 style={{ fontSize: '2rem', fontWeight: '800', color: '#0f172a' }}>
+              Elige la ruta que mejor se adapte a lo que necesitas.
+            </h2>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
+            
+            {/* Card 1: Colecciones */}
+            <div
+              className="card"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                padding: '2rem',
+                borderRadius: 'var(--radius-xl)',
+                border: '1px solid var(--border-light)',
+                background: '#ffffff',
+                transition: 'all 0.25s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+              }}
+            >
+              <div>
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0, 130, 138, 0.1)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
+                  <Box size={24} />
+                </div>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.25rem' }}>Colecciones</h3>
+                <div style={{ fontSize: '0.88rem', fontWeight: '700', color: 'var(--color-primary)', marginBottom: '0.75rem' }}>
+                  Diseña algo que sea tuyo.
+                </div>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '1.5rem' }}>
+                  Productos personalizados para escuela, oficina, regalos y uso diario listos para ordenar o diseñar.
+                </p>
+              </div>
+
+              <button className="btn btn-primary" onClick={() => navigateTo('colecciones')}>
+                <span>Explorar colecciones</span>
+                <ArrowRight size={16} />
+              </button>
             </div>
 
-            <div>
-              <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)' }}>24-48h</div>
-              <div style={{ fontWeight: '700', fontSize: '0.95rem', color: '#0f172a' }}>Tiempo de Fabricación</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>Granja de impresión optimizada</div>
+            {/* Card 2: Empresas */}
+            <div
+              className="card"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                padding: '2rem',
+                borderRadius: 'var(--radius-xl)',
+                border: '1px solid var(--border-light)',
+                background: '#ffffff',
+                transition: 'all 0.25s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+              }}
+            >
+              <div>
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#f1f5f9', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
+                  <Building2 size={24} />
+                </div>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.25rem' }}>Empresas</h3>
+                <div style={{ fontSize: '0.88rem', fontWeight: '700', color: '#0f172a', marginBottom: '0.75rem' }}>
+                  Haz tangible tu marca.
+                </div>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '1.5rem' }}>
+                  Productos personalizados para promover tu negocio, fortalecer tu identidad corporativa y cotizar por mayoreo.
+                </p>
+              </div>
+
+              <button className="btn btn-dark" onClick={() => navigateTo('empresas')}>
+                <span>Ver soluciones para empresas</span>
+                <ArrowRight size={16} />
+              </button>
             </div>
 
-            <div>
-              <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)' }}>100%</div>
-              <div style={{ fontWeight: '700', fontSize: '0.95rem', color: '#0f172a' }}>PLA Biodegradable</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>Bioplásticos eco-friendly</div>
-            </div>
+            {/* Card 3: Eventos */}
+            <div
+              className="card"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                padding: '2rem',
+                borderRadius: 'var(--radius-xl)',
+                border: '1px solid #e8dfd1',
+                background: '#fdfbf9',
+                transition: 'all 0.25s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+              }}
+            >
+              <div>
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#f5efe6', color: '#8c6d48', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
+                  <Heart size={24} />
+                </div>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#2c2217', marginBottom: '0.25rem' }}>Eventos</h3>
+                <div style={{ fontSize: '0.88rem', fontWeight: '700', color: '#8c6d48', marginBottom: '0.75rem' }}>
+                  Crea algo para recordar.
+                </div>
+                <p style={{ fontSize: '0.9rem', color: '#6e5d4b', lineHeight: '1.5', marginBottom: '1.5rem' }}>
+                  Recuerdos y artículos personalizados para bodas, XV años, graduaciones y celebraciones especiales.
+                </p>
+              </div>
 
-            <div>
-              <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)' }}>+10,000</div>
-              <div style={{ fontWeight: '700', fontSize: '0.95rem', color: '#0f172a' }}>Piezas Fabricadas</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>Para clientes y eventos en México</div>
+              <button className="btn" style={{ background: '#c29d72', color: '#ffffff', fontWeight: '700' }} onClick={() => navigateTo('eventos')}>
+                <span>Descubrir opciones para eventos</span>
+                <ArrowRight size={16} />
+              </button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 3. FEATURED BESTSELLERS */}
+      {/* 3. TRUST BAR (Matching Mockup 4) */}
+      <section style={{ background: '#f8fafc', borderBottom: '1px solid var(--border-light)', padding: '1.75rem 0' }}>
+        <div className="container">
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-around', alignItems: 'center', gap: '1.5rem', fontSize: '0.85rem', fontWeight: '700', color: '#475569' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Heart size={18} color="var(--color-primary)" />
+              <span>Hecho con amor en 3D</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <ShieldCheck size={18} color="var(--color-primary)" />
+              <span>Materiales de alta calidad</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Sparkles size={18} color="var(--color-primary)" />
+              <span>Diseños exclusivos y originales</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Truck size={18} color="var(--color-primary)" />
+              <span>Envíos a todo México</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <UserCheck size={18} color="var(--color-primary)" />
+              <span>Atención personalizada</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. ASÍ DE FÁCIL (3 Pasos Claros - Matching Mockup 4) */}
+      <section style={{ padding: '4rem 0', background: '#ffffff', borderBottom: '1px solid var(--border-light)' }}>
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <div style={{ fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: '700', marginBottom: '0.25rem' }}>
+              ✨ Así de fácil ✨
+            </div>
+            <h2 style={{ fontSize: '2rem', fontWeight: '800', color: '#0f172a' }}>Cómo funciona IdeaForm</h2>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '2rem' }}>
+            
+            {/* Step 1 */}
+            <div className="card" style={{ padding: '2rem', textAlign: 'center', borderRadius: 'var(--radius-lg)' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0, 130, 138, 0.1)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto' }}>
+                <Box size={24} />
+              </div>
+              <div style={{ display: 'inline-block', background: '#00828A', color: '#fff', fontSize: '0.75rem', fontWeight: '800', width: '22px', height: '22px', borderRadius: '50%', lineHeight: '22px', marginBottom: '0.5rem' }}>1</div>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.4rem' }}>Elige</h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Escoge tu colección, producto o solución ideal.</p>
+            </div>
+
+            {/* Step 2 */}
+            <div className="card" style={{ padding: '2rem', textAlign: 'center', borderRadius: 'var(--radius-lg)' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0, 130, 138, 0.1)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto' }}>
+                <PenTool size={24} />
+              </div>
+              <div style={{ display: 'inline-block', background: '#00828A', color: '#fff', fontSize: '0.75rem', fontWeight: '800', width: '22px', height: '22px', borderRadius: '50%', lineHeight: '22px', marginBottom: '0.5rem' }}>2</div>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.4rem' }}>Personaliza</h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Agrega nombres, colores, logos y detalles únicos.</p>
+            </div>
+
+            {/* Step 3 */}
+            <div className="card" style={{ padding: '2rem', textAlign: 'center', borderRadius: 'var(--radius-lg)' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0, 130, 138, 0.1)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto' }}>
+                <PackageCheck size={24} />
+              </div>
+              <div style={{ display: 'inline-block', background: '#00828A', color: '#fff', fontSize: '0.75rem', fontWeight: '800', width: '22px', height: '22px', borderRadius: '50%', lineHeight: '22px', marginBottom: '0.5rem' }}>3</div>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.4rem' }}>Recibe</h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Lo fabricamos con calidad y lo enviamos hasta ti.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. INSPÍRATE (UGC Showcase - Matching Mockup 4) */}
       <section style={{ padding: '4rem 0', background: 'var(--bg-main)' }}>
         <div className="container">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
-              <div className="badge badge-primary" style={{ marginBottom: '0.5rem' }}>DESTACADOS</div>
-              <h2 style={{ fontSize: '2rem', fontWeight: '800' }}>Los Favoritos de la Comunidad</h2>
-              <p style={{ color: 'var(--text-secondary)' }}>Modelos listos para tu setup o configurables con tus nombres y logotipos.</p>
+              <div style={{ fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: '700', marginBottom: '0.25rem' }}>
+                ✨ Inspírate ✨
+              </div>
+              <h2 style={{ fontSize: '2rem', fontWeight: '800' }}>Proyectos reales de nuestros clientes</h2>
+              <p style={{ color: 'var(--text-secondary)' }}>Descubre ideas, nuevos productos y piezas personalizadas terminadas.</p>
             </div>
-            <button className="btn btn-secondary" onClick={() => navigateTo('catalog')}>
-              <span>Ver Todo el Catálogo</span>
+            <button className="btn btn-secondary" onClick={() => navigateTo('customizer')}>
+              <span>Ver configurador 3D</span>
               <ArrowRight size={16} />
             </button>
           </div>
 
-          <div className="grid-responsive">
-            {featuredProducts.map((prod) => (
-              <div key={prod.id} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '1.25rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                  <span className={`badge ${prod.isCustomizable ? 'badge-primary' : 'badge-success'}`}>
-                    {prod.isCustomizable ? '✨ Personalizable' : '📦 Stock'}
-                  </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.8rem', fontWeight: '700', color: '#f59e0b' }}>
-                    <Star size={13} fill="#f59e0b" />
-                    <span>{prod.rating}</span>
-                  </div>
-                </div>
-
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem' }}>
+            {[
+              { name: 'Llavero Valentina', tag: 'Turquesa Seda', bg: '#00828A', text: 'Valentina' },
+              { name: 'Tag Corporativo', tag: 'Negro Obsidiana', bg: '#1E293B', text: 'IDEA' },
+              { name: 'Organizador de Ideas', tag: 'Arena Mate', bg: '#c29d72', text: 'Organiza tus ideas' },
+              { name: 'Portaplumas Emma', tag: 'Rosa Seda', bg: '#e11d48', text: 'Emma' },
+              { name: 'Taza Oficial IdeaForm', tag: 'Cerámica & PLA', bg: '#00828A', text: 'IdeaForm' }
+            ].map((item, idx) => (
+              <div
+                key={idx}
+                className="card"
+                style={{
+                  padding: '1.25rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  textAlign: 'center',
+                  borderRadius: 'var(--radius-lg)'
+                }}
+              >
                 <div
-                  onClick={() => prod.isCustomizable ? navigateTo('customizer', { productId: prod.id }) : navigateTo('catalog')}
                   style={{
-                    height: '160px',
+                    width: '100%',
+                    height: '140px',
                     borderRadius: 'var(--radius-md)',
-                    background: 'radial-gradient(circle, #ffffff 0%, #f1f5f9 100%)',
+                    background: item.bg,
+                    color: '#ffffff',
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    cursor: 'pointer',
-                    marginBottom: '1rem'
+                    marginBottom: '1rem',
+                    boxShadow: 'var(--shadow-sm)'
                   }}
                 >
-                  <div style={{ width: '60px', height: '60px', borderRadius: '14px', background: 'linear-gradient(135deg, #00828A, #00e5ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
-                    <Box size={28} />
-                  </div>
+                  <Sparkles size={24} style={{ marginBottom: '0.5rem', opacity: 0.8 }} />
+                  <span style={{ fontWeight: '800', fontSize: '0.95rem', letterSpacing: '0.04em' }}>"{item.text}"</span>
                 </div>
-
-                <div>
-                  <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.25rem' }}>{prod.name}</h3>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>{prod.description}</p>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '0.85rem' }}>
-                  <div style={{ fontWeight: '800', fontSize: '1.2rem', color: '#0f172a' }}>{formatCurrency(prod.basePrice)}</div>
-                  <button
-                    className="btn btn-primary btn-sm"
-                    onClick={() => {
-                      if (prod.isCustomizable) {
-                        navigateTo('customizer', { productId: prod.id });
-                      } else {
-                        addToCart({
-                          id: prod.id,
-                          name: prod.name,
-                          basePrice: prod.basePrice,
-                          finalUnitPrice: prod.basePrice,
-                          selectedMaterial: FILAMENT_MATERIALS[0],
-                          selectedColor: FILAMENT_MATERIALS[0].colors[0],
-                          quantity: 1
-                        });
-                      }
-                    }}
-                  >
-                    {prod.isCustomizable ? 'Personalizar' : 'Comprar'}
-                  </button>
-                </div>
+                <div style={{ fontWeight: '700', fontSize: '0.9rem', color: '#0f172a' }}>{item.name}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{item.tag}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* 4. FILAMENT MATERIALS GUIDE */}
-      <section style={{ padding: '4rem 0', background: '#ffffff', borderBottom: '1px solid var(--border-light)' }}>
-        <div className="container">
-          <div style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto 3rem auto' }}>
-            <div className="badge badge-primary" style={{ marginBottom: '0.5rem' }}>CIENCIA DE MATERIALES</div>
-            <h2 style={{ fontSize: '2rem', fontWeight: '800' }}>Polímeros de Grado Industrial</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>Seleccionamos los mejores filamentos para garantizar resistencia mecánica y acabados excepcionales.</p>
-          </div>
+      {/* 6. NEWSLETTER / PROMO BOX (Matching Mockup 4) */}
+      <section style={{ padding: '3.5rem 0', background: '#ffffff', borderTop: '1px solid var(--border-light)' }}>
+        <div className="container" style={{ maxWidth: '800px' }}>
+          <div
+            className="card"
+            style={{
+              padding: '2.5rem',
+              background: 'linear-gradient(135deg, rgba(0, 130, 138, 0.08) 0%, rgba(0, 229, 255, 0.08) 100%)',
+              border: '1px solid rgba(0, 130, 138, 0.2)',
+              borderRadius: 'var(--radius-xl)',
+              textAlign: 'center'
+            }}
+          >
+            <Mail size={32} color="var(--color-primary)" style={{ margin: '0 auto 0.75rem auto' }} />
+            <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.4rem' }}>
+              Sé el primero en conocer novedades y promociones especiales
+            </h3>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+              Suscríbete y recibe un 10% de descuento en tu primer pedido personalizado con código <strong>IDEAFORM10</strong>.
+            </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem' }}>
-            {FILAMENT_MATERIALS.map((mat) => (
-              <div key={mat.id} className="card" style={{ padding: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800' }}>{mat.name}</h3>
-                  <span className="badge badge-primary">Lead: {mat.leadTimeHours}h</span>
-                </div>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: '1.5' }}>
-                  {mat.description}
-                </p>
-                <div style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-tertiary)', marginBottom: '0.5rem' }}>COLORES POPULARES:</div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  {mat.colors.slice(0, 5).map((col) => (
-                    <span
-                      key={col.id}
-                      style={{ width: '22px', height: '22px', borderRadius: '50%', background: col.hex, border: '1px solid #cbd5e1' }}
-                      title={col.name}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 5. TESTIMONIALS */}
-      <section style={{ padding: '4rem 0', background: 'var(--bg-main)' }}>
-        <div className="container">
-          <div style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto 3rem auto' }}>
-            <div className="badge badge-primary" style={{ marginBottom: '0.5rem' }}>OPINIONES REALES</div>
-            <h2 style={{ fontSize: '2rem', fontWeight: '800' }}>Lo que dicen nuestros clientes</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>Event planners, empresas y entusiastas del diseño que confían en IdeaForm.</p>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
-            {TESTIMONIALS.map((t) => (
-              <div key={t.id} className="card" style={{ padding: '1.75rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ display: 'flex', gap: '0.2rem', color: '#f59e0b', marginBottom: '1rem' }}>
-                    {[...Array(t.stars)].map((_, i) => (
-                      <Star key={i} size={16} fill="#f59e0b" />
-                    ))}
-                  </div>
-                  <p style={{ fontSize: '0.92rem', color: '#0f172a', lineHeight: '1.6', fontStyle: 'italic', marginBottom: '1.25rem' }}>
-                    "{t.comment}"
-                  </p>
-                </div>
-                <div>
-                  <div style={{ fontWeight: '800', fontSize: '0.95rem', color: '#0f172a' }}>{t.name}</div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)' }}>{t.role} • {t.location}</div>
-                </div>
-              </div>
-            ))}
+            <form onSubmit={handleNewsletterSubmit} style={{ display: 'flex', gap: '0.5rem', maxWidth: '480px', margin: '0 auto' }}>
+              <input
+                type="email"
+                required
+                placeholder="Escribe tu correo electrónico..."
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: '0.75rem 1rem',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border-light)',
+                  fontSize: '0.9rem',
+                  outline: 'none'
+                }}
+              />
+              <button type="submit" className="btn btn-primary" style={{ padding: '0.75rem 1.25rem' }}>
+                <span>Suscribirme</span>
+                <Send size={16} />
+              </button>
+            </form>
           </div>
         </div>
       </section>
 
-      {/* 6. FAQ ACCORDION */}
-      <section style={{ padding: '4rem 0', background: '#ffffff', borderTop: '1px solid var(--border-light)' }}>
+      {/* 7. FAQ ACCORDION */}
+      <section style={{ padding: '4rem 0', background: 'var(--bg-main)', borderTop: '1px solid var(--border-light)' }}>
         <div className="container" style={{ maxWidth: '800px' }}>
           <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
             <div className="badge badge-primary" style={{ marginBottom: '0.5rem' }}>RESOLVEMOS TUS DUDAS</div>

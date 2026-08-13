@@ -4,9 +4,11 @@ import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import CartSlideOver from './components/layout/CartSlideOver';
 import HomeView from './components/home/HomeView';
+import ColeccionesRoute from './components/routes/ColeccionesRoute';
+import EmpresasRoute from './components/routes/EmpresasRoute';
+import EventosRoute from './components/routes/EventosRoute';
 import CatalogView from './components/catalog/CatalogView';
 import CustomizerView from './components/customizer/CustomizerView';
-import B2BCalculator from './components/b2b/B2BCalculator';
 import CheckoutView from './components/checkout/CheckoutView';
 import OrderTrackingView from './components/tracking/OrderTrackingView';
 import AdminDashboard from './components/admin/AdminDashboard';
@@ -23,9 +25,12 @@ function App() {
       {/* Main Dynamic View Content */}
       <main style={{ flex: 1 }}>
         {currentView === 'home' && <HomeView />}
+        {currentView === 'colecciones' && <ColeccionesRoute />}
+        {currentView === 'empresas' && <EmpresasRoute />}
+        {currentView === 'eventos' && <EventosRoute />}
         {currentView === 'catalog' && <CatalogView />}
         {currentView === 'customizer' && <CustomizerView />}
-        {currentView === 'b2b' && <B2BCalculator />}
+        {currentView === 'b2b' && <EmpresasRoute />}
         {currentView === 'checkout' && <CheckoutView />}
         {currentView === 'tracking' && <OrderTrackingView />}
         {currentView === 'admin' && <AdminDashboard />}

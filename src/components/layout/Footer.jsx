@@ -1,147 +1,125 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
-import { Box, ShieldCheck, Leaf, Truck, Receipt, Sparkles, MapPin, Mail, Phone } from 'lucide-react';
+import IdeaFormLogo from '../common/IdeaFormLogo';
+import { Leaf, Sparkles, Receipt, Truck, MapPin, Mail, Phone, ShieldCheck } from 'lucide-react';
 
 const Footer = () => {
   const { navigateTo } = useApp();
 
   return (
-    <footer style={{ background: '#090e17', color: '#ffffff', borderTop: '1px solid #1e293b', marginTop: '4rem' }}>
+    <footer style={{ background: '#ffffff', color: '#0f172a', borderTop: '1px solid var(--border-light)', marginTop: '4rem' }}>
+      
       {/* 1. Value Props Banner */}
-      <div style={{ background: '#0f172a', borderBottom: '1px solid #1e293b', padding: '2.5rem 0' }}>
-        <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '2rem' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
-            <div style={{ background: 'rgba(0, 130, 138, 0.2)', padding: '0.75rem', borderRadius: 'var(--radius-md)', color: '#00e5ff' }}>
-              <Leaf size={24} />
+      <div style={{ background: '#f8fafc', borderBottom: '1px solid var(--border-light)', padding: '2.5rem 0' }}>
+        <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '2rem' }}>
+          
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
+            <div style={{ background: 'rgba(0, 130, 138, 0.1)', padding: '0.65rem', borderRadius: 'var(--radius-md)', color: 'var(--color-primary)' }}>
+              <Leaf size={22} />
             </div>
             <div>
-              <div style={{ fontWeight: '700', fontSize: '1rem', color: '#ffffff', marginBottom: '0.25rem' }}>PLA 100% Eco-Friendly</div>
-              <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Bioplásticos biodegradables a base de almidón de maíz, libres de toxinas y de alta durabilidad.</div>
+              <div style={{ fontWeight: '700', fontSize: '0.95rem', color: '#0f172a', marginBottom: '0.2rem' }}>Materiales de Alta Calidad</div>
+              <div style={{ fontSize: '0.82rem', color: '#64748b' }}>Bioplásticos PLA biodegradables de maíz y polímeros técnicos no tóxicos.</div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
-            <div style={{ background: 'rgba(0, 130, 138, 0.2)', padding: '0.75rem', borderRadius: 'var(--radius-md)', color: '#00e5ff' }}>
-              <Sparkles size={24} />
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
+            <div style={{ background: 'rgba(0, 130, 138, 0.1)', padding: '0.65rem', borderRadius: 'var(--radius-md)', color: 'var(--color-primary)' }}>
+              <Sparkles size={22} />
             </div>
             <div>
-              <div style={{ fontWeight: '700', fontSize: '1rem', color: '#ffffff', marginBottom: '0.25rem' }}>Personalización 3D en Vivo</div>
-              <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Motor WebGL interactivo para previsualizar colores, tipografías y logos antes de imprimir.</div>
+              <div style={{ fontWeight: '700', fontSize: '0.95rem', color: '#0f172a', marginBottom: '0.2rem' }}>Personalización 3D en Vivo</div>
+              <div style={{ fontSize: '0.82rem', color: '#64748b' }}>Previsualiza tus nombres y logotipos en 360° antes de imprimir.</div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
-            <div style={{ background: 'rgba(0, 130, 138, 0.2)', padding: '0.75rem', borderRadius: 'var(--radius-md)', color: '#00e5ff' }}>
-              <Receipt size={24} />
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
+            <div style={{ background: 'rgba(0, 130, 138, 0.1)', padding: '0.65rem', borderRadius: 'var(--radius-md)', color: 'var(--color-primary)' }}>
+              <Receipt size={22} />
             </div>
             <div>
-              <div style={{ fontWeight: '700', fontSize: '1rem', color: '#ffffff', marginBottom: '0.25rem' }}>Facturación CFDI 4.0 SAT</div>
-              <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Factura inmediata para personas físicas y empresas con desglose fiscal completo y XML/PDF.</div>
+              <div style={{ fontWeight: '700', fontSize: '0.95rem', color: '#0f172a', marginBottom: '0.2rem' }}>Facturación CFDI 4.0 SAT</div>
+              <div style={{ fontSize: '0.82rem', color: '#64748b' }}>Generación inmediata de factura con validez fiscal para empresas y particulares.</div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
-            <div style={{ background: 'rgba(0, 130, 138, 0.2)', padding: '0.75rem', borderRadius: 'var(--radius-md)', color: '#00e5ff' }}>
-              <Truck size={24} />
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
+            <div style={{ background: 'rgba(0, 130, 138, 0.1)', padding: '0.65rem', borderRadius: 'var(--radius-md)', color: 'var(--color-primary)' }}>
+              <Truck size={22} />
             </div>
             <div>
-              <div style={{ fontWeight: '700', fontSize: '1rem', color: '#ffffff', marginBottom: '0.25rem' }}>Envíos Seguros a Todo México</div>
-              <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Alianzas directas con DHL, FedEx y Estafeta con número de guía y rastreo en tiempo real.</div>
+              <div style={{ fontWeight: '700', fontSize: '0.95rem', color: '#0f172a', marginBottom: '0.2rem' }}>Envíos a Todo México</div>
+              <div style={{ fontSize: '0.82rem', color: '#64748b' }}>DHL, FedEx y Estafeta con número de guía y rastreo de producción en tiempo real.</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 2. Main Footer Navigation */}
+      {/* 2. Main Footer Body (Matching Mockup Footer) */}
       <div className="container" style={{ padding: '3.5rem 1.5rem 2rem 1.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2.5rem' }}>
-        {/* Col 1: Brand */}
-        <div style={{ maxWidth: '320px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-            <div style={{ width: '2rem', height: '2rem', borderRadius: 'var(--radius-sm)', background: 'linear-gradient(135deg, #00828A, #00e5ff)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Box size={18} color="#fff" />
-            </div>
-            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '800', fontSize: '1.25rem', letterSpacing: '-0.02em' }}>
-              IDEA<span style={{ color: '#00e5ff' }}>FORM</span>
-            </span>
-          </div>
-          <p style={{ color: '#94a3b8', fontSize: '0.85rem', lineHeight: '1.6', marginBottom: '1.25rem' }}>
-            Transformamos tus ideas y marcas en objetos tridimensionales de alta precisión con tecnología aditiva industrial.
+        
+        {/* Brand & Slogan */}
+        <div style={{ maxWidth: '300px' }}>
+          <IdeaFormLogo onClick={() => navigateTo('home')} size="medium" />
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: '1.6', marginTop: '1rem', marginBottom: '1.25rem' }}>
+            Manufactura aditiva y comercio electrónico de artículos personalizados y stock para hogar, oficina y eventos.
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.82rem', color: '#cbd5e1' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <MapPin size={15} color="#00e5ff" />
-              <span>La Paz, Baja California Sur, México</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Mail size={15} color="#00e5ff" />
-              <span>contacto@ideaform.mx</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Phone size={15} color="#00e5ff" />
-              <span>+52 (612) 123-4567</span>
-            </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)' }}>
+            © {new Date().getFullYear()} IdeaForm. Todos los derechos reservados.
           </div>
         </div>
 
-        {/* Col 2: Rutas & Catálogo */}
+        {/* Navegación */}
         <div>
-          <h4 style={{ color: '#ffffff', fontSize: '0.95rem', fontWeight: '700', marginBottom: '1rem', letterSpacing: '0.04em' }}>CATÁLOGO & RUTAS</h4>
-          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.85rem', color: '#94a3b8' }}>
-            <li><a href="#catalog" onClick={(e) => { e.preventDefault(); navigateTo('catalog'); }} style={{ transition: 'color 0.2s' }}>Colección Escritorio & Setup</a></li>
-            <li><a href="#catalog" onClick={(e) => { e.preventDefault(); navigateTo('catalog'); }} style={{ transition: 'color 0.2s' }}>Hogar & Decoración Voronoi</a></li>
-            <li><a href="#customizer" onClick={(e) => { e.preventDefault(); navigateTo('customizer'); }} style={{ transition: 'color 0.2s', color: '#00e5ff' }}>Configurador 3D en Vivo</a></li>
-            <li><a href="#b2b" onClick={(e) => { e.preventDefault(); navigateTo('b2b'); }} style={{ transition: 'color 0.2s' }}>Portal B2B & Mayoreo</a></li>
-            <li><a href="#events" onClick={(e) => { e.preventDefault(); navigateTo('customizer', { productId: 'prod-03' }); }} style={{ transition: 'color 0.2s' }}>Recuerdos de Bodas & Eventos</a></li>
+          <h4 style={{ color: '#0f172a', fontSize: '0.9rem', fontWeight: '800', marginBottom: '1rem', letterSpacing: '0.04em' }}>NAVEGACIÓN</h4>
+          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            <li><a href="#colecciones" onClick={(e) => { e.preventDefault(); navigateTo('colecciones'); }}>Colecciones</a></li>
+            <li><a href="#empresas" onClick={(e) => { e.preventDefault(); navigateTo('empresas'); }}>Empresas</a></li>
+            <li><a href="#eventos" onClick={(e) => { e.preventDefault(); navigateTo('eventos'); }}>Eventos</a></li>
+            <li><a href="#customizer" onClick={(e) => { e.preventDefault(); navigateTo('customizer'); }} style={{ color: 'var(--color-primary)', fontWeight: '700' }}>Personalizador 3D</a></li>
+            <li><a href="#tracking" onClick={(e) => { e.preventDefault(); navigateTo('tracking'); }}>Rastrear Pedido</a></li>
           </ul>
         </div>
 
-        {/* Col 3: Clientes & Soporte */}
+        {/* Ayuda & Políticas */}
         <div>
-          <h4 style={{ color: '#ffffff', fontSize: '0.95rem', fontWeight: '700', marginBottom: '1rem', letterSpacing: '0.04em' }}>SOPORTE & AYUDA</h4>
-          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.85rem', color: '#94a3b8' }}>
-            <li><a href="#tracking" onClick={(e) => { e.preventDefault(); navigateTo('tracking'); }}>Rastrear Pedido en Tiempo Real</a></li>
-            <li><a href="#faq" onClick={(e) => { e.preventDefault(); navigateTo('home'); }}>Preguntas Frecuentes (FAQ)</a></li>
-            <li><a href="#materials" onClick={(e) => { e.preventDefault(); navigateTo('home'); }}>Guía de Filamentos & Materiales</a></li>
-            <li><a href="#privacy" onClick={(e) => { e.preventDefault(); alert('Aviso de Privacidad: Protegemos tus datos y propiedad intelectual con cifrado SSL 256-bit bajo la ley LFPDPPP.'); }}>Aviso de Privacidad</a></li>
-            <li><a href="#terms" onClick={(e) => { e.preventDefault(); alert('Términos de Manufactura: Productos personalizados se fabrican bajo demanda; incluyen garantía de satisfacción y reemplazo por defectos de fabricación.'); }}>Términos y Condiciones</a></li>
+          <h4 style={{ color: '#0f172a', fontSize: '0.9rem', fontWeight: '800', marginBottom: '1rem', letterSpacing: '0.04em' }}>AYUDA</h4>
+          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            <li><a href="#faq" onClick={(e) => { e.preventDefault(); navigateTo('home'); }}>Preguntas Frecuentes</a></li>
+            <li><a href="#shipping" onClick={(e) => { e.preventDefault(); alert('Envíos rápidos a toda la República Mexicana por DHL/FedEx en 24 a 72 hrs hábiles.'); }}>Envíos y Entregas</a></li>
+            <li><a href="#returns" onClick={(e) => { e.preventDefault(); alert('Garantía de calidad: Reemplazamos sin costo cualquier producto con defecto de fabricación.'); }}>Cambios y Devoluciones</a></li>
+            <li><a href="#privacy" onClick={(e) => { e.preventDefault(); alert('Aviso de Privacidad: Cuidamos tus datos conforme a la legislación mexicana LFPDPPP.'); }}>Aviso de Privacidad</a></li>
           </ul>
         </div>
 
-        {/* Col 4: Métodos de Pago & Seguridad */}
+        {/* Contacto Directo (Matching Mockup) */}
         <div>
-          <h4 style={{ color: '#ffffff', fontSize: '0.95rem', fontWeight: '700', marginBottom: '1rem', letterSpacing: '0.04em' }}>PAGOS SEGUROS</h4>
-          <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.85rem' }}>
-            Aceptamos las principales pasarelas con encriptación bancaria SSL 256-bit:
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
-            {['Visa', 'Mastercard', 'AMEX', 'SPEI BBVA', 'Mercado Pago', 'Stripe', 'OXXO Pay'].map((badge) => (
-              <span
-                key={badge}
-                style={{
-                  background: '#1e293b',
-                  border: '1px solid #334155',
-                  padding: '0.25rem 0.6rem',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: '0.72rem',
-                  fontWeight: '600',
-                  color: '#e2e8f0'
-                }}
-              >
-                {badge}
-              </span>
-            ))}
+          <h4 style={{ color: '#0f172a', fontSize: '0.9rem', fontWeight: '800', marginBottom: '1rem', letterSpacing: '0.04em' }}>CONTACTO</h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Phone size={15} color="var(--color-primary)" />
+              <span>612 123 4567</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Mail size={15} color="var(--color-primary)" />
+              <span>hola@ideaform.mx</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <MapPin size={15} color="var(--color-primary)" />
+              <span>La Paz, Baja California Sur</span>
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: '#10b981' }}>
-            <ShieldCheck size={16} />
-            <span>Transacciones 100% Protegidas PCI-DSS</span>
-          </div>
-        </div>
-      </div>
 
-      {/* 3. Bottom Bar */}
-      <div style={{ borderTop: '1px solid #1e293b', padding: '1.5rem 0', textAlign: 'center', fontSize: '0.8rem', color: '#64748b' }}>
-        <div className="container">
-          © {new Date().getFullYear()} IdeaForm México S.A. de C.V. Todos los derechos reservados. Diseñado para manufactura aditiva y personalización digital 3D.
+          <div style={{ marginTop: '1.25rem' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-tertiary)', marginBottom: '0.4rem' }}>MÉTODOS DE PAGO SEGUROS</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+              {['VISA', 'Mastercard', 'AMEX', 'SPEI', 'PayPal', 'OXXO', 'Mercado Pago'].map((b) => (
+                <span key={b} style={{ background: '#f1f5f9', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '700', color: '#475569' }}>
+                  {b}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </footer>
