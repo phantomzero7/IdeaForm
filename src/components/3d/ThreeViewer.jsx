@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef, useCallback } from 'react';
 import * as THREE from 'three';
-import { RotateCw, Sun, Moon, Maximize2, Layers, Eye, RefreshCw } from 'lucide-react';
+import { RotateCw, Sun, Moon, Layers, Eye } from 'lucide-react';
 
 const ThreeViewer = forwardRef(({
   modelType = 'keychain', // keychain | organizer | lamp | trophy
@@ -16,15 +16,21 @@ const ThreeViewer = forwardRef(({
   const rendererRef = useRef(null);
   const cameraRef = useRef(null);
   const meshGroupRef = useRef(null);
-  const textMeshRef = useRef(null);
   const animFrameId = useRef(null);
 
   const [isAutoRotating, setIsAutoRotating] = useState(true);
-  const [lightingMode, setLightingMode] = useState('studio'); // studio | warm | dark
-  const [wireframeMode, setWireframeMode] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const isAutoRotatingRef = useRef(true);
+  const isDraggingRef = useRef(false);
 
-  // Expose snapshot capture function to parent
+  const [lightingMode, setLightingMode] = useState('studio'); // studio | dark
+  const [wireframeMode, setWireframeMode] = useState(false);
+
+  // Sync ref with state
+  useEffect(() => {
+    isAutoRotatingRef.current = isAutoRotating;
+  }, [isAutoRotating]);
+
+  // Expose snapshot capture and camera reset function to parent
   useImperativeHandle(ref, () => ({
     getSnapshot: () => {
       if (rendererRef.current && sceneRef.current && cameraRef.current) {
@@ -35,201 +41,18 @@ const ThreeViewer = forwardRef(({
     },
     resetCamera: () => {
       if (cameraRef.current) {
-        cameraRef.current.position.set(0, 3, 7);
-        cameraRef.current.lookAt(0, 0, 0);
+        cameraRef.current.position.set(0, 3.2, 6.8);
+        cameraRef.current.lookAt(0, 0.2, 0);
       }
     }
   }));
 
-  // Setup Three.js Scene
-  useEffect(() => {
-    const container = mountRef.current;
-    if (!container) return;
-
-    const width = container.clientWidth || 600;
-    const height = container.clientHeight || 450;
-
-    // 1. Scene
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(lightingMode === 'dark' ? 0x090e17 : 0xf8fafc);
-    sceneRef.current = scene;
-
-    // 2. Camera
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    camera.position.set(0, 3.2, 6.8);
-    camera.lookAt(0, 0.2, 0);
-    cameraRef.current = camera;
-
-    // 3. Renderer
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      preserveDrawingBuffer: true,
-      powerPreference: 'high-performance'
-    });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
-
-    container.innerHTML = '';
-    container.appendChild(renderer.domElement);
-    rendererRef.current = renderer;
-
-    // 4. Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
-    scene.add(ambientLight);
-
-    const mainLight = new THREE.DirectionalLight(0xffffff, 1.8);
-    mainLight.position.set(5, 8, 5);
-    mainLight.castShadow = true;
-    mainLight.shadow.mapSize.width = 1024;
-    mainLight.shadow.mapSize.height = 1024;
-    scene.add(mainLight);
-
-    const fillLight = new THREE.DirectionalLight(0x00e5ff, 0.6);
-    fillLight.position.set(-5, 3, -3);
-    scene.add(fillLight);
-
-    const rimLight = new THREE.DirectionalLight(0xffffff, 0.9);
-    rimLight.position.set(0, -4, -4);
-    scene.add(rimLight);
-
-    // Grid Floor
-    const gridHelper = new THREE.GridHelper(12, 24, 0x00828a, 0xe2e8f0);
-    gridHelper.position.y = -1.2;
-    scene.add(gridHelper);
-
-    // 3D Model Group
-    const meshGroup = new THREE.Group();
-    meshGroup.position.y = -0.2;
-    scene.add(meshGroup);
-    meshGroupRef.current = meshGroup;
-
-    // Orbit Controls manual handling (smooth touch/mouse)
-    let isDragging = false;
-    let previousMousePosition = { x: 0, y: 0 };
-
-    const onMouseDown = (e) => {
-      isDragging = true;
-      previousMousePosition = { x: e.clientX, y: e.clientY };
-    };
-
-    const onMouseMove = (e) => {
-      if (!isDragging || !meshGroupRef.current) return;
-      const deltaX = e.clientX - previousMousePosition.x;
-      const deltaY = e.clientY - previousMousePosition.y;
-
-      meshGroupRef.current.rotation.y += deltaX * 0.008;
-      meshGroupRef.current.rotation.x += deltaY * 0.008;
-      meshGroupRef.current.rotation.x = Math.max(-0.8, Math.min(0.8, meshGroupRef.current.rotation.x));
-
-      previousMousePosition = { x: e.clientX, y: e.clientY };
-    };
-
-    const onMouseUp = () => {
-      isDragging = false;
-    };
-
-    const onWheel = (e) => {
-      e.preventDefault();
-      if (!cameraRef.current) return;
-      const zoomSpeed = 0.004;
-      cameraRef.current.position.z = Math.max(3.5, Math.min(11, cameraRef.current.position.z + e.deltaY * zoomSpeed));
-    };
-
-    // Touch support for mobile
-    let touchStartDist = 0;
-    const onTouchStart = (e) => {
-      if (e.touches.length === 1) {
-        isDragging = true;
-        previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      } else if (e.touches.length === 2) {
-        touchStartDist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-      }
-    };
-
-    const onTouchMove = (e) => {
-      if (e.touches.length === 1 && isDragging && meshGroupRef.current) {
-        const deltaX = e.touches[0].clientX - previousMousePosition.x;
-        const deltaY = e.touches[0].clientY - previousMousePosition.y;
-        meshGroupRef.current.rotation.y += deltaX * 0.008;
-        meshGroupRef.current.rotation.x += deltaY * 0.008;
-        previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      } else if (e.touches.length === 2 && cameraRef.current) {
-        const dist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        const diff = touchStartDist - dist;
-        cameraRef.current.position.z = Math.max(3.5, Math.min(11, cameraRef.current.position.z + diff * 0.01));
-        touchStartDist = dist;
-      }
-    };
-
-    const onTouchEnd = () => {
-      isDragging = false;
-    };
-
-    const domElement = renderer.domElement;
-    domElement.addEventListener('mousedown', onMouseDown);
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
-    domElement.addEventListener('wheel', onWheel, { passive: false });
-    domElement.addEventListener('touchstart', onTouchStart);
-    domElement.addEventListener('touchmove', onTouchMove);
-    domElement.addEventListener('touchend', onTouchEnd);
-
-    // Animation Loop
-    const animate = () => {
-      animFrameId.current = requestAnimationFrame(animate);
-
-      if (isAutoRotating && meshGroupRef.current && !isDragging) {
-        meshGroupRef.current.rotation.y += 0.006;
-      }
-
-      renderer.render(scene, camera);
-    };
-
-    animate();
-    setLoading(false);
-
-    // Resize Handler
-    const handleResize = () => {
-      if (!container || !renderer || !camera) return;
-      const w = container.clientWidth;
-      const h = container.clientHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      cancelAnimationFrame(animFrameId.current);
-      window.removeEventListener('resize', handleResize);
-      domElement.removeEventListener('mousedown', onMouseDown);
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
-      domElement.removeEventListener('wheel', onWheel);
-      domElement.removeEventListener('touchstart', onTouchStart);
-      domElement.removeEventListener('touchmove', onTouchMove);
-      domElement.removeEventListener('touchend', onTouchEnd);
-      renderer.dispose();
-    };
-  }, [lightingMode, isAutoRotating]);
-
-  // Update 3D Geometry and Materials when props change
-  useEffect(() => {
+  // Rebuild / Update 3D Geometry Function
+  const buildGeometry = useCallback(() => {
     if (!meshGroupRef.current) return;
     const group = meshGroupRef.current;
 
-    // Clear existing meshes
+    // Clear existing meshes cleanly
     while (group.children.length > 0) {
       const obj = group.children[0];
       if (obj.geometry) obj.geometry.dispose();
@@ -243,7 +66,7 @@ const ThreeViewer = forwardRef(({
       group.remove(obj);
     }
 
-    // Determine Material Properties
+    // Determine Material Properties based on polymer
     let roughness = 0.5;
     let metalness = 0.1;
     let transmission = 0.0;
@@ -368,7 +191,6 @@ const ThreeViewer = forwardRef(({
 
     } else if (modelType === 'organizer') {
       // Hexagonal Desk Station
-      // Main body
       const mainGeo = new THREE.CylinderGeometry(1.6, 1.8, 2.0, 6);
       const mainMesh = new THREE.Mesh(mainGeo, mainMaterial);
       mainMesh.castShadow = true;
@@ -448,8 +270,202 @@ const ThreeViewer = forwardRef(({
     }
 
     group.scale.set(scaleMultiplier, scaleMultiplier, scaleMultiplier);
-
   }, [modelType, selectedColor, materialType, customText, fontFamily, scaleMultiplier, wireframeMode]);
+
+  // 1. Initialize Three.js WebGL Scene ONCE on Mount
+  useEffect(() => {
+    const container = mountRef.current;
+    if (!container) return;
+
+    const width = container.clientWidth || 600;
+    const height = container.clientHeight || 450;
+
+    // Scene
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(lightingMode === 'dark' ? 0x090e17 : 0xf8fafc);
+    sceneRef.current = scene;
+
+    // Camera
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    camera.position.set(0, 3.2, 6.8);
+    camera.lookAt(0, 0.2, 0);
+    cameraRef.current = camera;
+
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      preserveDrawingBuffer: true,
+      powerPreference: 'high-performance'
+    });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+
+    container.innerHTML = '';
+    container.appendChild(renderer.domElement);
+    rendererRef.current = renderer;
+
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    scene.add(ambientLight);
+
+    const mainLight = new THREE.DirectionalLight(0xffffff, 1.8);
+    mainLight.position.set(5, 8, 5);
+    mainLight.castShadow = true;
+    mainLight.shadow.mapSize.width = 1024;
+    mainLight.shadow.mapSize.height = 1024;
+    scene.add(mainLight);
+
+    const fillLight = new THREE.DirectionalLight(0x00e5ff, 0.6);
+    fillLight.position.set(-5, 3, -3);
+    scene.add(fillLight);
+
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    rimLight.position.set(0, -4, -4);
+    scene.add(rimLight);
+
+    // Grid Floor
+    const gridHelper = new THREE.GridHelper(12, 24, 0x00828a, 0xe2e8f0);
+    gridHelper.position.y = -1.2;
+    scene.add(gridHelper);
+
+    // 3D Model Group
+    const meshGroup = new THREE.Group();
+    meshGroup.position.y = -0.2;
+    scene.add(meshGroup);
+    meshGroupRef.current = meshGroup;
+
+    // Initial build of geometry
+    buildGeometry();
+
+    // Mouse & Touch Controls
+    let previousMousePosition = { x: 0, y: 0 };
+
+    const onMouseDown = (e) => {
+      isDraggingRef.current = true;
+      previousMousePosition = { x: e.clientX, y: e.clientY };
+    };
+
+    const onMouseMove = (e) => {
+      if (!isDraggingRef.current || !meshGroupRef.current) return;
+      const deltaX = e.clientX - previousMousePosition.x;
+      const deltaY = e.clientY - previousMousePosition.y;
+
+      meshGroupRef.current.rotation.y += deltaX * 0.008;
+      meshGroupRef.current.rotation.x += deltaY * 0.008;
+      meshGroupRef.current.rotation.x = Math.max(-0.8, Math.min(0.8, meshGroupRef.current.rotation.x));
+
+      previousMousePosition = { x: e.clientX, y: e.clientY };
+    };
+
+    const onMouseUp = () => {
+      isDraggingRef.current = false;
+    };
+
+    const onWheel = (e) => {
+      e.preventDefault();
+      if (!cameraRef.current) return;
+      const zoomSpeed = 0.004;
+      cameraRef.current.position.z = Math.max(3.5, Math.min(11, cameraRef.current.position.z + e.deltaY * zoomSpeed));
+    };
+
+    let touchStartDist = 0;
+    const onTouchStart = (e) => {
+      if (e.touches.length === 1) {
+        isDraggingRef.current = true;
+        previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      } else if (e.touches.length === 2) {
+        touchStartDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+      }
+    };
+
+    const onTouchMove = (e) => {
+      if (e.touches.length === 1 && isDraggingRef.current && meshGroupRef.current) {
+        const deltaX = e.touches[0].clientX - previousMousePosition.x;
+        const deltaY = e.touches[0].clientY - previousMousePosition.y;
+        meshGroupRef.current.rotation.y += deltaX * 0.008;
+        meshGroupRef.current.rotation.x += deltaY * 0.008;
+        previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      } else if (e.touches.length === 2 && cameraRef.current) {
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const diff = touchStartDist - dist;
+        cameraRef.current.position.z = Math.max(3.5, Math.min(11, cameraRef.current.position.z + diff * 0.01));
+        touchStartDist = dist;
+      }
+    };
+
+    const onTouchEnd = () => {
+      isDraggingRef.current = false;
+    };
+
+    const domElement = renderer.domElement;
+    domElement.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    domElement.addEventListener('wheel', onWheel, { passive: false });
+    domElement.addEventListener('touchstart', onTouchStart);
+    domElement.addEventListener('touchmove', onTouchMove);
+    domElement.addEventListener('touchend', onTouchEnd);
+
+    // Continuous Animation Loop
+    const animate = () => {
+      animFrameId.current = requestAnimationFrame(animate);
+
+      if (isAutoRotatingRef.current && meshGroupRef.current && !isDraggingRef.current) {
+        meshGroupRef.current.rotation.y += 0.006;
+      }
+
+      renderer.render(scene, camera);
+    };
+
+    animate();
+
+    // Resize
+    const handleResize = () => {
+      if (!container || !renderer || !camera) return;
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      cancelAnimationFrame(animFrameId.current);
+      window.removeEventListener('resize', handleResize);
+      domElement.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      domElement.removeEventListener('wheel', onWheel);
+      domElement.removeEventListener('touchstart', onTouchStart);
+      domElement.removeEventListener('touchmove', onTouchMove);
+      domElement.removeEventListener('touchend', onTouchEnd);
+      renderer.dispose();
+    };
+  }, []); // Run once on mount
+
+  // 2. Update background color when lightingMode toggles (without resetting canvas or scene!)
+  useEffect(() => {
+    if (sceneRef.current) {
+      sceneRef.current.background = new THREE.Color(lightingMode === 'dark' ? 0x090e17 : 0xf8fafc);
+    }
+  }, [lightingMode]);
+
+  // 3. Rebuild geometry whenever model properties change
+  useEffect(() => {
+    buildGeometry();
+  }, [buildGeometry]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '440px' }}>
