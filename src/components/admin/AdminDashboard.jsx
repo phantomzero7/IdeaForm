@@ -1,0 +1,448 @@
+import React, { useState } from 'react';
+import { useApp } from '../../context/AppContext';
+import { generateB2BQuotePDF } from '../../utils/pdfGenerator';
+import { formatCurrency, formatGrams, formatMinutesToHours } from '../../utils/formatters';
+import {
+  LayoutDashboard,
+  Printer,
+  Layers,
+  FileText,
+  TrendingUp,
+  Clock,
+  ArrowRight,
+  Plus,
+  Minus,
+  CheckCircle2,
+  AlertTriangle,
+  FileDown
+} from 'lucide-react';
+
+const AdminDashboard = () => {
+  const {
+    productionOrders,
+    updateOrderStatus,
+    assignPrinter,
+    filamentInventory,
+    updateFilamentStock,
+    b2bQuotes,
+    showToast
+  } = useApp();
+
+  const [activeTab, setActiveTab] = useState('kanban'); // kanban | inventory | quotes | metrics
+
+  // Calculate Metrics
+  const totalSales = productionOrders.reduce((acc, o) => acc + (o.total || 0), 0);
+  const totalMachineMinutes = productionOrders.reduce((acc, o) => acc + (o.printTimeMins || 0), 0);
+  const totalGramsUsed = productionOrders.reduce((acc, o) => acc + (o.filamentGrams || 0), 0);
+  const activePrintersCount = productionOrders.filter((o) => o.status === 'PRINTING').length;
+
+  const KANBAN_COLUMNS = [
+    { id: 'QUEUED', label: '1. En Cola', color: '#f59e0b' },
+    { id: 'SLICING', label: '2. Slicing G-Code', color: '#3b82f6' },
+    { id: 'PRINTING', label: '3. En Impresora 3D', color: '#00828A' },
+    { id: 'QUALITY_CONTROL', label: '4. Control de Calidad', color: '#8b5cf6' },
+    { id: 'READY_TO_SHIP', label: '5. Listo para Envío', color: '#10b981' }
+  ];
+
+  const PRINTERS_LIST = [
+    'Bambu Lab X1C #01',
+    'Bambu Lab X1C #02',
+    'Creality K1 Max #01',
+    'Creality K1 Max #02',
+    'Prusa MK4 #03'
+  ];
+
+  return (
+    <div className="container" style={{ paddingTop: '2rem', paddingBottom: '4rem' }}>
+      
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
+        <div>
+          <div className="badge badge-primary" style={{ marginBottom: '0.4rem' }}>
+            <LayoutDashboard size={13} /> BACKOFFICE & ERP 3D
+          </div>
+          <h1 style={{ fontSize: '2rem', fontWeight: '800' }}>Panel de Control del Taller IdeaForm</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+            Administración de órdenes, granja de impresoras 3D, inventario de materias primas y cotizaciones corporativas.
+          </p>
+        </div>
+
+        {/* Quick KPI pills */}
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <div style={{ background: '#ffffff', padding: '0.6rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', fontWeight: '700' }}>TOTAL GMV</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--color-primary)' }}>{formatCurrency(totalSales)}</div>
+          </div>
+          <div style={{ background: '#ffffff', padding: '0.6rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', fontWeight: '700' }}>EN MÁQUINA</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#059669' }}>{activePrintersCount} impresiones</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation Tabs */}
+      <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border-light)', marginBottom: '2rem' }}>
+        <button
+          onClick={() => setActiveTab('kanban')}
+          style={{
+            padding: '0.75rem 1.25rem',
+            fontWeight: '700',
+            fontSize: '0.9rem',
+            border: 'none',
+            background: 'transparent',
+            cursor: 'pointer',
+            color: activeTab === 'kanban' ? 'var(--color-primary)' : 'var(--text-secondary)',
+            borderBottom: activeTab === 'kanban' ? '3px solid var(--color-primary)' : '3px solid transparent',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem'
+          }}
+        >
+          <Printer size={16} />
+          <span>Tablero Kanban de Taller ({productionOrders.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('inventory')}
+          style={{
+            padding: '0.75rem 1.25rem',
+            fontWeight: '700',
+            fontSize: '0.9rem',
+            border: 'none',
+            background: 'transparent',
+            cursor: 'pointer',
+            color: activeTab === 'inventory' ? 'var(--color-primary)' : 'var(--text-secondary)',
+            borderBottom: activeTab === 'inventory' ? '3px solid var(--color-primary)' : '3px solid transparent',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem'
+          }}
+        >
+          <Layers size={16} />
+          <span>Inventario BOM (Filamentos)</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('quotes')}
+          style={{
+            padding: '0.75rem 1.25rem',
+            fontWeight: '700',
+            fontSize: '0.9rem',
+            border: 'none',
+            background: 'transparent',
+            cursor: 'pointer',
+            color: activeTab === 'quotes' ? 'var(--color-primary)' : 'var(--text-secondary)',
+            borderBottom: activeTab === 'quotes' ? '3px solid var(--color-primary)' : '3px solid transparent',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem'
+          }}
+        >
+          <FileText size={16} />
+          <span>Cotizaciones B2B ({b2bQuotes.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('metrics')}
+          style={{
+            padding: '0.75rem 1.25rem',
+            fontWeight: '700',
+            fontSize: '0.9rem',
+            border: 'none',
+            background: 'transparent',
+            cursor: 'pointer',
+            color: activeTab === 'metrics' ? 'var(--color-primary)' : 'var(--text-secondary)',
+            borderBottom: activeTab === 'metrics' ? '3px solid var(--color-primary)' : '3px solid transparent',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem'
+          }}
+        >
+          <TrendingUp size={16} />
+          <span>Métricas Operativas</span>
+        </button>
+      </div>
+
+      {/* TAB 1: TABLERO KANBAN DE TALLER 3D */}
+      {activeTab === 'kanban' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', alignItems: 'start' }}>
+          {KANBAN_COLUMNS.map((col) => {
+            const colOrders = productionOrders.filter((o) => o.status === col.id);
+
+            return (
+              <div
+                key={col.id}
+                style={{
+                  background: '#f8fafc',
+                  borderRadius: 'var(--radius-lg)',
+                  border: '1px solid var(--border-light)',
+                  padding: '1rem',
+                  minHeight: '550px'
+                }}
+              >
+                {/* Column Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: `2px solid ${col.color}` }}>
+                  <span style={{ fontWeight: '800', fontSize: '0.9rem', color: '#0f172a' }}>{col.label}</span>
+                  <span style={{ background: '#e2e8f0', color: '#0f172a', fontWeight: '800', fontSize: '0.75rem', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)' }}>
+                    {colOrders.length}
+                  </span>
+                </div>
+
+                {/* Orders Cards */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                  {colOrders.map((order) => (
+                    <div
+                      key={order.id}
+                      className="card"
+                      style={{
+                        padding: '1rem',
+                        background: '#ffffff',
+                        border: '1px solid var(--border-light)',
+                        borderRadius: 'var(--radius-md)',
+                        boxShadow: 'var(--shadow-sm)'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
+                        <span style={{ fontWeight: '800', fontFamily: 'var(--font-mono)', fontSize: '0.88rem', color: 'var(--color-primary)' }}>
+                          {order.orderNumber}
+                        </span>
+                        <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#0f172a' }}>
+                          {formatCurrency(order.total)}
+                        </span>
+                      </div>
+
+                      <div style={{ fontWeight: '700', fontSize: '0.85rem', color: '#0f172a', marginBottom: '0.2rem' }}>
+                        {order.productName}
+                      </div>
+
+                      {order.customText && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: '600', marginBottom: '0.4rem' }}>
+                          Texto: "{order.customText}"
+                        </div>
+                      )}
+
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginBottom: '0.5rem' }}>
+                        {order.filament} • {formatGrams(order.filamentGrams)}
+                      </div>
+
+                      {/* Printer Selection */}
+                      <div style={{ marginBottom: '0.75rem' }}>
+                        <label style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--text-tertiary)', display: 'block', marginBottom: '0.15rem' }}>
+                          IMPRESORA
+                        </label>
+                        <select
+                          value={order.assignedPrinter || ''}
+                          onChange={(e) => assignPrinter(order.id, e.target.value)}
+                          style={{
+                            width: '100%',
+                            fontSize: '0.75rem',
+                            padding: '0.3rem',
+                            borderRadius: '4px',
+                            border: '1px solid var(--border-light)',
+                            background: '#f8fafc',
+                            fontWeight: '600'
+                          }}
+                        >
+                          {PRINTERS_LIST.map((pr) => (
+                            <option key={pr} value={pr}>{pr}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Status Next Button */}
+                      <div style={{ display: 'flex', gap: '0.3rem' }}>
+                        {col.id !== 'READY_TO_SHIP' && (
+                          <button
+                            className="btn btn-primary btn-sm"
+                            style={{ width: '100%', padding: '0.35rem 0.5rem', fontSize: '0.75rem' }}
+                            onClick={() => {
+                              const nextMap = {
+                                QUEUED: 'SLICING',
+                                SLICING: 'PRINTING',
+                                PRINTING: 'QUALITY_CONTROL',
+                                QUALITY_CONTROL: 'READY_TO_SHIP'
+                              };
+                              updateOrderStatus(order.id, nextMap[col.id]);
+                            }}
+                          >
+                            <span>Avanzar Estado</span>
+                            <ArrowRight size={12} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* TAB 2: INVENTARIO DE MATERIAS PRIMAS (BOM) */}
+      {activeTab === 'inventory' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {filamentInventory.map((mat) => (
+            <div key={mat.id} className="card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: '800' }}>{mat.name}</h3>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{mat.description}</p>
+                </div>
+                <span className="badge badge-primary">Multiplicador: x{mat.priceMultiplier}</span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+                {mat.colors.map((col) => {
+                  const isLow = col.stockGrams < 2000;
+
+                  return (
+                    <div
+                      key={col.id}
+                      style={{
+                        padding: '1rem',
+                        borderRadius: 'var(--radius-md)',
+                        border: '1px solid var(--border-light)',
+                        background: '#ffffff',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: col.hex, border: '1px solid #cbd5e1' }} />
+                          <span style={{ fontWeight: '700', fontSize: '0.9rem', color: '#0f172a' }}>{col.name}</span>
+                        </div>
+                        {isLow && (
+                          <span className="badge badge-amber" style={{ fontSize: '0.65rem' }}>
+                            <AlertTriangle size={11} /> Stock Bajo
+                          </span>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', margin: '0.5rem 0' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>Gramos en Bodega:</span>
+                        <span style={{ fontSize: '1.2rem', fontWeight: '800', color: isLow ? '#d97706' : 'var(--color-primary)' }}>
+                          {formatGrams(col.stockGrams)}
+                        </span>
+                      </div>
+
+                      {/* Adjust buttons */}
+                      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          style={{ flex: 1, padding: '0.3rem 0.5rem', fontSize: '0.75rem' }}
+                          onClick={() => updateFilamentStock(mat.id, col.id, -500)}
+                        >
+                          <Minus size={12} /> -500g
+                        </button>
+                        <button
+                          className="btn btn-primary btn-sm"
+                          style={{ flex: 1, padding: '0.3rem 0.5rem', fontSize: '0.75rem' }}
+                          onClick={() => updateFilamentStock(mat.id, col.id, 1000)}
+                        >
+                          <Plus size={12} /> +1kg Rollo
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* TAB 3: COTIZACIONES B2B */}
+      {activeTab === 'quotes' && (
+        <div className="card" style={{ padding: '1.5rem', overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--border-light)', textAlign: 'left', color: 'var(--text-tertiary)' }}>
+                <th style={{ padding: '0.75rem' }}>Folio B2B</th>
+                <th style={{ padding: '0.75rem' }}>Empresa / RFC</th>
+                <th style={{ padding: '0.75rem' }}>Producto & Cantidad</th>
+                <th style={{ padding: '0.75rem' }}>Total Neto</th>
+                <th style={{ padding: '0.75rem' }}>Estado</th>
+                <th style={{ padding: '0.75rem', textAlign: 'right' }}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {b2bQuotes.map((q) => (
+                <tr key={q.quoteNumber} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                  <td style={{ padding: '0.75rem', fontWeight: '800', fontFamily: 'var(--font-mono)', color: 'var(--color-primary)' }}>
+                    {q.quoteNumber}
+                  </td>
+                  <td style={{ padding: '0.75rem' }}>
+                    <div style={{ fontWeight: '700', color: '#0f172a' }}>{q.companyName}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>RFC: {q.rfc}</div>
+                  </td>
+                  <td style={{ padding: '0.75rem' }}>
+                    <div>{q.productName}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: '600' }}>{q.units || q.quantity} piezas</div>
+                  </td>
+                  <td style={{ padding: '0.75rem', fontWeight: '800', color: '#0f172a' }}>
+                    {formatCurrency(q.totalAmount || q.finalTotal)}
+                  </td>
+                  <td style={{ padding: '0.75rem' }}>
+                    <span className="badge badge-success">{q.status}</span>
+                  </td>
+                  <td style={{ padding: '0.75rem', textAlign: 'right' }}>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => generateB2BQuotePDF(q)}
+                      title="Descargar PDF"
+                    >
+                      <FileDown size={14} />
+                      <span>PDF</span>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* TAB 4: MÉTRICAS */}
+      {activeTab === 'metrics' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
+          <div className="card" style={{ padding: '1.5rem' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', fontWeight: '700' }}>VOLUMEN TOTAL DE VENTAS (GMV)</div>
+            <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--color-primary)', margin: '0.5rem 0' }}>
+              {formatCurrency(totalSales)}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: '#059669' }}>↑ +24% vs mes anterior</div>
+          </div>
+
+          <div className="card" style={{ padding: '1.5rem' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', fontWeight: '700' }}>HORAS DE MÁQUINA ACUMULADAS</div>
+            <div style={{ fontSize: '2rem', fontWeight: '800', color: '#0f172a', margin: '0.5rem 0' }}>
+              {formatMinutesToHours(totalMachineMinutes)}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>5 impresoras activas en taller</div>
+          </div>
+
+          <div className="card" style={{ padding: '1.5rem' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', fontWeight: '700' }}>POLÍMEROS 3D CONSUMIDOS</div>
+            <div style={{ fontSize: '2rem', fontWeight: '800', color: '#0f172a', margin: '0.5rem 0' }}>
+              {formatGrams(totalGramsUsed)}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>88% PLA Biodegradable</div>
+          </div>
+
+          <div className="card" style={{ padding: '1.5rem' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', fontWeight: '700' }}>CUMPLIMIENTO DE ENTREGAS SLA</div>
+            <div style={{ fontSize: '2rem', fontWeight: '800', color: '#10b981', margin: '0.5rem 0' }}>
+              99.2%
+            </div>
+            <div style={{ fontSize: '0.8rem', color: '#059669' }}>Despachos en 24-48h cumplidos</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AdminDashboard;
