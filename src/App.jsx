@@ -3,6 +3,7 @@ import { useApp } from './context/AppContext';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import CartSlideOver from './components/layout/CartSlideOver';
+import AuthModal from './components/auth/AuthModal';
 import HomeView from './components/home/HomeView';
 import ColeccionesRoute from './components/routes/ColeccionesRoute';
 import EmpresasRoute from './components/routes/EmpresasRoute';
@@ -12,10 +13,11 @@ import CustomizerView from './components/customizer/CustomizerView';
 import CheckoutView from './components/checkout/CheckoutView';
 import OrderTrackingView from './components/tracking/OrderTrackingView';
 import AdminDashboard from './components/admin/AdminDashboard';
+import CustomerProfileView from './components/profile/CustomerProfileView';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 
 function App() {
-  const { currentView, toasts, removeToast } = useApp();
+  const { currentView, toasts, removeToast, isAuthModalOpen, setIsAuthModalOpen } = useApp();
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -34,6 +36,7 @@ function App() {
         {currentView === 'checkout' && <CheckoutView />}
         {currentView === 'tracking' && <OrderTrackingView />}
         {currentView === 'admin' && <AdminDashboard />}
+        {currentView === 'profile' && <CustomerProfileView />}
       </main>
 
       {/* Global Footer */}
@@ -41,6 +44,9 @@ function App() {
 
       {/* Slide-over Cart Drawer */}
       <CartSlideOver />
+
+      {/* Authentication Modal with RBAC Role Switchers */}
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
 
       {/* Toast Notifications Overlay */}
       <div className="toast-container">

@@ -14,7 +14,10 @@ import {
   Minus,
   CheckCircle2,
   AlertTriangle,
-  FileDown
+  FileDown,
+  Lock,
+  ShieldAlert,
+  LogIn
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -25,10 +28,55 @@ const AdminDashboard = () => {
     filamentInventory,
     updateFilamentStock,
     b2bQuotes,
-    showToast
+    user,
+    userRole,
+    setIsAuthModalOpen,
+    navigateTo
   } = useApp();
 
   const [activeTab, setActiveTab] = useState('kanban'); // kanban | inventory | quotes | metrics
+
+  // RBAC SECURITY GUARD: Check if user has permission
+  const isAuthorized = user && (userRole === 'ADMIN' || userRole === 'OPERATOR_3D');
+
+  if (!isAuthorized) {
+    return (
+      <div className="container" style={{ paddingTop: '5rem', paddingBottom: '5rem', maxWidth: '600px', textAlign: 'center' }}>
+        <div className="card card-elevated" style={{ padding: '3rem 2rem' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#fee2e2', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem auto' }}>
+            <ShieldAlert size={36} />
+          </div>
+
+          <h2 style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.5rem' }}>
+            Acceso Restringido al Taller 3D
+          </h2>
+
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '2rem' }}>
+            Esta sección contiene el tablero Kanban de manufactura, inventario de insumos (BOM) y métricas financieras de IdeaForm. Requiere credenciales de <strong>Administrador</strong> u <strong>Operador 3D</strong>.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <button
+              className="btn btn-primary btn-lg"
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+              onClick={() => setIsAuthModalOpen(true)}
+            >
+              <LogIn size={18} />
+              <span>Iniciar Sesión como Administrador</span>
+            </button>
+
+            <button
+              className="btn btn-secondary"
+              style={{ width: '100%' }}
+              onClick={() => navigateTo('home')}
+            >
+              Volver a la Tienda Pública
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Calculate Metrics
   const totalSales = productionOrders.reduce((acc, o) => acc + (o.total || 0), 0);
@@ -55,11 +103,16 @@ const AdminDashboard = () => {
   return (
     <div className="container" style={{ paddingTop: '2rem', paddingBottom: '4rem' }}>
       
-      {/* Header */}
+      {/* Header with Role Badge */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
         <div>
-          <div className="badge badge-primary" style={{ marginBottom: '0.4rem' }}>
-            <LayoutDashboard size={13} /> BACKOFFICE & ERP 3D
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+            <span className="badge badge-primary">
+              <LayoutDashboard size={13} /> BACKOFFICE & ERP 3D
+            </span>
+            <span className="badge" style={{ background: '#0f172a', color: '#fff' }}>
+              Sesión: {user.firstName} ({userRole})
+            </span>
           </div>
           <h1 style={{ fontSize: '2rem', fontWeight: '800' }}>Panel de Control del Taller IdeaForm</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
@@ -68,20 +121,22 @@ const AdminDashboard = () => {
         </div>
 
         {/* Quick KPI pills */}
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <div style={{ background: '#ffffff', padding: '0.6rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', fontWeight: '700' }}>TOTAL GMV</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--color-primary)' }}>{formatCurrency(totalSales)}</div>
+        {userRole === 'ADMIN' && (
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <div style={{ background: '#ffffff', padding: '0.6rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', fontWeight: '700' }}>TOTAL GMV</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--color-primary)' }}>{formatCurrency(totalSales)}</div>
+            </div>
+            <div style={{ background: '#ffffff', padding: '0.6rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', fontWeight: '700' }}>EN MÁQUINA</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#059669' }}>{activePrintersCount} impresiones</div>
+            </div>
           </div>
-          <div style={{ background: '#ffffff', padding: '0.6rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', fontWeight: '700' }}>EN MÁQUINA</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#059669' }}>{activePrintersCount} impresiones</div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Navigation Tabs */}
-      <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border-light)', marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border-light)', marginBottom: '2rem', overflowX: 'auto' }}>
         <button
           onClick={() => setActiveTab('kanban')}
           style={{
@@ -95,72 +150,80 @@ const AdminDashboard = () => {
             borderBottom: activeTab === 'kanban' ? '3px solid var(--color-primary)' : '3px solid transparent',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.4rem'
+            gap: '0.4rem',
+            whiteSpace: 'nowrap'
           }}
         >
           <Printer size={16} />
           <span>Tablero Kanban de Taller ({productionOrders.length})</span>
         </button>
 
-        <button
-          onClick={() => setActiveTab('inventory')}
-          style={{
-            padding: '0.75rem 1.25rem',
-            fontWeight: '700',
-            fontSize: '0.9rem',
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-            color: activeTab === 'inventory' ? 'var(--color-primary)' : 'var(--text-secondary)',
-            borderBottom: activeTab === 'inventory' ? '3px solid var(--color-primary)' : '3px solid transparent',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem'
-          }}
-        >
-          <Layers size={16} />
-          <span>Inventario BOM (Filamentos)</span>
-        </button>
+        {userRole === 'ADMIN' && (
+          <>
+            <button
+              onClick={() => setActiveTab('inventory')}
+              style={{
+                padding: '0.75rem 1.25rem',
+                fontWeight: '700',
+                fontSize: '0.9rem',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: activeTab === 'inventory' ? 'var(--color-primary)' : 'var(--text-secondary)',
+                borderBottom: activeTab === 'inventory' ? '3px solid var(--color-primary)' : '3px solid transparent',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <Layers size={16} />
+              <span>Inventario BOM (Filamentos)</span>
+            </button>
 
-        <button
-          onClick={() => setActiveTab('quotes')}
-          style={{
-            padding: '0.75rem 1.25rem',
-            fontWeight: '700',
-            fontSize: '0.9rem',
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-            color: activeTab === 'quotes' ? 'var(--color-primary)' : 'var(--text-secondary)',
-            borderBottom: activeTab === 'quotes' ? '3px solid var(--color-primary)' : '3px solid transparent',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem'
-          }}
-        >
-          <FileText size={16} />
-          <span>Cotizaciones B2B ({b2bQuotes.length})</span>
-        </button>
+            <button
+              onClick={() => setActiveTab('quotes')}
+              style={{
+                padding: '0.75rem 1.25rem',
+                fontWeight: '700',
+                fontSize: '0.9rem',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: activeTab === 'quotes' ? 'var(--color-primary)' : 'var(--text-secondary)',
+                borderBottom: activeTab === 'quotes' ? '3px solid var(--color-primary)' : '3px solid transparent',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <FileText size={16} />
+              <span>Cotizaciones B2B ({b2bQuotes.length})</span>
+            </button>
 
-        <button
-          onClick={() => setActiveTab('metrics')}
-          style={{
-            padding: '0.75rem 1.25rem',
-            fontWeight: '700',
-            fontSize: '0.9rem',
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-            color: activeTab === 'metrics' ? 'var(--color-primary)' : 'var(--text-secondary)',
-            borderBottom: activeTab === 'metrics' ? '3px solid var(--color-primary)' : '3px solid transparent',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem'
-          }}
-        >
-          <TrendingUp size={16} />
-          <span>Métricas Operativas</span>
-        </button>
+            <button
+              onClick={() => setActiveTab('metrics')}
+              style={{
+                padding: '0.75rem 1.25rem',
+                fontWeight: '700',
+                fontSize: '0.9rem',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: activeTab === 'metrics' ? 'var(--color-primary)' : 'var(--text-secondary)',
+                borderBottom: activeTab === 'metrics' ? '3px solid var(--color-primary)' : '3px solid transparent',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <TrendingUp size={16} />
+              <span>Métricas Operativas</span>
+            </button>
+          </>
+        )}
       </div>
 
       {/* TAB 1: TABLERO KANBAN DE TALLER 3D */}
@@ -206,9 +269,11 @@ const AdminDashboard = () => {
                         <span style={{ fontWeight: '800', fontFamily: 'var(--font-mono)', fontSize: '0.88rem', color: 'var(--color-primary)' }}>
                           {order.orderNumber}
                         </span>
-                        <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#0f172a' }}>
-                          {formatCurrency(order.total)}
-                        </span>
+                        {userRole === 'ADMIN' && (
+                          <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#0f172a' }}>
+                            {formatCurrency(order.total)}
+                          </span>
+                        )}
                       </div>
 
                       <div style={{ fontWeight: '700', fontSize: '0.85rem', color: '#0f172a', marginBottom: '0.2rem' }}>
@@ -280,7 +345,7 @@ const AdminDashboard = () => {
       )}
 
       {/* TAB 2: INVENTARIO DE MATERIAS PRIMAS (BOM) */}
-      {activeTab === 'inventory' && (
+      {activeTab === 'inventory' && userRole === 'ADMIN' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {filamentInventory.map((mat) => (
             <div key={mat.id} className="card">
@@ -355,7 +420,7 @@ const AdminDashboard = () => {
       )}
 
       {/* TAB 3: COTIZACIONES B2B */}
-      {activeTab === 'quotes' && (
+      {activeTab === 'quotes' && userRole === 'ADMIN' && (
         <div className="card" style={{ padding: '1.5rem', overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
@@ -406,7 +471,7 @@ const AdminDashboard = () => {
       )}
 
       {/* TAB 4: MÉTRICAS */}
-      {activeTab === 'metrics' && (
+      {activeTab === 'metrics' && userRole === 'ADMIN' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
           <div className="card" style={{ padding: '1.5rem' }}>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', fontWeight: '700' }}>VOLUMEN TOTAL DE VENTAS (GMV)</div>

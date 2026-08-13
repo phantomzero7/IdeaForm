@@ -1,13 +1,27 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { PRODUCTS, FILAMENT_MATERIALS, MOCK_ORDERS_KANBAN, MOCK_B2B_QUOTES, B2B_PRICE_TIERS } from '../data/mockData';
 import { generateFolio } from '../utils/formatters';
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 
 const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
   // Navigation / View State
-  const [currentView, setCurrentView] = useState('home'); // home | catalog | customizer | b2b | tracking | admin | checkout
+  const [currentView, setCurrentView] = useState('home'); // home | colecciones | empresas | eventos | catalog | customizer | b2b | tracking | admin | checkout | profile
   const [viewParams, setViewParams] = useState({});
+
+  // Auth State
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('ideaform_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const [userRole, setUserRole] = useState(() => {
+    const saved = localStorage.getItem('ideaform_user_role');
+    return saved || 'CUSTOMER'; // 'CUSTOMER' | 'B2B_CLIENT' | 'OPERATOR_3D' | 'ADMIN'
+  });
+
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Cart State (Persisted in localStorage)
   const [cart, setCart] = useState(() => {
@@ -39,7 +53,7 @@ export const AppProvider = ({ children }) => {
   // Toasts
   const [toasts, setToasts] = useState([]);
 
-  // Save changes to localStorage
+  // Persistence to localStorage
   useEffect(() => {
     localStorage.setItem('ideaform_cart', JSON.stringify(cart));
   }, [cart]);
@@ -55,6 +69,16 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('ideaform_filaments', JSON.stringify(filamentInventory));
   }, [filamentInventory]);
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('ideaform_user', JSON.stringify(user));
+      localStorage.setItem('ideaform_user_role', userRole);
+    } else {
+      localStorage.removeItem('ideaform_user');
+      localStorage.removeItem('ideaform_user_role');
+    }
+  }, [user, userRole]);
 
   // Toast Helper
   const showToast = (message, type = 'info') => {
@@ -76,10 +100,147 @@ export const AppProvider = ({ children }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // AUTH METHODS
+  const signIn = async (email, password) => {
+    const cleanEmail = email.trim().toLowerCase();
+
+    // 1. Check if Supabase Auth is active
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password
+      });
+
+      if (error) {
+        showToast(error.message, 'error');
+        return false;
+      }
+
+      if (data?.user) {
+        const profile = {
+          id: data.user.id,
+          email: data.user.email,
+          firstName: data.user.user_metadata?.first_name || 'Usuario',
+          lastName: data.user.user_metadata?.last_name || '',
+          role: data.user.user_metadata?.role || 'CUSTOMER'
+        };
+        setUser(profile);
+        setUserRole(profile.role);
+        showToast(`¡Bienvenido de vuelta, ${profile.firstName}!`, 'success');
+        return true;
+      }
+    }
+
+    // 2. Demo Auth Fallback with RBAC
+    if (cleanEmail === 'admin@ideaform.mx' || cleanEmail === 'admin') {
+      const adminUser = {
+        id: 'usr-admin-01',
+        email: 'admin@ideaform.mx',
+        firstName: 'Ing. Rodrigo',
+        lastName: 'Fregoso',
+        role: 'ADMIN'
+      };
+      setUser(adminUser);
+      setUserRole('ADMIN');
+      showToast('Acceso como Administrador de IdeaForm concedido 👑', 'success');
+      return true;
+    }
+
+    if (cleanEmail === 'operador@ideaform.mx' || cleanEmail === 'operador') {
+      const opUser = {
+        id: 'usr-op-02',
+        email: 'operador@ideaform.mx',
+        firstName: 'Marco',
+        lastName: 'Taller 3D',
+        role: 'OPERATOR_3D'
+      };
+      setUser(opUser);
+      setUserRole('OPERATOR_3D');
+      showToast('Acceso como Operador de Taller 3D concedido 🛠️', 'success');
+      return true;
+    }
+
+    if (cleanEmail.includes('empresa') || cleanEmail.includes('innovacion')) {
+      const b2bUser = {
+        id: 'usr-b2b-03',
+        email: cleanEmail,
+        firstName: 'Lic. Sofía',
+        lastName: 'Mendoza',
+        companyName: 'Innovación Tecnológica S.A. de C.V.',
+        rfc: 'ITE180425ABC',
+        role: 'B2B_CLIENT'
+      };
+      setUser(b2bUser);
+      setUserRole('B2B_CLIENT');
+      showToast('Acceso como Cuenta Corporativa B2B concedido 🏢', 'success');
+      return true;
+    }
+
+    // Default Customer
+    const regularUser = {
+      id: `usr-cust-${Date.now()}`,
+      email: cleanEmail,
+      firstName: cleanEmail.split('@')[0].toUpperCase(),
+      lastName: '',
+      role: 'CUSTOMER'
+    };
+    setUser(regularUser);
+    setUserRole('CUSTOMER');
+    showToast(`Sesión iniciada como ${regularUser.firstName}`, 'success');
+    return true;
+  };
+
+  const signUp = async (email, password, metadata = {}) => {
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase.auth.signUp({
+        email: cleanEmail,
+        password,
+        options: {
+          data: {
+            first_name: metadata.firstName,
+            last_name: metadata.lastName,
+            company_name: metadata.companyName,
+            role: metadata.role || 'CUSTOMER'
+          }
+        }
+      });
+
+      if (error) {
+        showToast(error.message, 'error');
+        return false;
+      }
+    }
+
+    const newUser = {
+      id: `usr-${Date.now()}`,
+      email: cleanEmail,
+      firstName: metadata.firstName || 'Cliente',
+      lastName: metadata.lastName || '',
+      companyName: metadata.companyName || null,
+      role: metadata.role || 'CUSTOMER'
+    };
+
+    setUser(newUser);
+    setUserRole(newUser.role);
+    showToast(`¡Cuenta creada con éxito! Bienvenido, ${newUser.firstName}`, 'success');
+    return true;
+  };
+
+  const signOut = () => {
+    if (isSupabaseConfigured && supabase) {
+      supabase.auth.signOut();
+    }
+    setUser(null);
+    setUserRole('CUSTOMER');
+    showToast('Sesión cerrada correctamente', 'info');
+    navigateTo('home');
+  };
+
   // Cart Actions
   const addToCart = (item) => {
     setCart((prevCart) => {
-      // Check if identical item exists (matching id and custom text/color/material)
       const existingIndex = prevCart.findIndex(
         (c) =>
           c.id === item.id &&
@@ -166,8 +327,13 @@ export const AppProvider = ({ children }) => {
   const cartTotal = Math.max(0, cartSubtotal - discountAmount + shippingCost);
   const totalItemsCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
-  // Production Kanban Actions
+  // Production Kanban Actions (Restricted to OPERATOR_3D and ADMIN)
   const updateOrderStatus = (orderId, newStatus) => {
+    if (userRole !== 'ADMIN' && userRole !== 'OPERATOR_3D') {
+      showToast('Acceso denegado: Solo operadores o administradores pueden modificar estados de impresión.', 'error');
+      return;
+    }
+
     setProductionOrders((prev) =>
       prev.map((order) => {
         if (order.id === orderId) {
@@ -186,6 +352,11 @@ export const AppProvider = ({ children }) => {
   };
 
   const assignPrinter = (orderId, printerName) => {
+    if (userRole !== 'ADMIN' && userRole !== 'OPERATOR_3D') {
+      showToast('Acceso denegado: Solo operadores pueden asignar impresoras 3D.', 'error');
+      return;
+    }
+
     setProductionOrders((prev) =>
       prev.map((order) => (order.id === orderId ? { ...order, assignedPrinter: printerName } : order))
     );
@@ -235,8 +406,13 @@ export const AppProvider = ({ children }) => {
     showToast(`Cotización ${quote.quoteNumber} guardada exitosamente`, 'success');
   };
 
-  // Adjust stock of filament
+  // Adjust stock of filament (Restricted to ADMIN)
   const updateFilamentStock = (materialId, colorId, addedGrams) => {
+    if (userRole !== 'ADMIN') {
+      showToast('Acceso denegado: Solo administradores pueden ajustar el inventario de insumos.', 'error');
+      return;
+    }
+
     setFilamentInventory((prev) =>
       prev.map((mat) => {
         if (mat.id === materialId) {
@@ -262,6 +438,13 @@ export const AppProvider = ({ children }) => {
         currentView,
         viewParams,
         navigateTo,
+        user,
+        userRole,
+        signIn,
+        signUp,
+        signOut,
+        isAuthModalOpen,
+        setIsAuthModalOpen,
         cart,
         isCartOpen,
         setIsCartOpen,
@@ -296,4 +479,5 @@ export const AppProvider = ({ children }) => {
   );
 };
 
+export default AppContext;
 export const useApp = () => useContext(AppContext);

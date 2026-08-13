@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { PRODUCTS } from '../../data/mockData';
 import IdeaFormLogo from '../common/IdeaFormLogo';
-import { ShoppingBag, Search, Sparkles, Building2, Heart, Truck, Wrench, Menu, X, ArrowRight } from 'lucide-react';
+import { ShoppingBag, Search, Sparkles, Building2, Heart, Truck, Wrench, Menu, X, User, LogIn } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
 const Header = () => {
-  const { currentView, navigateTo, totalItemsCount, setIsCartOpen } = useApp();
+  const { currentView, navigateTo, totalItemsCount, setIsCartOpen, user, userRole, setIsAuthModalOpen } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -28,6 +28,8 @@ const Header = () => {
       navigateTo('colecciones');
     }
   };
+
+  const isOperatorOrAdmin = userRole === 'ADMIN' || userRole === 'OPERATOR_3D';
 
   return (
     <header style={{ position: 'sticky', top: 0, zIndex: 100, background: '#ffffff', boxShadow: 'var(--shadow-sm)' }}>
@@ -61,7 +63,7 @@ const Header = () => {
         {/* Exact IdeaForm Brand Logo */}
         <IdeaFormLogo onClick={() => navigateTo('home')} />
 
-        {/* Desktop Navigation Links (Matching Mockup Header) */}
+        {/* Desktop Navigation Links */}
         <nav style={{ display: 'none', gap: '0.35rem', alignItems: 'center' }} className="desktop-nav">
           <button
             onClick={() => navigateTo('colecciones')}
@@ -154,30 +156,33 @@ const Header = () => {
             <span>Rastrear</span>
           </button>
 
-          <button
-            onClick={() => navigateTo('admin')}
-            title="Panel de Control & Taller 3D"
-            style={{
-              background: currentView === 'admin' ? '#0f172a' : 'transparent',
-              color: currentView === 'admin' ? '#ffffff' : 'var(--text-secondary)',
-              fontWeight: '600',
-              padding: '0.5rem 0.8rem',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid #e2e8f0',
-              cursor: 'pointer',
-              fontSize: '0.82rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem'
-            }}
-          >
-            <Wrench size={14} />
-            <span>Taller / Admin</span>
-          </button>
+          {/* ADMIN / TALLER BUTTON: STRICTLY PROTECTED & ONLY VISIBLE TO ADMINS OR OPERATORS */}
+          {isOperatorOrAdmin && (
+            <button
+              onClick={() => navigateTo('admin')}
+              title="Panel de Control & Taller 3D (Acceso Restringido)"
+              style={{
+                background: currentView === 'admin' ? '#0f172a' : 'rgba(15, 23, 42, 0.06)',
+                color: currentView === 'admin' ? '#ffffff' : '#0f172a',
+                fontWeight: '700',
+                padding: '0.5rem 0.85rem',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid #0f172a',
+                cursor: 'pointer',
+                fontSize: '0.82rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}
+            >
+              <Wrench size={14} />
+              <span>{userRole === 'ADMIN' ? '👑 Taller / Admin' : '🛠️ Operador 3D'}</span>
+            </button>
+          )}
         </nav>
 
-        {/* Right Actions: Search + Cart */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        {/* Right Actions: Search + Auth/Profile + Cart */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
           
           {/* Search Box */}
           <div style={{ position: 'relative' }}>
@@ -189,13 +194,13 @@ const Header = () => {
                 borderRadius: 'var(--radius-full)',
                 padding: '0.45rem 0.85rem',
                 gap: '0.4rem',
-                width: '180px'
+                width: '165px'
               }}
             >
               <Search size={15} color="var(--text-tertiary)" />
               <input
                 type="text"
-                placeholder="Buscar en 3D..."
+                placeholder="Buscar 3D..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -263,6 +268,51 @@ const Header = () => {
             )}
           </div>
 
+          {/* User Account / Login Button */}
+          {user ? (
+            <button
+              onClick={() => navigateTo('profile')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                background: '#f1f5f9',
+                border: '1px solid var(--border-light)',
+                borderRadius: 'var(--radius-full)',
+                padding: '0.45rem 0.85rem',
+                cursor: 'pointer',
+                fontSize: '0.82rem',
+                fontWeight: '700',
+                color: '#0f172a'
+              }}
+            >
+              <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'var(--color-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem' }}>
+                {user.firstName ? user.firstName[0] : 'U'}
+              </div>
+              <span>{user.firstName}</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                background: '#f8fafc',
+                border: '1px solid var(--border-light)',
+                borderRadius: 'var(--radius-full)',
+                padding: '0.45rem 0.85rem',
+                cursor: 'pointer',
+                fontSize: '0.82rem',
+                fontWeight: '700',
+                color: 'var(--text-secondary)'
+              }}
+            >
+              <LogIn size={15} color="var(--color-primary)" />
+              <span className="login-text">Ingresar</span>
+            </button>
+          )}
+
           {/* Cart Trigger Button */}
           <button
             onClick={() => setIsCartOpen(true)}
@@ -320,23 +370,32 @@ const Header = () => {
         <div style={{ background: '#ffffff', borderTop: '1px solid var(--border-light)', padding: '1rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <button className="btn btn-secondary" onClick={() => { navigateTo('home'); setMobileMenuOpen(false); }}>Inicio</button>
-            <button className="btn btn-secondary" onClick={() => { navigateTo('colecciones'); setMobileMenuOpen(false); }}>Colecciones (Stock & Escolar)</button>
-            <button className="btn btn-secondary" onClick={() => { navigateTo('empresas'); setMobileMenuOpen(false); }}>Empresas (B2B & Mayoreo)</button>
-            <button className="btn btn-secondary" onClick={() => { navigateTo('eventos'); setMobileMenuOpen(false); }}>Eventos & Recuerdos</button>
+            <button className="btn btn-secondary" onClick={() => { navigateTo('colecciones'); setMobileMenuOpen(false); }}>Colecciones</button>
+            <button className="btn btn-secondary" onClick={() => { navigateTo('empresas'); setMobileMenuOpen(false); }}>Empresas (B2B)</button>
+            <button className="btn btn-secondary" onClick={() => { navigateTo('eventos'); setMobileMenuOpen(false); }}>Eventos</button>
             <button className="btn btn-primary" onClick={() => { navigateTo('customizer'); setMobileMenuOpen(false); }}>✨ Personalizador 3D</button>
             <button className="btn btn-secondary" onClick={() => { navigateTo('tracking'); setMobileMenuOpen(false); }}>Rastrear Pedido</button>
-            <button className="btn btn-dark" onClick={() => { navigateTo('admin'); setMobileMenuOpen(false); }}>Taller / Admin</button>
+            
+            {user ? (
+              <button className="btn btn-secondary" onClick={() => { navigateTo('profile'); setMobileMenuOpen(false); }}>Mi Cuenta ({user.firstName})</button>
+            ) : (
+              <button className="btn btn-secondary" onClick={() => { setIsAuthModalOpen(true); setMobileMenuOpen(false); }}>Iniciar Sesión</button>
+            )}
+
+            {isOperatorOrAdmin && (
+              <button className="btn btn-dark" onClick={() => { navigateTo('admin'); setMobileMenuOpen(false); }}>Taller / Admin</button>
+            )}
           </div>
         </div>
       )}
 
       <style>{`
-        @media (min-width: 960px) {
+        @media (min-width: 990px) {
           .desktop-nav { display: flex !important; }
           .cart-text { display: inline !important; }
           .mobile-menu-btn { display: none !important; }
         }
-        @media (max-width: 959px) {
+        @media (max-width: 989px) {
           .mobile-menu-btn { display: block !important; }
         }
       `}</style>
