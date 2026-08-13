@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { generateB2BQuotePDF } from '../../utils/pdfGenerator';
+import { shippingService } from '../../services/shippingService';
 import { formatCurrency, formatGrams, formatMinutesToHours } from '../../utils/formatters';
 import {
   LayoutDashboard,
@@ -17,7 +18,10 @@ import {
   FileDown,
   Lock,
   ShieldAlert,
-  LogIn
+  LogIn,
+  Truck,
+  Plane,
+  PackageCheck
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -31,7 +35,8 @@ const AdminDashboard = () => {
     user,
     userRole,
     setIsAuthModalOpen,
-    navigateTo
+    navigateTo,
+    showToast
   } = useApp();
 
   const [activeTab, setActiveTab] = useState('kanban'); // kanban | inventory | quotes | metrics
@@ -87,7 +92,7 @@ const AdminDashboard = () => {
   const KANBAN_COLUMNS = [
     { id: 'QUEUED', label: '1. En Cola', color: '#f59e0b' },
     { id: 'SLICING', label: '2. Slicing G-Code', color: '#3b82f6' },
-    { id: 'PRINTING', label: '3. En Impresora 3D', color: '#00828A' },
+    { id: 'PRINTING', label: '3. En Impresora 3D', color: '#0F5F6D' },
     { id: 'QUALITY_CONTROL', label: '4. Control de Calidad', color: '#8b5cf6' },
     { id: 'READY_TO_SHIP', label: '5. Listo para Envío', color: '#10b981' }
   ];
@@ -100,6 +105,11 @@ const AdminDashboard = () => {
     'Prusa MK4 #03'
   ];
 
+  const handleGenerateWaybill = (order) => {
+    const waybill = shippingService.generateWaybill(order.orderNumber, 'dhl_express');
+    showToast(`Guía generada: ${waybill.trackingNumber} (${waybill.carrierName}). Listo para recolección.`, 'success');
+  };
+
   return (
     <div className="container" style={{ paddingTop: '2rem', paddingBottom: '4rem' }}>
       
@@ -110,7 +120,7 @@ const AdminDashboard = () => {
             <span className="badge badge-primary">
               <LayoutDashboard size={13} /> BACKOFFICE & ERP 3D
             </span>
-            <span className="badge" style={{ background: '#0f172a', color: '#fff' }}>
+            <span className="badge" style={{ background: '#1A1A1A', color: '#fff' }}>
               Sesión: {user.firstName} ({userRole})
             </span>
           </div>
@@ -314,8 +324,8 @@ const AdminDashboard = () => {
                         </select>
                       </div>
 
-                      {/* Status Next Button */}
-                      <div style={{ display: 'flex', gap: '0.3rem' }}>
+                      {/* Action Buttons */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                         {col.id !== 'READY_TO_SHIP' && (
                           <button
                             className="btn btn-primary btn-sm"
@@ -332,6 +342,17 @@ const AdminDashboard = () => {
                           >
                             <span>Avanzar Estado</span>
                             <ArrowRight size={12} />
+                          </button>
+                        )}
+
+                        {col.id === 'READY_TO_SHIP' && (
+                          <button
+                            className="btn btn-dark btn-sm"
+                            style={{ width: '100%', padding: '0.35rem 0.5rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+                            onClick={() => handleGenerateWaybill(order)}
+                          >
+                            <Plane size={12} color="#00e5ff" />
+                            <span>Generar Guía DHL / FedEx</span>
                           </button>
                         )}
                       </div>
