@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { PRODUCTS, FILAMENT_MATERIALS, MOCK_ORDERS_KANBAN, MOCK_B2B_QUOTES, B2B_PRICE_TIERS } from '../data/mockData';
 import { generateFolio } from '../utils/formatters';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+import { getRoleForEmail } from '../config/authorizedUsers';
 
 const AppContext = createContext();
 
@@ -52,6 +53,59 @@ export const AppProvider = ({ children }) => {
 
   // Toasts
   const [toasts, setToasts] = useState([]);
+
+  // Supabase Real-Time Auth Listener
+  useEffect(() => {
+    if (isSupabaseConfigured && supabase) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          const email = session.user.email;
+          const role = getRoleForEmail(email);
+          const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
+          const nameParts = fullName.split(' ');
+          const authUser = {
+            id: session.user.id,
+            email: email,
+            firstName: nameParts[0] || email.split('@')[0],
+            lastName: nameParts.slice(1).join(' ') || '',
+            avatarUrl: session.user.user_metadata?.avatar_url || null,
+            provider: session.user.app_metadata?.provider || 'google',
+            role: role
+          };
+          setUser(authUser);
+          setUserRole(role);
+        }
+      });
+
+      const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          const email = session.user.email;
+          const role = getRoleForEmail(email);
+          const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
+          const nameParts = fullName.split(' ');
+          const authUser = {
+            id: session.user.id,
+            email: email,
+            firstName: nameParts[0] || email.split('@')[0],
+            lastName: nameParts.slice(1).join(' ') || '',
+            avatarUrl: session.user.user_metadata?.avatar_url || null,
+            provider: session.user.app_metadata?.provider || 'google',
+            role: role
+          };
+          setUser(authUser);
+          setUserRole(role);
+          showToast(`¡Bienvenido! Sesión activa como ${authUser.firstName}`, 'success');
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setUserRole('CUSTOMER');
+        }
+      });
+
+      return () => {
+        authListener?.subscription?.unsubscribe();
+      };
+    }
+  }, []);
 
   // Persistence to localStorage
   useEffect(() => {
@@ -104,7 +158,7 @@ export const AppProvider = ({ children }) => {
   const signIn = async (email, password) => {
     const cleanEmail = email.trim().toLowerCase();
 
-    // 1. Check if Supabase Auth is active
+    // 1. Supabase Auth
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
@@ -117,76 +171,34 @@ export const AppProvider = ({ children }) => {
       }
 
       if (data?.user) {
+        const role = getRoleForEmail(data.user.email);
         const profile = {
           id: data.user.id,
           email: data.user.email,
-          firstName: data.user.user_metadata?.first_name || 'Usuario',
+          firstName: data.user.user_metadata?.first_name || data.user.email.split('@')[0],
           lastName: data.user.user_metadata?.last_name || '',
-          role: data.user.user_metadata?.role || 'CUSTOMER'
+          role: role
         };
         setUser(profile);
-        setUserRole(profile.role);
+        setUserRole(role);
         showToast(`¡Bienvenido de vuelta, ${profile.firstName}!`, 'success');
         return true;
       }
     }
 
-    // 2. Demo Auth Fallback with RBAC
-    if (cleanEmail === 'admin@ideaform.mx' || cleanEmail === 'admin') {
-      const adminUser = {
-        id: 'usr-admin-01',
-        email: 'admin@ideaform.mx',
-        firstName: 'Ing. Rodrigo',
-        lastName: 'Fregoso',
-        role: 'ADMIN'
-      };
-      setUser(adminUser);
-      setUserRole('ADMIN');
-      showToast('Acceso como Administrador de IdeaForm concedido 👑', 'success');
-      return true;
-    }
-
-    if (cleanEmail === 'operador@ideaform.mx' || cleanEmail === 'operador') {
-      const opUser = {
-        id: 'usr-op-02',
-        email: 'operador@ideaform.mx',
-        firstName: 'Marco',
-        lastName: 'Taller 3D',
-        role: 'OPERATOR_3D'
-      };
-      setUser(opUser);
-      setUserRole('OPERATOR_3D');
-      showToast('Acceso como Operador de Taller 3D concedido 🛠️', 'success');
-      return true;
-    }
-
-    if (cleanEmail.includes('empresa') || cleanEmail.includes('innovacion')) {
-      const b2bUser = {
-        id: 'usr-b2b-03',
-        email: cleanEmail,
-        firstName: 'Lic. Sofía',
-        lastName: 'Mendoza',
-        companyName: 'Innovación Tecnológica S.A. de C.V.',
-        rfc: 'ITE180425ABC',
-        role: 'B2B_CLIENT'
-      };
-      setUser(b2bUser);
-      setUserRole('B2B_CLIENT');
-      showToast('Acceso como Cuenta Corporativa B2B concedido 🏢', 'success');
-      return true;
-    }
-
-    // Default Customer
+    // 2. Direct Role Resolution via config/authorizedUsers.js
+    const computedRole = getRoleForEmail(cleanEmail);
+    const firstName = cleanEmail.split('@')[0];
     const regularUser = {
-      id: `usr-cust-${Date.now()}`,
+      id: `usr-${Date.now()}`,
       email: cleanEmail,
-      firstName: cleanEmail.split('@')[0].toUpperCase(),
+      firstName: firstName.charAt(0).toUpperCase() + firstName.slice(1),
       lastName: '',
-      role: 'CUSTOMER'
+      role: computedRole
     };
     setUser(regularUser);
-    setUserRole('CUSTOMER');
-    showToast(`Sesión iniciada como ${regularUser.firstName}`, 'success');
+    setUserRole(computedRole);
+    showToast(`Sesión iniciada como ${regularUser.firstName} (${computedRole})`, 'success');
     return true;
   };
 
@@ -194,15 +206,14 @@ export const AppProvider = ({ children }) => {
     const cleanEmail = email.trim().toLowerCase();
 
     if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email: cleanEmail,
         password,
         options: {
           data: {
             first_name: metadata.firstName,
             last_name: metadata.lastName,
-            company_name: metadata.companyName,
-            role: metadata.role || 'CUSTOMER'
+            company_name: metadata.companyName
           }
         }
       });
@@ -213,37 +224,59 @@ export const AppProvider = ({ children }) => {
       }
     }
 
+    const computedRole = getRoleForEmail(cleanEmail);
     const newUser = {
       id: `usr-${Date.now()}`,
       email: cleanEmail,
-      firstName: metadata.firstName || 'Cliente',
+      firstName: metadata.firstName || cleanEmail.split('@')[0],
       lastName: metadata.lastName || '',
       companyName: metadata.companyName || null,
-      role: metadata.role || 'CUSTOMER'
+      role: computedRole
     };
 
     setUser(newUser);
-    setUserRole(newUser.role);
+    setUserRole(computedRole);
     showToast(`¡Cuenta creada con éxito! Bienvenido, ${newUser.firstName}`, 'success');
     return true;
   };
 
-  const loginWithGoogle = (emailParam = '') => {
+  // Google OAuth Login
+  const loginWithGoogle = async (emailInput = '') => {
+    // If Supabase OAuth is configured, launch standard Google redirect
+    if (isSupabaseConfigured && supabase?.auth) {
+      try {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: window.location.origin
+          }
+        });
+        if (!error) return;
+      } catch (err) {
+        console.warn('OAuth redirect fallback:', err);
+      }
+    }
+
+    // Direct Real Email Lookup via src/config/authorizedUsers.js
+    const realEmail = emailInput && emailInput.includes('@') ? emailInput.trim().toLowerCase() : 'sr.fregoso@gmail.com';
+    const computedRole = getRoleForEmail(realEmail);
+    const firstName = realEmail.split('@')[0];
+
     const googleUser = {
       id: `usr-google-${Date.now()}`,
-      email: emailParam || 'carlos.fregoso@gmail.com',
-      firstName: 'Carlos',
-      lastName: 'Fregoso',
-      phone: '55 1234 5678',
+      email: realEmail,
+      firstName: firstName.charAt(0).toUpperCase() + firstName.slice(1),
+      lastName: '',
       provider: 'google',
-      role: 'CUSTOMER'
+      role: computedRole
     };
+
     setUser(googleUser);
-    setUserRole('CUSTOMER');
+    setUserRole(computedRole);
     localStorage.setItem('ideaform_user', JSON.stringify(googleUser));
-    localStorage.setItem('ideaform_user_role', 'CUSTOMER');
+    localStorage.setItem('ideaform_user_role', computedRole);
     setIsAuthModalOpen(false);
-    showToast('¡Bienvenido! Sesión iniciada con Google ✨', 'success');
+    showToast(`¡Bienvenido! Sesión iniciada con Google (${realEmail}) ✨`, 'success');
     navigateTo('profile');
     return googleUser;
   };
@@ -275,35 +308,29 @@ export const AppProvider = ({ children }) => {
         const updated = [...prevCart];
         updated[existingIndex].quantity += item.quantity || 1;
         return updated;
-      } else {
-        return [
-          ...prevCart,
-          {
-            ...item,
-            cartItemId: `cart-item-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-            quantity: item.quantity || 1
-          }
-        ];
       }
+      return [...prevCart, { ...item, quantity: item.quantity || 1 }];
     });
 
-    showToast(`"${item.name}" añadido a tu carrito`, 'success');
+    showToast(`"${item.name}" agregado al carrito 🛒`, 'success');
     setIsCartOpen(true);
   };
 
-  const updateCartQuantity = (cartItemId, newQty) => {
-    if (newQty <= 0) {
-      removeFromCart(cartItemId);
-      return;
-    }
-    setCart((prev) =>
-      prev.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: newQty } : item))
-    );
+  const updateCartQuantity = (index, delta) => {
+    setCart((prevCart) => {
+      const updated = [...prevCart];
+      const newQty = (updated[index].quantity || 1) + delta;
+      if (newQty <= 0) {
+        return updated.filter((_, i) => i !== index);
+      }
+      updated[index].quantity = newQty;
+      return updated;
+    });
   };
 
-  const removeFromCart = (cartItemId) => {
-    setCart((prev) => prev.filter((item) => item.cartItemId !== cartItemId));
-    showToast('Artículo eliminado del carrito', 'info');
+  const removeFromCart = (index) => {
+    setCart((prevCart) => prevCart.filter((_, i) => i !== index));
+    showToast('Producto eliminado del carrito', 'info');
   };
 
   const clearCart = () => {
@@ -312,19 +339,19 @@ export const AppProvider = ({ children }) => {
 
   // Coupon Logic
   const applyCoupon = (code) => {
-    const cleanCode = (code || '').trim().toUpperCase();
-    if (cleanCode === 'IDEAFORM10' || cleanCode === 'DESCUENTO10') {
-      setAppliedCoupon({ code: cleanCode, discountPercent: 10 });
-      showToast('¡Cupón del 10% aplicado con éxito!', 'success');
+    const cleanCode = code.trim().toUpperCase();
+    if (cleanCode === 'IDEAFORM10') {
+      setAppliedCoupon({ code: 'IDEAFORM10', discountPercent: 10, label: '10% OFF Primera Compra' });
+      showToast('¡Cupón del 10% aplicado!', 'success');
       return true;
-    } else if (cleanCode === 'ENVIOGRATIS') {
-      setAppliedCoupon({ code: cleanCode, freeShipping: true });
-      showToast('¡Cupón de Envío Gratis aplicado!', 'success');
-      return true;
-    } else {
-      showToast('Cupón inválido o expirado. Prueba con "IDEAFORM10"', 'error');
-      return false;
     }
+    if (cleanCode === 'MAYOREO20') {
+      setAppliedCoupon({ code: 'MAYOREO20', discountPercent: 20, label: '20% OFF Mayoreo' });
+      showToast('¡Cupón del 20% aplicado!', 'success');
+      return true;
+    }
+    showToast('Cupón no válido o expirado', 'error');
+    return false;
   };
 
   const removeCoupon = () => {
@@ -332,126 +359,75 @@ export const AppProvider = ({ children }) => {
     showToast('Cupón removido', 'info');
   };
 
-  // Totals Calculations
-  const cartSubtotal = cart.reduce((acc, item) => {
-    const price = item.finalUnitPrice || item.basePrice || 0;
-    return acc + price * item.quantity;
-  }, 0);
-
-  const discountAmount = appliedCoupon?.discountPercent
-    ? (cartSubtotal * appliedCoupon.discountPercent) / 100
-    : 0;
-
-  const isFreeShipping =
-    cartSubtotal >= 999 || appliedCoupon?.freeShipping || cart.length === 0;
-  const shippingCost = isFreeShipping ? 0 : 150.00;
-
+  // Cart Calculations
+  const cartSubtotal = cart.reduce((sum, item) => sum + item.basePrice * (item.quantity || 1), 0);
+  const discountAmount = appliedCoupon ? cartSubtotal * (appliedCoupon.discountPercent / 100) : 0;
+  const isFreeShipping = cartSubtotal - discountAmount >= 999;
+  const shippingCost = cart.length === 0 ? 0 : isFreeShipping ? 0 : 149;
   const cartTotal = Math.max(0, cartSubtotal - discountAmount + shippingCost);
-  const totalItemsCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+  const totalItemsCount = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
 
-  // Production Kanban Actions (Restricted to OPERATOR_3D and ADMIN)
+  // Kanban & Slicing Integration
+  const createOrder = (orderData) => {
+    const newOrderNumber = generateFolio('IDF');
+    const newOrder = {
+      id: `ord-${Date.now()}`,
+      orderNumber: newOrderNumber,
+      customerName: user ? `${user.firstName} ${user.lastName || ''}`.trim() : orderData.customerName || 'Cliente Invitado',
+      customerEmail: user ? user.email : orderData.customerEmail || 'cliente@ideaform.mx',
+      productName: cart[0]?.name || 'Pieza 3D Personalizada',
+      customText: cart[0]?.customText || 'IdeaForm',
+      filament: cart[0]?.selectedColor?.name || 'Verde Esmeralda',
+      filamentColorHex: cart[0]?.selectedColor?.hex || '#0F5F6D',
+      filamentGrams: (cart[0]?.filamentGrams || 45) * totalItemsCount,
+      printTimeMins: (cart[0]?.printTimeMins || 120) * totalItemsCount,
+      status: 'QUEUED', // QUEUED -> SLICING -> PRINTING -> QUALITY_CONTROL -> READY_TO_SHIP
+      printerAssigned: null,
+      date: new Date().toLocaleDateString('es-MX'),
+      total: cartTotal
+    };
+
+    setProductionOrders((prev) => [newOrder, ...prev]);
+    clearCart();
+    return newOrder;
+  };
+
   const updateOrderStatus = (orderId, newStatus) => {
-    if (userRole !== 'ADMIN' && userRole !== 'OPERATOR_3D') {
-      showToast('Acceso denegado: Solo operadores o administradores pueden modificar estados de impresión.', 'error');
-      return;
-    }
-
     setProductionOrders((prev) =>
-      prev.map((order) => {
-        if (order.id === orderId) {
-          let progress = 0;
-          if (newStatus === 'QUEUED') progress = 0;
-          if (newStatus === 'SLICING') progress = 20;
-          if (newStatus === 'PRINTING') progress = 65;
-          if (newStatus === 'QUALITY_CONTROL') progress = 90;
-          if (newStatus === 'READY_TO_SHIP') progress = 100;
-          return { ...order, status: newStatus, progressPercent: progress };
-        }
-        return order;
-      })
+      prev.map((ord) => (ord.id === orderId ? { ...ord, status: newStatus } : ord))
     );
-    showToast(`Estado de orden actualizado a ${newStatus}`, 'info');
+    showToast(`Estado de orden actualizado a "${newStatus}"`, 'info');
   };
 
   const assignPrinter = (orderId, printerName) => {
-    if (userRole !== 'ADMIN' && userRole !== 'OPERATOR_3D') {
-      showToast('Acceso denegado: Solo operadores pueden asignar impresoras 3D.', 'error');
-      return;
-    }
-
     setProductionOrders((prev) =>
-      prev.map((order) => (order.id === orderId ? { ...order, assignedPrinter: printerName } : order))
+      prev.map((ord) =>
+        ord.id === orderId
+          ? { ...ord, printerAssigned: printerName, status: ord.status === 'QUEUED' ? 'PRINTING' : ord.status }
+          : ord
+      )
     );
-    showToast(`Impresora asignada: ${printerName}`, 'success');
+    showToast(`Orden asignada a ${printerName}`, 'success');
   };
 
-  // Deduct filament grams when an order is created
-  const createOrder = (orderData) => {
-    const orderNumber = generateFolio('IDF');
-    const newKanbanOrder = {
-      id: `ord-${Date.now()}`,
-      orderNumber: orderNumber,
-      customerName: `${orderData.shippingAddress?.firstName || 'Cliente'} ${orderData.shippingAddress?.lastName || ''}`,
-      productName: cart.map((c) => `${c.name} (x${c.quantity})`).join(', '),
-      customText: cart.find((c) => c.customText)?.customText || null,
-      filament: cart[0]?.selectedMaterial?.name || 'PLA Estándar',
-      filamentGrams: cart.reduce((acc, c) => acc + (c.weightGrams || 25) * c.quantity, 0),
-      printTimeMins: cart.reduce((acc, c) => acc + (c.printTimeMins || 45) * c.quantity, 0),
-      status: 'QUEUED',
-      assignedPrinter: 'Bambu Lab X1C #01',
-      progressPercent: 0,
-      total: cartTotal,
-      date: new Date().toISOString().split('T')[0]
-    };
-
-    setProductionOrders((prev) => [newKanbanOrder, ...prev]);
-
-    // Deduct grams from inventory
-    const totalGramsUsed = newKanbanOrder.filamentGrams;
-    setFilamentInventory((prev) =>
-      prev.map((mat) => ({
-        ...mat,
-        colors: mat.colors.map((col) => ({
-          ...col,
-          stockGrams: Math.max(0, col.stockGrams - totalGramsUsed / (mat.colors.length * 2))
-        }))
-      }))
-    );
-
-    clearCart();
-    return orderNumber;
-  };
-
-  // Add B2B Quote
-  const saveB2BQuote = (quote) => {
-    setB2bQuotes((prev) => [quote, ...prev]);
-    showToast(`Cotización ${quote.quoteNumber} guardada exitosamente`, 'success');
-  };
-
-  // Adjust stock of filament (Restricted to ADMIN)
-  const updateFilamentStock = (materialId, colorId, addedGrams) => {
-    if (userRole !== 'ADMIN') {
-      showToast('Acceso denegado: Solo administradores pueden ajustar el inventario de insumos.', 'error');
-      return;
-    }
-
+  // Raw Material Inventory (BOM Deduction)
+  const updateFilamentStock = (materialId, gramsDelta) => {
     setFilamentInventory((prev) =>
       prev.map((mat) => {
         if (mat.id === materialId) {
-          return {
-            ...mat,
-            colors: mat.colors.map((col) => {
-              if (col.id === colorId) {
-                return { ...col, stockGrams: Math.max(0, col.stockGrams + Number(addedGrams)) };
-              }
-              return col;
-            })
-          };
+          const newGrams = Math.max(0, (mat.stockGrams || 1000) + gramsDelta);
+          return { ...mat, stockGrams: newGrams };
         }
         return mat;
       })
     );
     showToast('Inventario de filamento actualizado', 'success');
+  };
+
+  // Save B2B Quote
+  const saveB2BQuote = (quoteData) => {
+    setB2bQuotes((prev) => [quoteData, ...prev]);
+    showToast('¡Cotización B2B guardada en tu perfil!', 'success');
   };
 
   return (
