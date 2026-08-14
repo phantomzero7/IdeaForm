@@ -23,7 +23,8 @@ import {
 const HomeView = () => {
   const { navigateTo, showToast } = useApp();
 
-  const [teaserColor, setTeaserColor] = useState('#C9685B');
+  // Official IdeaForm Teal (#176B87) as default starting color
+  const [teaserColor, setTeaserColor] = useState('#176B87');
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
   const [newsletterEmail, setNewsletterEmail] = useState('');
 
@@ -87,9 +88,9 @@ const HomeView = () => {
                   </span>
                 </div>
 
-                {/* Swatches matching official section colors */}
+                {/* Swatches: Official IdeaForm Brand Palette */}
                 <div style={{ display: 'flex', gap: '0.4rem' }}>
-                  {['#C9685B', '#21658A', '#B77B21', '#1A1A1A'].map((hex) => (
+                  {['#176B87', '#0F172A', '#C9685B', '#B77B21', '#21658A'].map((hex) => (
                     <button
                       key={hex}
                       onClick={() => setTeaserColor(hex)}
@@ -109,6 +110,9 @@ const HomeView = () => {
               <div style={{ height: '340px', width: '100%' }}>
                 <ThreeViewer
                   modelType="keychain"
+                  baseColor={teaserColor}
+                  accentColor="#176B87"
+                  reliefColor="#FFFFFF"
                   selectedColor={teaserColor}
                   materialType="PLA_SILK"
                   customText="IDEAFORM"

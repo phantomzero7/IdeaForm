@@ -123,6 +123,11 @@ const ThreeViewer = forwardRef(({
 
         if (isBrandLogo) {
           // --- OFFICIAL IDEAFORM BRAND LOGO ON 3D RELIEF ---
+          const isLightBase = ['#ffffff', '#faeeeb', '#f1f5f9', '#f8fafc', '#e2e8f0', '#fdf2f0'].includes(activeBaseColor.toLowerCase());
+          const bulbColor = isLightBase ? '#176B87' : '#00E5FF';
+          const ideaColor = isLightBase ? '#0F172A' : '#FFFFFF';
+          const formColor = isLightBase ? '#176B87' : '#00E5FF';
+
           const drawBulbLogo = (cx, cy, scale = 1.45) => {
             ctx.save();
             ctx.translate(cx, cy);
@@ -160,8 +165,8 @@ const ThreeViewer = forwardRef(({
             ctx.moveTo(5 + 8, -10 + 8); ctx.lineTo(65 + 8, -10 + 8);
             ctx.stroke();
 
-            // Main Vivid Lines in activeAccentColor
-            ctx.strokeStyle = activeAccentColor;
+            // Main Vivid Lines in Official Bulb Color
+            ctx.strokeStyle = bulbColor;
             ctx.lineWidth = 24;
 
             // Rays
@@ -177,7 +182,7 @@ const ThreeViewer = forwardRef(({
             ctx.stroke();
 
             // 'i' Dot
-            ctx.fillStyle = activeAccentColor;
+            ctx.fillStyle = bulbColor;
             ctx.beginPath();
             ctx.arc(-35, -35, 17, 0, Math.PI * 2);
             ctx.fill();
@@ -211,11 +216,11 @@ const ThreeViewer = forwardRef(({
           ctx.fillText('Idea', 768, 522);
           ctx.fillText('Form', 1288, 522);
 
-          // Text Fill
-          ctx.fillStyle = activeTextColor;
+          // Text Fill: "Idea" in Charcoal/White, "Form" in Official Teal
+          ctx.fillStyle = ideaColor;
           ctx.fillText('Idea', 760, 512);
 
-          ctx.fillStyle = activeAccentColor;
+          ctx.fillStyle = formColor;
           ctx.fillText('Form', 1280, 512);
         } else {
           // --- CUSTOMER CUSTOM ENGRAVING IN FULL-SIZE PROMINENT RELIEF ---
