@@ -1,10 +1,14 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef, useCallback } from 'react';
 import * as THREE from 'three';
-import { RotateCw, Eye } from 'lucide-react';
+import { RotateCw, Eye, Sparkles } from 'lucide-react';
 
 const ThreeViewer = forwardRef(({
-  modelType = 'keychain', // keychain | organizer | lamp | trophy
-  selectedColor = '#00828A',
+  modelType = 'keychain', // keychain | trophy | sphere | car | cup | planter | organizer | lamp
+  selectedColor = '#176B87', // Base / Body color
+  baseColor = null,
+  accentColor = '#D4AF37', // Secondary / Accent color (oro, plata, etc.)
+  textColor = '#FFFFFF', // Relief / Text color
+  reliefColor = null,
   materialType = 'PLA_SILK',
   customText = 'IDEAFORM',
   fontFamily = 'Space Grotesk',
@@ -19,6 +23,10 @@ const ThreeViewer = forwardRef(({
   const cameraRef = useRef(null);
   const meshGroupRef = useRef(null);
   const animFrameId = useRef(null);
+
+  const activeBaseColor = baseColor || selectedColor || '#176B87';
+  const activeAccentColor = accentColor || '#D4AF37';
+  const activeTextColor = reliefColor || textColor || '#FFFFFF';
 
   const [isAutoRotating, setIsAutoRotating] = useState(true);
   const isAutoRotatingRef = useRef(true);
@@ -62,395 +70,392 @@ const ThreeViewer = forwardRef(({
       group.remove(obj);
     }
 
+    // Material 1: Body / Base
     const mainMaterial = new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color(selectedColor),
-      roughness: 0.25,
+      color: new THREE.Color(activeBaseColor),
+      roughness: 0.22,
       metalness: 0.35,
-      wireframe: false,
-      clearcoat: 0.65,
+      clearcoat: 0.6,
       clearcoatRoughness: 0.1
     });
 
-    const accentMaterial = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(selectedColor === '#00828A' ? '#D4AF37' : '#00828A'),
-      roughness: 0.3,
-      metalness: 0.6
+    // Material 2: Accent (Trim, Borders, Stand)
+    const accentMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(activeAccentColor),
+      roughness: 0.25,
+      metalness: 0.7
     });
 
+    // Material 3: Metallic Steel / Ring
     const steelMaterial = new THREE.MeshStandardMaterial({
       color: 0xdde3ea,
       metalness: 0.95,
       roughness: 0.1
     });
 
-    // Helper: Draw Canvas Texture with Logo or Text
+    // Helper: Canvas Texture with embossed logo/text and custom relief color
     const createTextCanvasTexture = () => {
       const canvas = document.createElement('canvas');
       canvas.width = 1024;
       canvas.height = 512;
       const ctx = canvas.getContext('2d');
 
-      // Base background in chosen filament color
-      ctx.fillStyle = selectedColor;
+      // Base background
+      ctx.fillStyle = activeBaseColor;
       ctx.fillRect(0, 0, 1024, 512);
 
-      // Subtle chamfer outline
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
-      ctx.lineWidth = 14;
-      ctx.strokeRect(24, 24, 976, 464);
-
-      const texture = new THREE.CanvasTexture(canvas);
+      // Accent border
+      ctx.strokeStyle = activeAccentColor;
+      ctx.lineWidth = 16;
+      ctx.strokeRect(20, 20, 984, 472);
 
       if (noEngraving) {
-        // Plain solid plate
+        const texture = new THREE.CanvasTexture(canvas);
         texture.needsUpdate = true;
         return texture;
       }
 
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetX = 3;
+      ctx.shadowOffsetY = 4;
+
       if (logoImage) {
-        // If user uploaded a corporate logo image
         const img = new Image();
         img.crossOrigin = 'anonymous';
-        img.onload = () => {
-          ctx.save();
-          // Draw logo centered with 3D drop shadow
-          ctx.shadowColor = 'rgba(0,0,0,0.6)';
-          ctx.shadowBlur = 12;
-          ctx.shadowOffsetX = 4;
-          ctx.shadowOffsetY = 6;
-
-          const maxDim = 320;
-          const ratio = Math.min(maxDim / img.width, maxDim / img.height);
-          const drawW = img.width * ratio;
-          const drawH = img.height * ratio;
-          const drawX = (1024 - drawW) / 2;
-          const drawY = (512 - drawH) / 2;
-
-          ctx.drawImage(img, drawX, drawY, drawW, drawH);
-          ctx.restore();
-
-          if (customText && customText.toUpperCase() !== 'IDEAFORM') {
-            ctx.fillStyle = '#ffffff';
-            ctx.font = `bold 42px ${fontFamily}, 'Poppins', sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.fillText(customText.toUpperCase(), 512, 440);
-          }
-          texture.needsUpdate = true;
-        };
         img.src = logoImage;
-        return texture;
-      }
-
-      const isDefaultBrand = !customText || customText.toUpperCase() === 'IDEAFORM';
-
-      if (isDefaultBrand) {
-        // DRAW EXACT IDEAFORM LOGO FROM MANUAL
-        ctx.save();
-        ctx.translate(160, 256);
-        ctx.scale(2.2, 2.2);
-
-        // 3 Top Rays
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 6;
-        ctx.lineCap = 'round';
-        ctx.shadowColor = 'rgba(0,0,0,0.55)';
-        ctx.shadowBlur = 10;
-        ctx.shadowOffsetX = 3;
-        ctx.shadowOffsetY = 4;
-
-        ctx.beginPath();
-        ctx.moveTo(-24, -24); ctx.lineTo(-34, -34);
-        ctx.moveTo(0, -32); ctx.lineTo(0, -45);
-        ctx.moveTo(24, -24); ctx.lineTo(34, -34);
-        ctx.stroke();
-
-        // Bulb Outer Contour
-        ctx.beginPath();
-        ctx.arc(0, 0, 30, 0.75 * Math.PI, 2.25 * Math.PI, false);
-        ctx.lineTo(14, 30);
-        ctx.lineTo(-14, 30);
-        ctx.closePath();
-        ctx.stroke();
-
-        // Filament 'i' Dot
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(-8, -4, 4.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Filament 'i' & 'f' Loop
-        ctx.beginPath();
-        ctx.moveTo(-8, 6);
-        ctx.lineTo(-8, 28);
-        ctx.bezierCurveTo(-8, 34, 6, 36, 10, 28);
-        ctx.lineTo(10, -6);
-        ctx.bezierCurveTo(10, -14, 18, -14, 22, -8);
-        ctx.moveTo(0, 10);
-        ctx.lineTo(18, 10);
-        ctx.stroke();
-        ctx.restore();
-
-        // Text "IdeaForm"
-        ctx.fillStyle = '#ffffff';
-        ctx.font = "800 102px 'Space Grotesk', 'Plus Jakarta Sans', sans-serif";
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.shadowColor = 'rgba(0,0,0,0.6)';
-        ctx.shadowBlur = 12;
-        ctx.shadowOffsetX = 4;
-        ctx.shadowOffsetY = 5;
-
-        ctx.fillText('Idea', 320, 215);
-        const ideaWidth = ctx.measureText('Idea').width;
-        ctx.fillStyle = '#00e5ff';
-        ctx.fillText('Form', 320 + ideaWidth + 6, 215);
-
-        // Subtitle "Ideas que toman forma."
-        ctx.font = "500 36px 'Plus Jakarta Sans', 'Inter', sans-serif";
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-        ctx.shadowColor = 'rgba(0,0,0,0.5)';
-        ctx.shadowBlur = 8;
-        ctx.shadowOffsetX = 2;
-        ctx.shadowOffsetY = 3;
-        ctx.fillText('Ideas que toman forma.', 324, 305);
-
+        img.onload = () => {
+          ctx.drawImage(img, 312, 106, 400, 300);
+          const dynamicTexture = new THREE.CanvasTexture(canvas);
+          dynamicTexture.needsUpdate = true;
+          if (mainMesh) {
+            if (Array.isArray(mainMesh.material)) {
+              mainMesh.material[4].map = dynamicTexture;
+              mainMesh.material[4].needsUpdate = true;
+            } else {
+              mainMesh.material.map = dynamicTexture;
+              mainMesh.material.needsUpdate = true;
+            }
+          }
+        };
       } else {
-        // CUSTOM USER TEXT IN EMBOSSED 3D
-        ctx.fillStyle = '#ffffff';
-        ctx.font = `bold 82px ${fontFamily}, 'Poppins', sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.shadowColor = 'rgba(0,0,0,0.6)';
-        ctx.shadowBlur = 12;
-        ctx.shadowOffsetX = 4;
-        ctx.shadowOffsetY = 6;
-        ctx.fillText(customText.toUpperCase(), 512, 256);
+        const isDefault = !customText || customText.trim().toUpperCase() === 'IDEAFORM';
+
+        if (isDefault) {
+          // Draw official vector bulb + text
+          ctx.strokeStyle = activeAccentColor;
+          ctx.lineWidth = 14;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+
+          // Bulb dome
+          ctx.beginPath();
+          ctx.arc(280, 256, 75, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Dot
+          ctx.fillStyle = activeAccentColor;
+          ctx.beginPath();
+          ctx.arc(250, 220, 12, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Typography
+          ctx.font = `bold 105px 'Space Grotesk', sans-serif`;
+          ctx.fillStyle = activeTextColor;
+          ctx.fillText('Idea', 420, 290);
+
+          ctx.fillStyle = activeAccentColor;
+          ctx.fillText('Form', 660, 290);
+        } else {
+          // Custom embossed text
+          const displayStr = customText.toUpperCase();
+          const fontSize = Math.min(110, Math.floor(820 / Math.max(displayStr.length, 1)));
+          ctx.font = `bold ${fontSize}px sans-serif`;
+          ctx.fillStyle = activeTextColor;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(displayStr, 512, 256);
+        }
       }
 
+      ctx.restore();
+      const texture = new THREE.CanvasTexture(canvas);
       texture.needsUpdate = true;
       return texture;
     };
 
-    const textTexture = createTextCanvasTexture();
-    const textPlateMaterial = new THREE.MeshStandardMaterial({
-      map: textTexture,
-      roughness: 0.3,
-      metalness: 0.2
-    });
+    let mainMesh = null;
 
+    // --- 1. KEYCHAIN (LLAVERO BICAPA) ---
     if (modelType === 'keychain') {
-      const baseGeo = new THREE.CylinderGeometry(1.9, 1.9, 0.22, 6);
-      baseGeo.rotateX(Math.PI / 2);
-      const baseMesh = new THREE.Mesh(baseGeo, mainMaterial);
-      baseMesh.castShadow = true;
-      baseMesh.receiveShadow = true;
+      const plateGeo = new THREE.BoxGeometry(4.2, 0.4, 2.2);
+      const textTexture = createTextCanvasTexture();
+
+      const plateMaterials = [
+        mainMaterial,
+        mainMaterial,
+        mainMaterial,
+        mainMaterial,
+        new THREE.MeshPhysicalMaterial({ map: textTexture, roughness: 0.22, metalness: 0.25 }),
+        mainMaterial
+      ];
+
+      mainMesh = new THREE.Mesh(plateGeo, plateMaterials);
+      mainMesh.castShadow = true;
+      mainMesh.receiveShadow = true;
+      group.add(mainMesh);
+
+      // Accent border rim
+      const rimGeo = new THREE.BoxGeometry(4.35, 0.15, 2.35);
+      const rimMesh = new THREE.Mesh(rimGeo, accentMat);
+      rimMesh.position.y = 0.18;
+      group.add(rimMesh);
+
+      // Keychain Ring
+      const ringGeo = new THREE.TorusGeometry(0.45, 0.08, 16, 32);
+      const ringMesh = new THREE.Mesh(ringGeo, steelMaterial);
+      ringMesh.rotation.x = Math.PI / 2;
+      ringMesh.position.set(-2.5, 0, 0);
+      group.add(ringMesh);
+    }
+
+    // --- 2. TROPHY / CORPORATE AWARD (TROFEO EJECUTIVO) ---
+    else if (modelType === 'trophy') {
+      // Base (Accent color)
+      const baseGeo = new THREE.CylinderGeometry(1.6, 1.8, 0.7, 32);
+      const baseMesh = new THREE.Mesh(baseGeo, accentMat);
+      baseMesh.position.y = -1.2;
       group.add(baseMesh);
 
-      const plateGeo = new THREE.BoxGeometry(2.6, 1.35, 0.06);
-      const plateMesh = new THREE.Mesh(plateGeo, textPlateMaterial);
-      plateMesh.position.z = 0.13;
-      group.add(plateMesh);
-
-      const backPlate = new THREE.Mesh(plateGeo, textPlateMaterial);
-      backPlate.position.z = -0.13;
-      backPlate.rotation.y = Math.PI;
-      group.add(backPlate);
-
-      const ringGeo = new THREE.TorusGeometry(0.55, 0.07, 16, 32);
-      const ringMesh = new THREE.Mesh(ringGeo, steelMaterial);
-      ringMesh.position.set(0, 2.05, 0);
-      ringMesh.rotation.y = Math.PI / 4;
-      group.add(ringMesh);
-
-      const holeGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.32, 16);
-      holeGeo.rotateX(Math.PI / 2);
-      const holeMesh = new THREE.Mesh(holeGeo, accentMaterial);
-      holeMesh.position.set(0, 1.52, 0);
-      group.add(holeMesh);
-
-    } else if (modelType === 'organizer') {
-      const mainGeo = new THREE.CylinderGeometry(1.6, 1.8, 2.0, 6);
-      const mainMesh = new THREE.Mesh(mainGeo, mainMaterial);
+      // Main Crystal / Polymer Body (Base color)
+      const columnGeo = new THREE.BoxGeometry(2.4, 3.2, 0.45);
+      const textTexture = createTextCanvasTexture();
+      const columnMat = [
+        mainMaterial,
+        mainMaterial,
+        mainMaterial,
+        mainMaterial,
+        new THREE.MeshPhysicalMaterial({ map: textTexture, roughness: 0.15, metalness: 0.2 }),
+        mainMaterial
+      ];
+      mainMesh = new THREE.Mesh(columnGeo, columnMat);
+      mainMesh.position.y = 0.8;
       mainMesh.castShadow = true;
       group.add(mainMesh);
 
-      for (let i = 0; i < 4; i++) {
-        const angle = (i * Math.PI) / 2;
-        const slotGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.8, 16);
-        const slotMesh = new THREE.Mesh(slotGeo, accentMaterial);
-        slotMesh.position.set(Math.cos(angle) * 0.75, 0.8, Math.sin(angle) * 0.75);
-        group.add(slotMesh);
-      }
-
-      const phoneTrayGeo = new THREE.BoxGeometry(2.2, 0.5, 0.8);
-      const phoneTrayMesh = new THREE.Mesh(phoneTrayGeo, mainMaterial);
-      phoneTrayMesh.position.set(0, -0.65, 1.3);
-      group.add(phoneTrayMesh);
-
-      const badgeGeo = new THREE.BoxGeometry(2.0, 0.6, 0.05);
-      const badgeMesh = new THREE.Mesh(badgeGeo, textPlateMaterial);
-      badgeMesh.position.set(0, -0.2, 1.55);
-      badgeMesh.rotation.x = -0.2;
-      group.add(badgeMesh);
-
-    } else if (modelType === 'lamp') {
-      const lampBaseGeo = new THREE.CylinderGeometry(1.4, 1.6, 0.5, 32);
-      const lampBaseMesh = new THREE.Mesh(lampBaseGeo, accentMaterial);
-      lampBaseMesh.position.y = -1.2;
-      group.add(lampBaseMesh);
-
-      const shadeGeo = new THREE.CylinderGeometry(1.3, 1.3, 2.4, 32, 1, true);
-      const shadeMesh = new THREE.Mesh(shadeGeo, textPlateMaterial);
-      shadeMesh.position.y = 0.2;
-      group.add(shadeMesh);
-
-      const bulbGeo = new THREE.SphereGeometry(0.4, 16, 16);
-      const bulbMat = new THREE.MeshBasicMaterial({ color: 0xffe8b3 });
-      const bulbMesh = new THREE.Mesh(bulbGeo, bulbMat);
-      bulbMesh.position.y = 0.2;
-      group.add(bulbMesh);
-
-      const pointLight = new THREE.PointLight(0xffc56e, 2.5, 6);
-      pointLight.position.y = 0.2;
-      group.add(pointLight);
-
-    } else if (modelType === 'trophy') {
-      const base1Geo = new THREE.BoxGeometry(2.2, 0.4, 2.2);
-      const base1Mesh = new THREE.Mesh(base1Geo, accentMaterial);
-      base1Mesh.position.y = -1.3;
-      group.add(base1Mesh);
-
-      const base2Geo = new THREE.BoxGeometry(1.8, 0.3, 1.8);
-      const base2Mesh = new THREE.Mesh(base2Geo, mainMaterial);
-      base2Mesh.position.y = -0.95;
-      group.add(base2Mesh);
-
-      const towerGeo = new THREE.ConeGeometry(1.2, 2.6, 5);
-      const towerMesh = new THREE.Mesh(towerGeo, mainMaterial);
-      towerMesh.position.y = 0.45;
-      towerMesh.castShadow = true;
-      group.add(towerMesh);
-
-      const awardPlateGeo = new THREE.BoxGeometry(1.4, 0.5, 0.05);
-      const awardPlateMesh = new THREE.Mesh(awardPlateGeo, textPlateMaterial);
-      awardPlateMesh.position.set(0, -0.95, 0.93);
-      group.add(awardPlateMesh);
+      // Crown / Peak
+      const peakGeo = new THREE.ConeGeometry(0.8, 0.9, 4);
+      const peakMesh = new THREE.Mesh(peakGeo, accentMat);
+      peakMesh.position.y = 2.8;
+      peakMesh.rotation.y = Math.PI / 4;
+      group.add(peakMesh);
     }
 
-    group.scale.set(scaleMultiplier, scaleMultiplier, scaleMultiplier);
-  }, [modelType, selectedColor, materialType, customText, fontFamily, logoImage, noEngraving, scaleMultiplier]);
+    // --- 3. SPHERE / CHRISTMAS ORNAMENT (ESFERA PERSONALIZADA) ---
+    else if (modelType === 'sphere') {
+      const sphereGeo = new THREE.SphereGeometry(1.8, 48, 48);
+      const textTexture = createTextCanvasTexture();
+      const sphereMat = new THREE.MeshPhysicalMaterial({
+        color: new THREE.Color(activeBaseColor),
+        roughness: 0.2,
+        metalness: 0.35,
+        clearcoat: 0.8
+      });
+      mainMesh = new THREE.Mesh(sphereGeo, sphereMat);
+      mainMesh.castShadow = true;
+      group.add(mainMesh);
 
+      // Accent Ribbon / Band
+      const bandGeo = new THREE.TorusGeometry(1.82, 0.12, 16, 48);
+      const bandMesh = new THREE.Mesh(bandGeo, accentMat);
+      bandMesh.rotation.x = Math.PI / 2;
+      group.add(bandMesh);
+
+      // Top Cap and Ring
+      const capGeo = new THREE.CylinderGeometry(0.35, 0.45, 0.35, 24);
+      const capMesh = new THREE.Mesh(capGeo, steelMaterial);
+      capMesh.position.y = 1.95;
+      group.add(capMesh);
+
+      const topRingGeo = new THREE.TorusGeometry(0.3, 0.06, 16, 24);
+      const topRingMesh = new THREE.Mesh(topRingGeo, steelMaterial);
+      topRingMesh.position.y = 2.3;
+      group.add(topRingMesh);
+    }
+
+    // --- 4. CAR / SCALE MODEL (AUTO A ESCALA) ---
+    else if (modelType === 'car') {
+      // Body (Base color)
+      const bodyGeo = new THREE.BoxGeometry(4.2, 1.1, 2.0);
+      const bodyMesh = new THREE.Mesh(bodyGeo, mainMaterial);
+      bodyMesh.position.y = 0.2;
+      group.add(bodyMesh);
+
+      // Cabin / Roof (Accent color)
+      const cabinGeo = new THREE.BoxGeometry(2.4, 0.9, 1.7);
+      const cabinMesh = new THREE.Mesh(cabinGeo, accentMat);
+      cabinMesh.position.set(-0.2, 1.0, 0);
+      group.add(cabinMesh);
+
+      // 4 Wheels (Metallic Steel / Black)
+      const wheelGeo = new THREE.CylinderGeometry(0.55, 0.55, 0.35, 24);
+      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.6 });
+
+      const wheelPositions = [
+        [1.3, -0.3, 1.05],
+        [1.3, -0.3, -1.05],
+        [-1.3, -0.3, 1.05],
+        [-1.3, -0.3, -1.05]
+      ];
+
+      wheelPositions.forEach((pos) => {
+        const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+        wheel.rotation.x = Math.PI / 2;
+        wheel.position.set(pos[0], pos[1], pos[2]);
+        group.add(wheel);
+
+        const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.38, 16), steelMaterial);
+        hub.rotation.x = Math.PI / 2;
+        hub.position.set(pos[0], pos[1], pos[2]);
+        group.add(hub);
+      });
+    }
+
+    // --- 5. CUP / CYLINDER ORGANIZER (TAZA / ORGANIZADOR) ---
+    else if (modelType === 'cup') {
+      // Outer Cylinder
+      const cupGeo = new THREE.CylinderGeometry(1.6, 1.4, 3.2, 36, 1, true);
+      const cupMesh = new THREE.Mesh(cupGeo, mainMaterial);
+      group.add(cupMesh);
+
+      // Base bottom
+      const botGeo = new THREE.CylinderGeometry(1.4, 1.4, 0.2, 36);
+      const botMesh = new THREE.Mesh(botGeo, mainMaterial);
+      botMesh.position.y = -1.5;
+      group.add(botMesh);
+
+      // Accent Rim top & base
+      const topRimGeo = new THREE.TorusGeometry(1.6, 0.08, 16, 36);
+      const topRimMesh = new THREE.Mesh(topRimGeo, accentMat);
+      topRimMesh.rotation.x = Math.PI / 2;
+      topRimMesh.position.y = 1.6;
+      group.add(topRimMesh);
+
+      // Handle (Torus segment)
+      const handleGeo = new THREE.TorusGeometry(0.9, 0.16, 16, 32, Math.PI);
+      const handleMesh = new THREE.Mesh(handleGeo, accentMat);
+      handleMesh.rotation.z = -Math.PI / 2;
+      handleMesh.position.set(1.7, 0, 0);
+      group.add(handleMesh);
+    }
+
+    // --- 6. GEOMETRIC PLANTER (MACETA GEOMÉTRICA) ---
+    else {
+      const planterGeo = new THREE.DodecahedronGeometry(1.8, 0);
+      const planterMesh = new THREE.Mesh(planterGeo, mainMaterial);
+      planterMesh.castShadow = true;
+      group.add(planterMesh);
+
+      // Accent top tray
+      const trayGeo = new THREE.TorusGeometry(1.85, 0.1, 16, 6);
+      const trayMesh = new THREE.Mesh(trayGeo, accentMat);
+      trayMesh.rotation.x = Math.PI / 2;
+      group.add(trayMesh);
+    }
+
+  }, [modelType, activeBaseColor, activeAccentColor, activeTextColor, customText, logoImage, noEngraving]);
+
+  // Three.js Scene Setup & Animation Loop
   useEffect(() => {
-    const container = mountRef.current;
-    if (!container) return;
+    const mount = mountRef.current;
+    if (!mount) return;
 
-    const width = container.clientWidth || 600;
-    const height = container.clientHeight || 450;
+    const width = mount.clientWidth || 400;
+    const height = mount.clientHeight || 400;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf8fafc);
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
     camera.position.set(0, 3.2, 6.8);
     camera.lookAt(0, 0.2, 0);
     cameraRef.current = camera;
 
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      preserveDrawingBuffer: true,
-      powerPreference: 'high-performance'
-    });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
-
-    container.innerHTML = '';
-    container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.95);
+    mount.appendChild(renderer.domElement);
+
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
     scene.add(ambientLight);
 
-    const mainLight = new THREE.DirectionalLight(0xffffff, 1.8);
-    mainLight.position.set(5, 8, 5);
-    mainLight.castShadow = true;
-    scene.add(mainLight);
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.8);
+    dirLight1.position.set(5, 10, 7);
+    dirLight1.castShadow = true;
+    scene.add(dirLight1);
 
-    const fillLight = new THREE.DirectionalLight(0x00e5ff, 0.4);
-    fillLight.position.set(-5, 3, -3);
-    scene.add(fillLight);
+    const dirLight2 = new THREE.DirectionalLight(0xa5c4d4, 0.9);
+    dirLight2.position.set(-5, -3, -5);
+    scene.add(dirLight2);
 
-    const rimLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    rimLight.position.set(0, -4, -4);
-    scene.add(rimLight);
-
-    const gridHelper = new THREE.GridHelper(12, 24, 0x00828a, 0xe2e8f0);
-    gridHelper.position.y = -1.2;
-    scene.add(gridHelper);
-
-    const meshGroup = new THREE.Group();
-    meshGroup.position.y = -0.2;
-    scene.add(meshGroup);
-    meshGroupRef.current = meshGroup;
+    const group = new THREE.Group();
+    meshGroupRef.current = group;
+    scene.add(group);
 
     buildGeometry();
 
-    let previousMousePosition = { x: 0, y: 0 };
+    // Mouse Interaction
+    let mouseX = 0;
+    let mouseY = 0;
 
     const onMouseDown = (e) => {
       isDraggingRef.current = true;
-      previousMousePosition = { x: e.clientX, y: e.clientY };
+      mouseX = e.clientX;
+      mouseY = e.clientY;
     };
 
     const onMouseMove = (e) => {
       if (!isDraggingRef.current || !meshGroupRef.current) return;
-      const deltaX = e.clientX - previousMousePosition.x;
-      const deltaY = e.clientY - previousMousePosition.y;
+      const deltaX = e.clientX - mouseX;
+      const deltaY = e.clientY - mouseY;
 
-      meshGroupRef.current.rotation.y += deltaX * 0.008;
-      meshGroupRef.current.rotation.x += deltaY * 0.008;
-      meshGroupRef.current.rotation.x = Math.max(-0.8, Math.min(0.8, meshGroupRef.current.rotation.x));
+      meshGroupRef.current.rotation.y += deltaX * 0.01;
+      meshGroupRef.current.rotation.x += deltaY * 0.01;
 
-      previousMousePosition = { x: e.clientX, y: e.clientY };
+      mouseX = e.clientX;
+      mouseY = e.clientY;
     };
 
     const onMouseUp = () => {
       isDraggingRef.current = false;
     };
 
-    const onWheel = (e) => {
-      e.preventDefault();
-      if (!cameraRef.current) return;
-      const zoomSpeed = 0.004;
-      cameraRef.current.position.z = Math.max(3.5, Math.min(11, cameraRef.current.position.z + e.deltaY * zoomSpeed));
-    };
-
-    const domElement = renderer.domElement;
-    domElement.addEventListener('mousedown', onMouseDown);
+    mount.addEventListener('mousedown', onMouseDown);
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
-    domElement.addEventListener('wheel', onWheel, { passive: false });
 
+    // Render loop
     const animate = () => {
       animFrameId.current = requestAnimationFrame(animate);
 
       if (isAutoRotatingRef.current && meshGroupRef.current && !isDraggingRef.current) {
-        meshGroupRef.current.rotation.y += 0.006;
+        meshGroupRef.current.rotation.y += 0.008;
       }
 
       renderer.render(scene, camera);
     };
-
     animate();
 
     const handleResize = () => {
-      if (!container || !renderer || !camera) return;
-      const w = container.clientWidth;
-      const h = container.clientHeight;
+      if (!mount || !renderer || !camera) return;
+      const w = mount.clientWidth;
+      const h = mount.clientHeight;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
@@ -460,84 +465,86 @@ const ThreeViewer = forwardRef(({
 
     return () => {
       cancelAnimationFrame(animFrameId.current);
-      window.removeEventListener('resize', handleResize);
-      domElement.removeEventListener('mousedown', onMouseDown);
+      mount.removeEventListener('mousedown', onMouseDown);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
-      domElement.removeEventListener('wheel', onWheel);
-      renderer.dispose();
+      window.removeEventListener('resize', handleResize);
+      if (renderer.domElement && mount.contains(renderer.domElement)) {
+        mount.removeChild(renderer.domElement);
+      }
     };
-  }, []);
-
-  useEffect(() => {
-    buildGeometry();
   }, [buildGeometry]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '400px' }}>
-      <div
-        ref={mountRef}
-        style={{
-          width: '100%',
-          height: '100%',
-          minHeight: '400px',
-          borderRadius: 'var(--radius-xl)',
-          overflow: 'hidden',
-          cursor: 'grab',
-          touchAction: 'none'
-        }}
-      />
-
-      <div
-        style={{
-          position: 'absolute',
-          top: '1rem',
-          right: '1rem',
-          zIndex: 10
-        }}
-      >
+    <div
+      ref={mountRef}
+      style={{
+        width: '100%',
+        height: '100%',
+        position: 'relative',
+        cursor: 'grab',
+        userSelect: 'none'
+      }}
+    >
+      {/* 3D Controls Overlays */}
+      <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.4rem', zIndex: 10 }}>
         <button
           onClick={() => setIsAutoRotating(!isAutoRotating)}
-          title={isAutoRotating ? 'Pausar Rotación 360°' : 'Activar Rotación 360°'}
           style={{
-            width: '2.5rem',
-            height: '2.5rem',
-            borderRadius: '50%',
-            background: isAutoRotating ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.95)',
-            color: isAutoRotating ? '#ffffff' : '#0f172a',
+            background: isAutoRotating ? 'rgba(23, 107, 135, 0.85)' : 'rgba(255, 255, 255, 0.85)',
+            color: isAutoRotating ? '#ffffff' : '#1e293b',
             border: '1px solid rgba(0,0,0,0.1)',
+            borderRadius: 'var(--radius-full)',
+            padding: '0.4rem 0.75rem',
+            fontSize: '0.75rem',
+            fontWeight: '700',
+            cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            boxShadow: 'var(--shadow-md)'
+            gap: '0.35rem',
+            boxShadow: 'var(--shadow-sm)',
+            backdropFilter: 'blur(4px)'
           }}
         >
-          <RotateCw size={16} />
+          <RotateCw size={13} />
+          <span>{isAutoRotating ? 'Giro Activo' : 'Pausar Giro'}</span>
         </button>
       </div>
 
+      {/* Multi-Zone Colors Indicator Badge */}
       <div
         style={{
           position: 'absolute',
-          top: '1rem',
+          bottom: '1rem',
           left: '1rem',
-          background: 'rgba(255, 255, 255, 0.9)',
-          backdropFilter: 'blur(6px)',
-          padding: '0.35rem 0.75rem',
+          background: 'rgba(255, 255, 255, 0.92)',
+          padding: '0.4rem 0.85rem',
           borderRadius: 'var(--radius-full)',
-          fontSize: '0.72rem',
-          fontWeight: '600',
-          color: 'var(--text-secondary)',
+          fontSize: '0.75rem',
+          fontWeight: '700',
+          color: '#0F172A',
+          boxShadow: 'var(--shadow-sm)',
           display: 'flex',
           alignItems: 'center',
-          gap: '0.4rem',
-          pointerEvents: 'none',
-          boxShadow: 'var(--shadow-sm)'
+          gap: '0.6rem',
+          backdropFilter: 'blur(4px)',
+          zIndex: 10
         }}
       >
-        <Eye size={12} color="var(--color-primary)" />
-        <span>Arrastra para rotar 360° • Zoom con rueda</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+          <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: activeBaseColor, border: '1px solid rgba(0,0,0,0.2)' }} />
+          <span>Base</span>
+        </div>
+        <span style={{ opacity: 0.3 }}>|</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+          <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: activeAccentColor, border: '1px solid rgba(0,0,0,0.2)' }} />
+          <span>Acento</span>
+        </div>
+        <span style={{ opacity: 0.3 }}>|</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+          <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: activeTextColor, border: '1px solid rgba(0,0,0,0.2)' }} />
+          <span>Relieve 3D</span>
+        </div>
       </div>
     </div>
   );

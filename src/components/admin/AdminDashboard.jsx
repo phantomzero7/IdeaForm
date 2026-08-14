@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
-import { FILAMENT_MATERIALS, PRODUCTS, B2B_PRICE_TIERS } from '../../data/mockData';
+import { FILAMENT_MATERIALS, PRODUCTS, B2B_PRICE_TIERS, SUBCOLLECTIONS } from '../../data/mockData';
 import { shippingService } from '../../services/shippingService';
 import { generateB2BQuotePDF } from '../../utils/pdfGenerator';
 import { formatCurrency, formatGrams, formatMinutesToHours, generateFolio } from '../../utils/formatters';
 import IdeaFormLogo from '../common/IdeaFormLogo';
+import ThreeViewer from '../3d/ThreeViewer';
 import {
   LayoutDashboard,
   Layers,
@@ -42,7 +43,11 @@ import {
   DollarSign,
   TrendingUp,
   Activity,
-  Calendar
+  Calendar,
+  Sparkles,
+  Upload,
+  Box,
+  Palette
 } from 'lucide-react';
 
 const KANBAN_STAGES = [
@@ -78,7 +83,7 @@ const AdminDashboard = () => {
     showToast
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState('kanban'); // kanban | inventory | quotes | metrics
+  const [activeTab, setActiveTab] = useState('kanban'); // kanban | inventory | quotes | metrics | products
   const [staffPin, setStaffPin] = useState('');
 
   // 1. Kanban Internal Comments & Order Inspection State
@@ -130,7 +135,31 @@ const AdminDashboard = () => {
 
   // 6. Metrics Date & Channel Filters State
   const [metricsPeriod, setMetricsPeriod] = useState('MONTH'); // 'TODAY' | 'WEEK' | 'MONTH' | 'ALL'
-  const [metricsChannelFilter, setMetricsChannelFilter] = useState('ALL');
+
+  // 7. Product Catalog & 3D Multi-Color Zone Configurator State
+  const [productsCatalog, setProductsCatalog] = useState(PRODUCTS);
+  const [productCategoryFilter, setProductCategoryFilter] = useState('ALL');
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [productFormData, setProductFormData] = useState({
+    name: '',
+    subcollection: 'hogar',
+    basePrice: 180,
+    description: '',
+    modelType: 'sphere', // keychain | trophy | sphere | car | cup | planter
+    filamentGrams: 60,
+    printTimeMins: 120,
+    allowBaseColor: true,
+    allowAccentColor: true,
+    allowReliefColor: true,
+    allowCustomText: true,
+    allowLogoUpload: true,
+    previewBaseColor: '#176B87',
+    previewAccentColor: '#D4AF37',
+    previewReliefColor: '#FFFFFF',
+    isActive: true,
+    image2D: ''
+  });
 
   // RBAC GUARD
   const isAuthorized = user && (userRole === 'ADMIN' || userRole === 'OPERATOR_3D');
@@ -165,7 +194,7 @@ const AdminDashboard = () => {
             Panel de Control del Taller
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: '1.5', marginBottom: '1.75rem' }}>
-            Acceso restringido a operadores y administradores para gestión de granja 3D, inventario e insumos.
+            Acceso restringido a operadores y administradores para gestión de granja 3D, catálogo e inventario.
           </p>
 
           <form onSubmit={handleStaffPinUnlock} style={{ marginBottom: '1.25rem' }}>
@@ -335,6 +364,120 @@ const AdminDashboard = () => {
     window.open(`https://wa.me/526121234567?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
+  // --- PRODUCT CATALOG & 3D ZONE CONFIGURATOR HANDLERS ---
+  const handleOpenNewProductModal = () => {
+    setEditingProduct(null);
+    setProductFormData({
+      name: '',
+      subcollection: 'hogar',
+      basePrice: 180,
+      description: 'Pieza de manufactura aditiva con relieve 3D personalizable.',
+      modelType: 'sphere',
+      filamentGrams: 55,
+      printTimeMins: 110,
+      allowBaseColor: true,
+      allowAccentColor: true,
+      allowReliefColor: true,
+      allowCustomText: true,
+      allowLogoUpload: true,
+      previewBaseColor: '#176B87',
+      previewAccentColor: '#D4AF37',
+      previewReliefColor: '#FFFFFF',
+      isActive: true,
+      image2D: ''
+    });
+    setIsProductModalOpen(true);
+  };
+
+  const handleEditProduct = (prod) => {
+    setEditingProduct(prod);
+    setProductFormData({
+      name: prod.name,
+      subcollection: prod.subcollection || 'hogar',
+      basePrice: prod.basePrice,
+      description: prod.description || '',
+      modelType: prod.modelType || 'keychain',
+      filamentGrams: prod.filamentGrams || 50,
+      printTimeMins: prod.printTimeMins || 100,
+      allowBaseColor: prod.allowBaseColor !== false,
+      allowAccentColor: prod.allowAccentColor !== false,
+      allowReliefColor: prod.allowReliefColor !== false,
+      allowCustomText: prod.isCustomizable !== false,
+      allowLogoUpload: prod.allowLogoUpload !== false,
+      previewBaseColor: '#176B87',
+      previewAccentColor: '#D4AF37',
+      previewReliefColor: '#FFFFFF',
+      isActive: prod.isActive !== false,
+      image2D: prod.image || ''
+    });
+    setIsProductModalOpen(true);
+  };
+
+  const handleSaveProduct = (e) => {
+    e.preventDefault();
+    if (editingProduct) {
+      const updated = productsCatalog.map((p) =>
+        p.id === editingProduct.id
+          ? {
+              ...p,
+              name: productFormData.name,
+              subcollection: productFormData.subcollection,
+              basePrice: Number(productFormData.basePrice),
+              description: productFormData.description,
+              modelType: productFormData.modelType,
+              filamentGrams: Number(productFormData.filamentGrams),
+              printTimeMins: Number(productFormData.printTimeMins),
+              allowBaseColor: productFormData.allowBaseColor,
+              allowAccentColor: productFormData.allowAccentColor,
+              allowReliefColor: productFormData.allowReliefColor,
+              isCustomizable: productFormData.allowCustomText,
+              allowLogoUpload: productFormData.allowLogoUpload,
+              isActive: productFormData.isActive
+            }
+          : p
+      );
+      setProductsCatalog(updated);
+      showToast(`Producto "${productFormData.name}" actualizado con éxito`, 'success');
+    } else {
+      const newProd = {
+        id: `prod-custom-${Date.now()}`,
+        name: productFormData.name,
+        categoryName: SUBCOLLECTIONS.find((s) => s.id === productFormData.subcollection)?.name || 'Colección General',
+        subcollection: productFormData.subcollection,
+        basePrice: Number(productFormData.basePrice),
+        description: productFormData.description,
+        modelType: productFormData.modelType,
+        filamentGrams: Number(productFormData.filamentGrams),
+        printTimeMins: Number(productFormData.printTimeMins),
+        allowBaseColor: productFormData.allowBaseColor,
+        allowAccentColor: productFormData.allowAccentColor,
+        allowReliefColor: productFormData.allowReliefColor,
+        isCustomizable: productFormData.allowCustomText,
+        allowLogoUpload: productFormData.allowLogoUpload,
+        isActive: productFormData.isActive
+      };
+      setProductsCatalog([newProd, ...productsCatalog]);
+      showToast(`¡Nuevo producto "${newProd.name}" publicado en tienda!`, 'success');
+    }
+    setIsProductModalOpen(false);
+  };
+
+  const handleToggleProductActive = (id) => {
+    const updated = productsCatalog.map((p) => (p.id === id ? { ...p, isActive: p.isActive === false ? true : false } : p));
+    setProductsCatalog(updated);
+    showToast('Estado de visibilidad en tienda actualizado', 'info');
+  };
+
+  // --- 2D Image Upload Handler ---
+  const handleImage2DUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setProductFormData({ ...productFormData, image2D: url });
+      showToast(`Imagen 2D cargada: ${file.name}`, 'success');
+    }
+  };
+
   // --- METRICS CALCULATION ---
   const totalRevenue = productionOrders.reduce((sum, o) => sum + (o.total || 0), 0);
   const totalGramsConsumed = productionOrders.reduce((sum, o) => sum + (o.filamentGrams || 45), 0);
@@ -462,6 +605,26 @@ const AdminDashboard = () => {
           >
             <BarChart3 size={17} />
             <span>4. Métricas & Analítica</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('products')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.6rem 1.15rem',
+              borderRadius: 'var(--radius-md)',
+              border: 'none',
+              background: activeTab === 'products' ? 'rgba(23, 107, 135, 0.12)' : 'transparent',
+              color: activeTab === 'products' ? '#176B87' : '#64748b',
+              fontWeight: '800',
+              fontSize: '0.88rem',
+              cursor: 'pointer'
+            }}
+          >
+            <Tag size={17} />
+            <span>5. Catálogo & Zonas 3D ({productsCatalog.length})</span>
           </button>
         </div>
       </div>
@@ -1008,7 +1171,377 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
+
+        {/* =========================================================================
+            TAB 5: CATÁLOGO DE PRODUCTOS & CONFIGURACIÓN DE ZONAS 3D
+           ========================================================================= */}
+        {activeTab === 'products' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <h2 style={{ fontSize: '1.45rem', fontWeight: '800', color: '#0F172A', margin: 0 }}>
+                  Catálogo de Productos & Zonas de Personalización 3D
+                </h2>
+                <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0, marginTop: '0.2rem' }}>
+                  Publica nuevos artículos (esferas, autos, tazas, trofeos) y configura qué zonas/colores puede modificar el cliente.
+                </p>
+              </div>
+
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={handleOpenNewProductModal}
+                style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+              >
+                <Plus size={16} />
+                <span>+ Crear Nuevo Producto 3D</span>
+              </button>
+            </div>
+
+            {/* Products Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
+              {productsCatalog.map((prod) => (
+                <div
+                  key={prod.id}
+                  className="card"
+                  style={{
+                    background: '#ffffff',
+                    borderRadius: 'var(--radius-lg)',
+                    border: '1px solid #e2e8f0',
+                    padding: '1.25rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between'
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span className="badge" style={{ background: '#f1f5f9', color: '#475569' }}>
+                        {prod.subcollection || 'General'}
+                      </span>
+                      <span style={{ fontSize: '0.7rem', fontWeight: '800', padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-full)', background: prod.isActive !== false ? '#ecfdf5' : '#fee2e2', color: prod.isActive !== false ? '#059669' : '#dc2626' }}>
+                        {prod.isActive !== false ? 'Activo en Tienda' : 'Oculto'}
+                      </span>
+                    </div>
+
+                    <div style={{ height: '140px', background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.75rem' }}>
+                      <Box size={36} color="#176B87" style={{ opacity: 0.8 }} />
+                    </div>
+
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#0F172A', marginBottom: '0.25rem' }}>
+                      {prod.name}
+                    </h3>
+                    <p style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: '1.4', marginBottom: '0.75rem' }}>
+                      {prod.description}
+                    </p>
+
+                    {/* Enabled Zones Badges */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginBottom: '0.75rem' }}>
+                      <span style={{ fontSize: '0.68rem', fontWeight: '700', padding: '0.15rem 0.45rem', borderRadius: '4px', background: 'rgba(23, 107, 135, 0.1)', color: '#176B87' }}>
+                        🎨 Color Base
+                      </span>
+                      {prod.allowAccentColor !== false && (
+                        <span style={{ fontSize: '0.68rem', fontWeight: '700', padding: '0.15rem 0.45rem', borderRadius: '4px', background: '#fef3c7', color: '#b45309' }}>
+                          ✨ Acento
+                        </span>
+                      )}
+                      {prod.isCustomizable !== false && (
+                        <span style={{ fontSize: '0.68rem', fontWeight: '700', padding: '0.15rem 0.45rem', borderRadius: '4px', background: '#f3e8ff', color: '#7e22ce' }}>
+                          ✍️ Relieve 3D
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '0.6rem', marginBottom: '0.6rem' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Precio Base:</span>
+                      <strong style={{ fontSize: '1.15rem', color: '#176B87' }}>{formatCurrency(prod.basePrice)}</strong>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        style={{ flex: 1, fontSize: '0.75rem', fontWeight: '700' }}
+                        onClick={() => handleEditProduct(prod)}
+                      >
+                        <Edit3 size={13} />
+                        <span>Configurar Zonas</span>
+                      </button>
+
+                      <button
+                        title={prod.isActive !== false ? 'Ocultar de la tienda' : 'Mostrar en la tienda'}
+                        onClick={() => handleToggleProductActive(prod.id)}
+                        style={{ padding: '0.4rem 0.6rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }}
+                      >
+                        {prod.isActive !== false ? <Ban size={14} color="#dc2626" /> : <Check size={14} color="#059669" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* =========================================================================
+          MODAL 5: ALTA Y CONFIGURACIÓN DE PRODUCTOS & ZONAS 3D MULTI-COLOR
+         ========================================================================= */}
+      {isProductModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem'
+          }}
+          onClick={() => setIsProductModalOpen(false)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: 'var(--radius-xl)',
+              width: '100%',
+              maxWidth: '920px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '2rem',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: '800', color: '#0F172A' }}>
+                  {editingProduct ? `Editar Producto: ${editingProduct.name}` : 'Crear Nuevo Producto & Zonas 3D'}
+                </h3>
+                <p style={{ color: '#64748b', fontSize: '0.82rem', margin: 0, marginTop: '0.2rem' }}>
+                  Define el modelo 3D, carga imagen 2D y configura los elementos personalizables por el cliente.
+                </p>
+              </div>
+              <button onClick={() => setIsProductModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem', alignItems: 'start' }}>
+              
+              {/* Left Form: Product Data & Zones */}
+              <form onSubmit={handleSaveProduct}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>
+                      Nombre del Producto *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ej. Esfera Navideña con Nombre 3D"
+                      value={productFormData.name}
+                      onChange={(e) => setProductFormData({ ...productFormData, name: e.target.value })}
+                      style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>
+                      Subcolección *
+                    </label>
+                    <select
+                      value={productFormData.subcollection}
+                      onChange={(e) => setProductFormData({ ...productFormData, subcollection: e.target.value })}
+                      style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                    >
+                      <option value="escolar">Escolar & Estudiantes</option>
+                      <option value="oficina">Oficina & Escritorio</option>
+                      <option value="hogar">Hogar & Decoración</option>
+                      <option value="personal">Personal & Accesorios</option>
+                      <option value="kids">Kids & Juguetes 3D</option>
+                      <option value="empresas">Empresas & B2B</option>
+                      <option value="eventos">Eventos & Souvenirs</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>
+                      Precio Base ($ MXN) *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="10"
+                      value={productFormData.basePrice}
+                      onChange={(e) => setProductFormData({ ...productFormData, basePrice: e.target.value })}
+                      style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: '700' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>
+                      Modelo 3D Base *
+                    </label>
+                    <select
+                      value={productFormData.modelType}
+                      onChange={(e) => setProductFormData({ ...productFormData, modelType: e.target.value })}
+                      style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                    >
+                      <option value="sphere">Esfera Decorativa / Navideña</option>
+                      <option value="keychain">Llavero Bicapa</option>
+                      <option value="car">Auto a Escala</option>
+                      <option value="cup">Taza / Cilindro</option>
+                      <option value="planter">Maceta Geométrica</option>
+                      <option value="trophy">Trofeo Ejecutivo</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>
+                      Gramos BOM (g)
+                    </label>
+                    <input
+                      type="number"
+                      value={productFormData.filamentGrams}
+                      onChange={(e) => setProductFormData({ ...productFormData, filamentGrams: e.target.value })}
+                      style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>
+                    Descripción para la Tienda
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={productFormData.description}
+                    onChange={(e) => setProductFormData({ ...productFormData, description: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                  />
+                </div>
+
+                {/* Multi-Color Zones Configuration (Like Sneaker Customizers) */}
+                <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                    <Palette size={16} color="#176B87" />
+                    <strong style={{ fontSize: '0.88rem', color: '#0F172A' }}>
+                      Zonas Personalizables por el Cliente
+                    </strong>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.82rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={productFormData.allowBaseColor}
+                        onChange={(e) => setProductFormData({ ...productFormData, allowBaseColor: e.target.checked })}
+                      />
+                      <span><strong>Zona 1: Color Base / Cuerpo Principal</strong> (Permitido para el cliente)</span>
+                    </label>
+
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.82rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={productFormData.allowAccentColor}
+                        onChange={(e) => setProductFormData({ ...productFormData, allowAccentColor: e.target.checked })}
+                      />
+                      <span><strong>Zona 2: Color de Acentos / Detalles / Trim</strong> (Permitido para el cliente)</span>
+                    </label>
+
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.82rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={productFormData.allowReliefColor}
+                        onChange={(e) => setProductFormData({ ...productFormData, allowReliefColor: e.target.checked })}
+                      />
+                      <span><strong>Zona 3: Relieve 3D de Texto / Logotipo</strong> (Permitido para el cliente)</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* 2D Image Upload Input */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.35rem' }}>
+                    Subir Imagen 2D / Render Fotográfico
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImage2DUpload}
+                    style={{ fontSize: '0.85rem' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setIsProductModalOpen(false)}>
+                    Cancelar
+                  </button>
+                  <button type="submit" className="btn btn-primary" style={{ fontWeight: '800' }}>
+                    Guardar y Publicar en Tienda
+                  </button>
+                </div>
+              </form>
+
+              {/* Right: Live Interactive 3D Model Tester */}
+              <div style={{ background: '#f1f5f9', borderRadius: 'var(--radius-lg)', padding: '1rem', border: '1px solid #cbd5e1' }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: '800', color: '#176B87', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <Sparkles size={14} />
+                  <span>Previsualizador 3D en Vivo</span>
+                </div>
+
+                <div style={{ height: '320px', background: '#ffffff', borderRadius: 'var(--radius-md)', overflow: 'hidden', position: 'relative' }}>
+                  <ThreeViewer
+                    modelType={productFormData.modelType}
+                    baseColor={productFormData.previewBaseColor}
+                    accentColor={productFormData.previewAccentColor}
+                    reliefColor={productFormData.previewReliefColor}
+                    customText="MUESTRA 3D"
+                  />
+                </div>
+
+                {/* Color Swatches Tester for the Admin */}
+                <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.75rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Color Base:</span>
+                    <input
+                      type="color"
+                      value={productFormData.previewBaseColor}
+                      onChange={(e) => setProductFormData({ ...productFormData, previewBaseColor: e.target.value })}
+                      style={{ border: 'none', width: '28px', height: '24px', cursor: 'pointer' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Color Acento:</span>
+                    <input
+                      type="color"
+                      value={productFormData.previewAccentColor}
+                      onChange={(e) => setProductFormData({ ...productFormData, previewAccentColor: e.target.value })}
+                      style={{ border: 'none', width: '28px', height: '24px', cursor: 'pointer' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Color Relieve:</span>
+                    <input
+                      type="color"
+                      value={productFormData.previewReliefColor}
+                      onChange={(e) => setProductFormData({ ...productFormData, previewReliefColor: e.target.value })}
+                      style={{ border: 'none', width: '28px', height: '24px', cursor: 'pointer' }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* =========================================================================
           MODAL 1: EDICIÓN Y DETALLE COMPLETO DE COTIZACIÓN B2B
