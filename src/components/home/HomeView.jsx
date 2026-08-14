@@ -23,8 +23,8 @@ import {
 const HomeView = () => {
   const { navigateTo, showToast } = useApp();
 
-  // Official IdeaForm Teal (#176B87) as default starting color
-  const [teaserColor, setTeaserColor] = useState('#176B87');
+  // White base (#FFFFFF) as default so the IdeaForm Teal/Charcoal logo shines brilliantly
+  const [teaserColor, setTeaserColor] = useState('#FFFFFF');
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
   const [newsletterEmail, setNewsletterEmail] = useState('');
 
@@ -88,9 +88,9 @@ const HomeView = () => {
                   </span>
                 </div>
 
-                {/* Swatches: Official IdeaForm Brand Palette */}
+                {/* Swatches: Official IdeaForm Brand Palette starting with White */}
                 <div style={{ display: 'flex', gap: '0.4rem' }}>
-                  {['#176B87', '#0F172A', '#C9685B', '#B77B21', '#21658A'].map((hex) => (
+                  {['#FFFFFF', '#176B87', '#0F172A', '#C9685B', '#D4AF37', '#21658A'].map((hex) => (
                     <button
                       key={hex}
                       onClick={() => setTeaserColor(hex)}
@@ -99,7 +99,8 @@ const HomeView = () => {
                         height: '20px',
                         borderRadius: '50%',
                         background: hex,
-                        border: teaserColor === hex ? '2px solid #1A1A1A' : '1px solid #cbd5e1',
+                        border: teaserColor === hex ? '2px solid #176B87' : '1px solid #cbd5e1',
+                        boxShadow: teaserColor === hex ? '0 0 0 2px rgba(23, 107, 135, 0.25)' : 'none',
                         cursor: 'pointer'
                       }}
                     />
@@ -112,7 +113,7 @@ const HomeView = () => {
                   modelType="keychain"
                   baseColor={teaserColor}
                   accentColor="#176B87"
-                  reliefColor="#FFFFFF"
+                  reliefColor="#0F172A"
                   selectedColor={teaserColor}
                   materialType="PLA_SILK"
                   customText="IDEAFORM"
