@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { FAQS } from '../../data/mockData';
 import ThreeViewer from '../3d/ThreeViewer';
+import IdeaFormLogo from '../common/IdeaFormLogo';
 import {
   Sparkles,
   Building2,
@@ -79,9 +80,11 @@ const HomeView = () => {
             {/* Right Hero Visual: 3D Stage with Official IdeaForm Brand Emblem */}
             <div className="card card-elevated" style={{ padding: '1rem', background: '#ffffff', position: 'relative' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem 0.75rem 0.75rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', fontWeight: '700', color: '#1A1A1A' }}>
-                  <Sparkles size={16} color="var(--color-primary)" />
-                  <span>Configurador 3D en Vivo</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <IdeaFormLogo size="small" showTagline={false} />
+                  <span style={{ fontSize: '0.65rem', color: 'var(--color-primary)', fontWeight: '800', paddingLeft: '0.4rem', borderLeft: '1.5px solid #cbd5e1', letterSpacing: '0.05em' }}>
+                    3D LIVE
+                  </span>
                 </div>
 
                 {/* Swatches matching official section colors */}

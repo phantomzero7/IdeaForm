@@ -20,7 +20,8 @@ const ThreeViewer = forwardRef(({
   logoImage = null,
   noEngraving = false,
   scaleMultiplier = 1,
-  showDimensions = true
+  showDimensions = true,
+  showFloatingBadge = false
 }, ref) => {
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
@@ -112,126 +113,145 @@ const ThreeViewer = forwardRef(({
         img.crossOrigin = 'anonymous';
         img.src = logoImage;
         img.onload = () => {
-          ctx.drawImage(img, 624, 212, 800, 600);
+          ctx.drawImage(img, 524, 162, 1000, 700);
           if (materialsRef.current.canvasTexture) {
             materialsRef.current.canvasTexture.needsUpdate = true;
           }
         };
       } else {
-        // 1. Draw Official IdeaForm Bulb Vector Logo on the Left in 3D Relief
-        const drawBulbLogo = (cx, cy, scale = 1.35) => {
-          ctx.save();
-          ctx.translate(cx, cy);
-          ctx.scale(scale, scale);
+        const isBrandLogo = !customText || customText.trim().toUpperCase() === 'IDEAFORM';
 
-          // 3D Extrusion Shadow (+8px offset)
-          ctx.strokeStyle = 'rgba(0, 0, 0, 0.65)';
-          ctx.lineWidth = 26;
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
+        if (isBrandLogo) {
+          // --- OFFICIAL IDEAFORM BRAND LOGO ON 3D RELIEF ---
+          const drawBulbLogo = (cx, cy, scale = 1.45) => {
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.scale(scale, scale);
 
-          // Rays shadow
-          ctx.beginPath();
-          ctx.moveTo(-56 + 8, -130 + 8); ctx.lineTo(-84 + 8, -170 + 8);
-          ctx.moveTo(0 + 8, -145 + 8);   ctx.lineTo(0 + 8, -195 + 8);
-          ctx.moveTo(56 + 8, -130 + 8);  ctx.lineTo(84 + 8, -170 + 8);
-          ctx.stroke();
+            // 3D Extrusion Shadow (+8px offset)
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.lineWidth = 26;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
 
-          // Dome shadow
-          ctx.beginPath();
-          ctx.arc(0 + 8, -10 + 8, 115, -Math.PI * 0.85, -Math.PI * 0.15);
-          ctx.stroke();
+            // Rays shadow
+            ctx.beginPath();
+            ctx.moveTo(-56 + 8, -130 + 8); ctx.lineTo(-84 + 8, -170 + 8);
+            ctx.moveTo(0 + 8, -145 + 8);   ctx.lineTo(0 + 8, -195 + 8);
+            ctx.moveTo(56 + 8, -130 + 8);  ctx.lineTo(84 + 8, -170 + 8);
+            ctx.stroke();
 
-          // 'i' stem & 'f' loop shadow
-          ctx.beginPath();
-          ctx.moveTo(-70 + 8, 0 + 8);
-          ctx.bezierCurveTo(-70 + 8, 80 + 8, -35 + 8, 130 + 8, -35 + 8, 170 + 8);
-          ctx.bezierCurveTo(-35 + 8, 200 + 8, 0 + 8, 200 + 8, 15 + 8, 170 + 8);
-          ctx.bezierCurveTo(30 + 8, 140 + 8, 30 + 8, -40 + 8, 30 + 8, -60 + 8);
-          ctx.bezierCurveTo(30 + 8, -100 + 8, 70 + 8, -90 + 8, 80 + 8, -65 + 8);
-          ctx.stroke();
+            // Dome shadow
+            ctx.beginPath();
+            ctx.arc(0 + 8, -10 + 8, 115, -Math.PI * 0.85, -Math.PI * 0.15);
+            ctx.stroke();
 
-          // 'f' crossbar shadow
-          ctx.beginPath();
-          ctx.moveTo(5 + 8, -10 + 8); ctx.lineTo(65 + 8, -10 + 8);
-          ctx.stroke();
+            // 'i' stem & 'f' loop shadow
+            ctx.beginPath();
+            ctx.moveTo(-70 + 8, 0 + 8);
+            ctx.bezierCurveTo(-70 + 8, 80 + 8, -35 + 8, 130 + 8, -35 + 8, 170 + 8);
+            ctx.bezierCurveTo(-35 + 8, 200 + 8, 0 + 8, 200 + 8, 15 + 8, 170 + 8);
+            ctx.bezierCurveTo(30 + 8, 140 + 8, 30 + 8, -40 + 8, 30 + 8, -60 + 8);
+            ctx.bezierCurveTo(30 + 8, -100 + 8, 70 + 8, -90 + 8, 80 + 8, -65 + 8);
+            ctx.stroke();
 
-          // Main Vivid Lines in activeAccentColor
-          ctx.strokeStyle = activeAccentColor;
-          ctx.lineWidth = 22;
+            // 'f' crossbar shadow
+            ctx.beginPath();
+            ctx.moveTo(5 + 8, -10 + 8); ctx.lineTo(65 + 8, -10 + 8);
+            ctx.stroke();
 
-          // Rays
-          ctx.beginPath();
-          ctx.moveTo(-56, -130); ctx.lineTo(-84, -170);
-          ctx.moveTo(0, -145);   ctx.lineTo(0, -195);
-          ctx.moveTo(56, -130);  ctx.lineTo(84, -170);
-          ctx.stroke();
+            // Main Vivid Lines in activeAccentColor
+            ctx.strokeStyle = activeAccentColor;
+            ctx.lineWidth = 24;
 
-          // Dome
-          ctx.beginPath();
-          ctx.arc(0, -10, 115, -Math.PI * 0.85, -Math.PI * 0.15);
-          ctx.stroke();
+            // Rays
+            ctx.beginPath();
+            ctx.moveTo(-56, -130); ctx.lineTo(-84, -170);
+            ctx.moveTo(0, -145);   ctx.lineTo(0, -195);
+            ctx.moveTo(56, -130);  ctx.lineTo(84, -170);
+            ctx.stroke();
 
-          // 'i' Dot
+            // Dome
+            ctx.beginPath();
+            ctx.arc(0, -10, 115, -Math.PI * 0.85, -Math.PI * 0.15);
+            ctx.stroke();
+
+            // 'i' Dot
+            ctx.fillStyle = activeAccentColor;
+            ctx.beginPath();
+            ctx.arc(-35, -35, 17, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 'i' stem & 'f' loop
+            ctx.beginPath();
+            ctx.moveTo(-70, 0);
+            ctx.bezierCurveTo(-70, 80, -35, 130, -35, 170);
+            ctx.bezierCurveTo(-35, 200, 0, 200, 15, 170);
+            ctx.bezierCurveTo(30, 140, 30, -40, 30, -60);
+            ctx.bezierCurveTo(30, -100, 70, -90, 80, -65);
+            ctx.stroke();
+
+            // 'f' crossbar
+            ctx.beginPath();
+            ctx.moveTo(5, -10); ctx.lineTo(65, -10);
+            ctx.stroke();
+
+            ctx.restore();
+          };
+
+          drawBulbLogo(480, 512, 1.45);
+
+          // Brand Typography "IdeaForm"
+          ctx.font = `900 240px 'Space Grotesk', sans-serif`;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+
+          // Shadow
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.fillText('Idea', 768, 522);
+          ctx.fillText('Form', 1288, 522);
+
+          // Text Fill
+          ctx.fillStyle = activeTextColor;
+          ctx.fillText('Idea', 760, 512);
+
           ctx.fillStyle = activeAccentColor;
-          ctx.beginPath();
-          ctx.arc(-35, -35, 16, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.fillText('Form', 1280, 512);
+        } else {
+          // --- CUSTOMER CUSTOM ENGRAVING IN FULL-SIZE PROMINENT RELIEF ---
+          const displayStr = customText.trim().toUpperCase();
+          const charLen = Math.max(displayStr.length, 1);
+          const fontSize = Math.min(290, Math.max(100, Math.floor(1850 / (charLen * 0.62))));
 
-          // 'i' stem & 'f' loop
-          ctx.beginPath();
-          ctx.moveTo(-70, 0);
-          ctx.bezierCurveTo(-70, 80, -35, 130, -35, 170);
-          ctx.bezierCurveTo(-35, 200, 0, 200, 15, 170);
-          ctx.bezierCurveTo(30, 140, 30, -40, 30, -60);
-          ctx.bezierCurveTo(30, -100, 70, -90, 80, -65);
-          ctx.stroke();
+          let cleanFont = 'Poppins, sans-serif';
+          if (fontFamily) {
+            if (fontFamily.includes('Space') || fontFamily.includes('Tech')) cleanFont = `'Space Grotesk', monospace`;
+            else if (fontFamily.includes('Playfair') || fontFamily.includes('Serif')) cleanFont = `'Playfair Display', serif`;
+            else if (fontFamily.includes('Dancing') || fontFamily.includes('Cursiva')) cleanFont = `'Dancing Script', cursive`;
+            else if (fontFamily.includes('Poppins')) cleanFont = `'Poppins', sans-serif`;
+            else cleanFont = `'${fontFamily}', sans-serif`;
+          }
 
-          // 'f' crossbar
-          ctx.beginPath();
-          ctx.moveTo(5, -10); ctx.lineTo(65, -10);
-          ctx.stroke();
+          ctx.font = `900 ${fontSize}px ${cleanFont}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
 
-          ctx.restore();
-        };
+          // 4 Deep 3D Extrusion Shadow Layers (Physical 3D depth)
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+          ctx.fillText(displayStr, 1024 + 8, 512 + 16);
+          ctx.fillText(displayStr, 1024 + 6, 512 + 12);
+          ctx.fillText(displayStr, 1024 + 4, 512 + 8);
+          ctx.fillText(displayStr, 1024 + 2, 512 + 4);
 
-        // Draw bulb logo on left
-        drawBulbLogo(380, 512, 1.35);
+          // Outer Contrast Bevel Stroke
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+          ctx.lineWidth = 18;
+          ctx.strokeText(displayStr, 1024, 512);
 
-        // 2. Render customer custom text or brand text in 3D relief (activeTextColor)
-        const displayStr = (customText && customText.trim()) ? customText.trim().toUpperCase() : 'IDEAFORM';
-        const charLen = Math.max(displayStr.length, 1);
-        const fontSize = Math.min(250, Math.max(90, Math.floor(1450 / (charLen * 0.62))));
-
-        let cleanFont = 'Poppins, sans-serif';
-        if (fontFamily) {
-          if (fontFamily.includes('Space') || fontFamily.includes('Tech')) cleanFont = `'Space Grotesk', monospace`;
-          else if (fontFamily.includes('Playfair') || fontFamily.includes('Serif')) cleanFont = `'Playfair Display', serif`;
-          else if (fontFamily.includes('Dancing') || fontFamily.includes('Cursiva')) cleanFont = `'Dancing Script', cursive`;
-          else if (fontFamily.includes('Poppins')) cleanFont = `'Poppins', sans-serif`;
-          else cleanFont = `'${fontFamily}', sans-serif`;
+          // Vivid Front Face Fill in activeTextColor (Filamento de Relieve)
+          ctx.fillStyle = activeTextColor;
+          ctx.fillText(displayStr, 1024, 512);
         }
-
-        ctx.font = `900 ${fontSize}px ${cleanFont}`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-
-        const textCenterX = 1260; // Positioned dynamically on the right side of the bulb logo
-
-        // Layer 1: Dark 3D Bottom Extrusion Shadow (Simulates physical height)
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillText(displayStr, textCenterX + 6, 522);
-        ctx.fillText(displayStr, textCenterX + 4, 518);
-        ctx.fillText(displayStr, textCenterX + 2, 515);
-
-        // Layer 2: Outer Contrast Bevel Stroke
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
-        ctx.lineWidth = 14;
-        ctx.strokeText(displayStr, textCenterX, 512);
-
-        // Layer 3: Solid Vivid Face Fill in activeTextColor (Filamento de Relieve)
-        ctx.fillStyle = activeTextColor;
-        ctx.fillText(displayStr, textCenterX, 512);
       }
     }
 
@@ -252,10 +272,10 @@ const ThreeViewer = forwardRef(({
     if (!meshGroupRef.current) return;
     const group = meshGroupRef.current;
 
-    // Preserve rotation across rebuilds
-    const currentRotX = group.rotation.x;
-    const currentRotY = group.rotation.y;
-    const currentRotZ = group.rotation.z;
+    // Preserve rotation across rebuilds or set ergonomic angle
+    const currentRotX = group.rotation.x || 0.08;
+    const currentRotY = group.rotation.y || -0.15;
+    const currentRotZ = group.rotation.z || 0;
 
     while (group.children.length > 0) {
       const obj = group.children[0];
@@ -374,17 +394,17 @@ const ThreeViewer = forwardRef(({
     });
     materialsRef.current.reliefMat = reliefFaceMat;
 
-    // 1. KEYCHAIN / TAG (Top Face +Y gets reliefFaceMat)
+    // 1. KEYCHAIN / TAG (Both +Z and -Z faces get reliefFaceMat so text is never hidden during rotation)
     if (modelType === 'keychain') {
-      const plateGeo = new THREE.BoxGeometry(4.6, 0.45, 2.3);
+      const plateGeo = new THREE.BoxGeometry(4.8, 2.4, 0.45);
       
       const plateMaterials = [
         mainMaterial, // +X right
         mainMaterial, // -X left
-        reliefFaceMat, // +Y TOP SURFACE (Vivid Embossed Text)
+        mainMaterial, // +Y top
         mainMaterial, // -Y bottom
-        mainMaterial, // +Z front
-        mainMaterial  // -Z back
+        reliefFaceMat, // +Z FRONT SURFACE (Ultra-crisp relief directly facing camera)
+        reliefFaceMat  // -Z BACK SURFACE (Also textured during 360 spin)
       ];
 
       const mainMesh = new THREE.Mesh(plateGeo, plateMaterials);
@@ -393,16 +413,15 @@ const ThreeViewer = forwardRef(({
       group.add(mainMesh);
 
       // Accent border rim (Zone 2)
-      const rimGeo = new THREE.BoxGeometry(4.75, 0.15, 2.45);
+      const rimGeo = new THREE.BoxGeometry(4.96, 2.56, 0.15);
       const rimMesh = new THREE.Mesh(rimGeo, accentMat);
-      rimMesh.position.y = 0.22;
+      rimMesh.position.z = -0.16;
       group.add(rimMesh);
 
       // Keychain Ring (Steel)
-      const ringGeo = new THREE.TorusGeometry(0.5, 0.08, 16, 32);
+      const ringGeo = new THREE.TorusGeometry(0.55, 0.09, 16, 32);
       const ringMesh = new THREE.Mesh(ringGeo, steelMaterial);
-      ringMesh.rotation.x = Math.PI / 2;
-      ringMesh.position.set(-2.8, 0, 0);
+      ringMesh.position.set(-2.95, 0, 0);
       group.add(ringMesh);
     }
 
@@ -615,7 +634,7 @@ const ThreeViewer = forwardRef(({
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(0, 3.5, 5.0);
+    camera.position.set(0, 0.4, 5.2);
     camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
@@ -728,29 +747,31 @@ const ThreeViewer = forwardRef(({
         </div>
       )}
 
-      {/* Official IdeaForm Brand Badge in 3D Viewport */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '1rem',
-          left: '1rem',
-          background: 'rgba(255, 255, 255, 0.95)',
-          padding: '0.35rem 0.75rem',
-          borderRadius: 'var(--radius-full)',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.4rem',
-          backdropFilter: 'blur(6px)',
-          zIndex: 10,
-          border: '1px solid rgba(23, 107, 135, 0.15)'
-        }}
-      >
-        <IdeaFormLogo size="small" showTagline={false} />
-        <span style={{ fontSize: '0.62rem', color: '#176B87', fontWeight: '800', paddingLeft: '0.35rem', borderLeft: '1px solid #cbd5e1', letterSpacing: '0.05em' }}>
-          3D LIVE
-        </span>
-      </div>
+      {/* Optional Floating Brand Badge in 3D Viewport */}
+      {showFloatingBadge && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '1rem',
+            left: '1rem',
+            background: 'rgba(255, 255, 255, 0.95)',
+            padding: '0.35rem 0.75rem',
+            borderRadius: 'var(--radius-full)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            backdropFilter: 'blur(6px)',
+            zIndex: 10,
+            border: '1px solid rgba(23, 107, 135, 0.15)'
+          }}
+        >
+          <IdeaFormLogo size="small" showTagline={false} />
+          <span style={{ fontSize: '0.62rem', color: '#176B87', fontWeight: '800', paddingLeft: '0.35rem', borderLeft: '1px solid #cbd5e1', letterSpacing: '0.05em' }}>
+            3D LIVE
+          </span>
+        </div>
+      )}
 
       {/* 3D Auto-Spin Control */}
       <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.4rem', zIndex: 10 }}>
@@ -773,7 +794,7 @@ const ThreeViewer = forwardRef(({
           }}
         >
           <RotateCw size={13} />
-          <span>{isAutoRotating ? 'Giro 360°' : 'Pausar Giro'}</span>
+          <span>{isAutoRotating ? '360°' : 'Pausa'}</span>
         </button>
       </div>
 

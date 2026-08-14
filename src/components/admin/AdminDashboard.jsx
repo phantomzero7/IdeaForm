@@ -1940,9 +1940,11 @@ const AdminDashboard = () => {
 
               {/* Right: Live Interactive 3D Model Tester */}
               <div style={{ background: '#f1f5f9', borderRadius: 'var(--radius-lg)', padding: '1.25rem', border: '1px solid #cbd5e1' }}>
-                <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#176B87', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <Sparkles size={16} />
-                  <span>Previsualizador 3D en Vivo</span>
+                <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <IdeaFormLogo size="small" showTagline={false} />
+                  <span style={{ fontSize: '0.65rem', color: '#176B87', fontWeight: '800', paddingLeft: '0.4rem', borderLeft: '1.5px solid #cbd5e1', letterSpacing: '0.05em' }}>
+                    3D LIVE
+                  </span>
                 </div>
 
                 <div style={{ height: '320px', background: '#ffffff', borderRadius: 'var(--radius-md)', overflow: 'hidden', position: 'relative', border: '1px solid #e2e8f0' }}>
