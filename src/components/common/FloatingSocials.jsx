@@ -61,6 +61,14 @@ const FloatingSocials = () => {
     return (botIntents || []).filter((i) => i.isActive !== false && !i.isArchived);
   }, [botIntents]);
 
+  // Auto-hide the floating greeting bubble after 2 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowGreetingTooltip(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
   useEffect(() => {
     if (isChatOpen) {
       setShowGreetingTooltip(false);
