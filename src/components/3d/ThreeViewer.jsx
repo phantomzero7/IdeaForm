@@ -122,121 +122,97 @@ const ThreeViewer = forwardRef(({
         const isBrandLogo = !customText || customText.trim().toUpperCase() === 'IDEAFORM';
 
         if (isBrandLogo) {
-          // --- FULL OFFICIAL IDEAFORM BRAND LOGO ON 3D RELIEF ---
+          // --- 100% IDENTICAL OFFICIAL IDEAFORM VECTOR LOGO ON 3D RELIEF ---
           const isLightBase = ['#ffffff', '#faeeeb', '#f1f5f9', '#f8fafc', '#e2e8f0', '#fdf2f0'].includes(activeBaseColor.toLowerCase());
           const bulbColor = isLightBase ? '#176B87' : '#00E5FF';
           const ideaColor = isLightBase ? '#0F172A' : '#FFFFFF';
           const formColor = isLightBase ? '#176B87' : '#00E5FF';
           const taglineColor = isLightBase ? '#526071' : '#cbd5e1';
 
-          // 1. Draw Vector Brand Logo with exact Tagline
-          const drawBulbLogo = (cx, cy, scale = 1.38) => {
-            ctx.save();
-            ctx.translate(cx, cy);
-            ctx.scale(scale, scale);
+          // Exact Path2D vector definitions taken directly from official IdeaFormLogo.jsx (viewBox 0 0 100 120)
+          const domePath = new Path2D("M20 54C14 38 26 22 46 20C66 18 82 32 82 52C82 62 76 70 70 76C67 79 66 83 66 88");
+          const ifLoopPath = new Path2D("M20 54C20 62 26 70 34 76V96C34 105 44 107 50 101C56 95 56 62 56 50C56 38 68 36 74 42");
 
-            // 3D Extrusion Shadow (+8px offset)
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.65)';
-            ctx.lineWidth = 26;
+          const drawExactBulbLogo = (ox, oy, s, strokeCol) => {
+            ctx.save();
+            ctx.translate(ox, oy);
+            ctx.scale(s, s);
+
+            ctx.strokeStyle = strokeCol;
+            ctx.fillStyle = strokeCol;
+            ctx.lineWidth = 6.5;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
 
-            // Rays shadow
+            // 3 Radiating Light Rays at Top
             ctx.beginPath();
-            ctx.moveTo(-56 + 8, -130 + 8); ctx.lineTo(-84 + 8, -170 + 8);
-            ctx.moveTo(0 + 8, -145 + 8);   ctx.lineTo(0 + 8, -195 + 8);
-            ctx.moveTo(56 + 8, -130 + 8);  ctx.lineTo(84 + 8, -170 + 8);
+            ctx.moveTo(22, 20); ctx.lineTo(12, 10);
+            ctx.moveTo(50, 14); ctx.lineTo(50, 2);
+            ctx.moveTo(78, 20); ctx.lineTo(88, 10);
             ctx.stroke();
 
-            // Dome shadow
-            ctx.beginPath();
-            ctx.arc(0 + 8, -10 + 8, 115, -Math.PI * 0.85, -Math.PI * 0.15);
-            ctx.stroke();
+            // Outer Light Bulb Dome Contour
+            ctx.stroke(domePath);
 
-            // 'i' stem & 'f' loop shadow
+            // Filament 'i' Dot
             ctx.beginPath();
-            ctx.moveTo(-70 + 8, 0 + 8);
-            ctx.bezierCurveTo(-70 + 8, 80 + 8, -35 + 8, 130 + 8, -35 + 8, 170 + 8);
-            ctx.bezierCurveTo(-35 + 8, 200 + 8, 0 + 8, 200 + 8, 15 + 8, 170 + 8);
-            ctx.bezierCurveTo(30 + 8, 140 + 8, 30 + 8, -40 + 8, 30 + 8, -60 + 8);
-            ctx.bezierCurveTo(30 + 8, -100 + 8, 70 + 8, -90 + 8, 80 + 8, -65 + 8);
-            ctx.stroke();
-
-            // 'f' crossbar shadow
-            ctx.beginPath();
-            ctx.moveTo(5 + 8, -10 + 8); ctx.lineTo(65 + 8, -10 + 8);
-            ctx.stroke();
-
-            // Main Vivid Lines in Official Bulb Color
-            ctx.strokeStyle = bulbColor;
-            ctx.lineWidth = 24;
-
-            // Rays
-            ctx.beginPath();
-            ctx.moveTo(-56, -130); ctx.lineTo(-84, -170);
-            ctx.moveTo(0, -145);   ctx.lineTo(0, -195);
-            ctx.moveTo(56, -130);  ctx.lineTo(84, -170);
-            ctx.stroke();
-
-            // Dome
-            ctx.beginPath();
-            ctx.arc(0, -10, 115, -Math.PI * 0.85, -Math.PI * 0.15);
-            ctx.stroke();
-
-            // 'i' Dot
-            ctx.fillStyle = bulbColor;
-            ctx.beginPath();
-            ctx.arc(-35, -35, 17, 0, Math.PI * 2);
+            ctx.arc(36, 44, 4.5, 0, Math.PI * 2);
             ctx.fill();
 
-            // 'i' stem & 'f' loop
-            ctx.beginPath();
-            ctx.moveTo(-70, 0);
-            ctx.bezierCurveTo(-70, 80, -35, 130, -35, 170);
-            ctx.bezierCurveTo(-35, 200, 0, 200, 15, 170);
-            ctx.bezierCurveTo(30, 140, 30, -40, 30, -60);
-            ctx.bezierCurveTo(30, -100, 70, -90, 80, -65);
-            ctx.stroke();
+            // 'i' stem and 'f' loop
+            ctx.stroke(ifLoopPath);
 
-            // 'f' crossbar
+            // Crossbar for 'f'
             ctx.beginPath();
-            ctx.moveTo(5, -10); ctx.lineTo(65, -10);
+            ctx.moveTo(46, 64); ctx.lineTo(68, 64);
             ctx.stroke();
 
             ctx.restore();
           };
 
-          drawBulbLogo(410, 500, 1.4);
+          const scale = 5.2;
+          const bulbX = 220;
+          const bulbY = (1024 - 120 * scale) / 2 + 10;
 
-          // Brand Typography: "IdeaForm"
-          ctx.font = `900 230px 'Space Grotesk', sans-serif`;
+          // 1. 3D Depth Extrusion Shadow (+8px offset)
+          drawExactBulbLogo(bulbX + 8, bulbY + 8, scale, 'rgba(0, 0, 0, 0.65)');
+
+          // 2. Exact Crisp Foreground Isotype
+          drawExactBulbLogo(bulbX, bulbY, scale, bulbColor);
+
+          // 3. Brand Typography: "IdeaForm"
+          const textStartX = bulbX + 100 * scale + 60; // 220 + 520 + 60 = 800
+
+          ctx.font = `800 230px 'Space Grotesk', 'Plus Jakarta Sans', sans-serif`;
           ctx.textAlign = 'left';
-          ctx.textBaseline = 'middle';
+          ctx.textBaseline = 'alphabetic';
 
-          // Shadow
+          const ideaWidth = ctx.measureText('Idea').width;
+
+          // Typography Shadow
           ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
-          ctx.fillText('Idea', 688, 452);
-          ctx.fillText('Form', 1198, 452);
+          ctx.fillText('Idea', textStartX + 6, 520 + 6);
+          ctx.fillText('Form', textStartX + ideaWidth + 6, 520 + 6);
 
-          // Text Fill
+          // Typography Fill: "Idea" in Charcoal, "Form" in Brand Teal
           ctx.fillStyle = ideaColor;
-          ctx.fillText('Idea', 680, 444);
+          ctx.fillText('Idea', textStartX, 520);
 
           ctx.fillStyle = formColor;
-          ctx.fillText('Form', 1190, 444);
+          ctx.fillText('Form', textStartX + ideaWidth, 520);
 
-          // Full Tagline: "Ideas que toman forma."
-          ctx.font = `600 115px 'Plus Jakarta Sans', 'Inter', sans-serif`;
+          // 4. Tagline: "Ideas que toman forma."
+          ctx.font = `500 100px 'Plus Jakarta Sans', 'Inter', sans-serif`;
           ctx.textAlign = 'left';
-          ctx.textBaseline = 'middle';
+          ctx.textBaseline = 'alphabetic';
 
           // Tagline Shadow
           ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-          ctx.fillText('Ideas que toman forma.', 684, 628);
+          ctx.fillText('Ideas que toman forma.', textStartX + 4, 650 + 4);
 
           // Tagline Fill
           ctx.fillStyle = taglineColor;
-          ctx.fillText('Ideas que toman forma.', 680, 624);
+          ctx.fillText('Ideas que toman forma.', textStartX, 650);
         } else {
           // --- CUSTOMER CUSTOM ENGRAVING IN FULL-SIZE PROMINENT RELIEF ---
           const displayStr = customText.trim().toUpperCase();
