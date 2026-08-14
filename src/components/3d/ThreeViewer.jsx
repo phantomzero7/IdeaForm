@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { RotateCw, Sparkles, Layers } from 'lucide-react';
+import IdeaFormLogo from '../common/IdeaFormLogo';
 
 const ThreeViewer = forwardRef(({
   modelType = 'keychain', // keychain | trophy | sphere | car | cup | planter | custom_file
@@ -117,10 +118,90 @@ const ThreeViewer = forwardRef(({
           }
         };
       } else {
-        // Render customer custom text prominently in 3D relief (activeTextColor)
+        // 1. Draw Official IdeaForm Bulb Vector Logo on the Left in 3D Relief
+        const drawBulbLogo = (cx, cy, scale = 1.35) => {
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.scale(scale, scale);
+
+          // 3D Extrusion Shadow (+8px offset)
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.65)';
+          ctx.lineWidth = 26;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+
+          // Rays shadow
+          ctx.beginPath();
+          ctx.moveTo(-56 + 8, -130 + 8); ctx.lineTo(-84 + 8, -170 + 8);
+          ctx.moveTo(0 + 8, -145 + 8);   ctx.lineTo(0 + 8, -195 + 8);
+          ctx.moveTo(56 + 8, -130 + 8);  ctx.lineTo(84 + 8, -170 + 8);
+          ctx.stroke();
+
+          // Dome shadow
+          ctx.beginPath();
+          ctx.arc(0 + 8, -10 + 8, 115, -Math.PI * 0.85, -Math.PI * 0.15);
+          ctx.stroke();
+
+          // 'i' stem & 'f' loop shadow
+          ctx.beginPath();
+          ctx.moveTo(-70 + 8, 0 + 8);
+          ctx.bezierCurveTo(-70 + 8, 80 + 8, -35 + 8, 130 + 8, -35 + 8, 170 + 8);
+          ctx.bezierCurveTo(-35 + 8, 200 + 8, 0 + 8, 200 + 8, 15 + 8, 170 + 8);
+          ctx.bezierCurveTo(30 + 8, 140 + 8, 30 + 8, -40 + 8, 30 + 8, -60 + 8);
+          ctx.bezierCurveTo(30 + 8, -100 + 8, 70 + 8, -90 + 8, 80 + 8, -65 + 8);
+          ctx.stroke();
+
+          // 'f' crossbar shadow
+          ctx.beginPath();
+          ctx.moveTo(5 + 8, -10 + 8); ctx.lineTo(65 + 8, -10 + 8);
+          ctx.stroke();
+
+          // Main Vivid Lines in activeAccentColor
+          ctx.strokeStyle = activeAccentColor;
+          ctx.lineWidth = 22;
+
+          // Rays
+          ctx.beginPath();
+          ctx.moveTo(-56, -130); ctx.lineTo(-84, -170);
+          ctx.moveTo(0, -145);   ctx.lineTo(0, -195);
+          ctx.moveTo(56, -130);  ctx.lineTo(84, -170);
+          ctx.stroke();
+
+          // Dome
+          ctx.beginPath();
+          ctx.arc(0, -10, 115, -Math.PI * 0.85, -Math.PI * 0.15);
+          ctx.stroke();
+
+          // 'i' Dot
+          ctx.fillStyle = activeAccentColor;
+          ctx.beginPath();
+          ctx.arc(-35, -35, 16, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 'i' stem & 'f' loop
+          ctx.beginPath();
+          ctx.moveTo(-70, 0);
+          ctx.bezierCurveTo(-70, 80, -35, 130, -35, 170);
+          ctx.bezierCurveTo(-35, 200, 0, 200, 15, 170);
+          ctx.bezierCurveTo(30, 140, 30, -40, 30, -60);
+          ctx.bezierCurveTo(30, -100, 70, -90, 80, -65);
+          ctx.stroke();
+
+          // 'f' crossbar
+          ctx.beginPath();
+          ctx.moveTo(5, -10); ctx.lineTo(65, -10);
+          ctx.stroke();
+
+          ctx.restore();
+        };
+
+        // Draw bulb logo on left
+        drawBulbLogo(380, 512, 1.35);
+
+        // 2. Render customer custom text or brand text in 3D relief (activeTextColor)
         const displayStr = (customText && customText.trim()) ? customText.trim().toUpperCase() : 'IDEAFORM';
         const charLen = Math.max(displayStr.length, 1);
-        const fontSize = Math.min(270, Math.max(90, Math.floor(1800 / (charLen * 0.62))));
+        const fontSize = Math.min(250, Math.max(90, Math.floor(1450 / (charLen * 0.62))));
 
         let cleanFont = 'Poppins, sans-serif';
         if (fontFamily) {
@@ -135,20 +216,22 @@ const ThreeViewer = forwardRef(({
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
+        const textCenterX = 1260; // Positioned dynamically on the right side of the bulb logo
+
         // Layer 1: Dark 3D Bottom Extrusion Shadow (Simulates physical height)
         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillText(displayStr, 1028, 524);
-        ctx.fillText(displayStr, 1026, 520);
-        ctx.fillText(displayStr, 1024, 516);
+        ctx.fillText(displayStr, textCenterX + 6, 522);
+        ctx.fillText(displayStr, textCenterX + 4, 518);
+        ctx.fillText(displayStr, textCenterX + 2, 515);
 
         // Layer 2: Outer Contrast Bevel Stroke
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
-        ctx.lineWidth = 16;
-        ctx.strokeText(displayStr, 1024, 512);
+        ctx.lineWidth = 14;
+        ctx.strokeText(displayStr, textCenterX, 512);
 
         // Layer 3: Solid Vivid Face Fill in activeTextColor (Filamento de Relieve)
         ctx.fillStyle = activeTextColor;
-        ctx.fillText(displayStr, 1024, 512);
+        ctx.fillText(displayStr, textCenterX, 512);
       }
     }
 
@@ -644,6 +727,30 @@ const ThreeViewer = forwardRef(({
           <span style={{ fontSize: '0.85rem', fontWeight: '700', color: '#176B87' }}>Cargando modelo 3D...</span>
         </div>
       )}
+
+      {/* Official IdeaForm Brand Badge in 3D Viewport */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '1rem',
+          left: '1rem',
+          background: 'rgba(255, 255, 255, 0.95)',
+          padding: '0.35rem 0.75rem',
+          borderRadius: 'var(--radius-full)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.4rem',
+          backdropFilter: 'blur(6px)',
+          zIndex: 10,
+          border: '1px solid rgba(23, 107, 135, 0.15)'
+        }}
+      >
+        <IdeaFormLogo size="small" showTagline={false} />
+        <span style={{ fontSize: '0.62rem', color: '#176B87', fontWeight: '800', paddingLeft: '0.35rem', borderLeft: '1px solid #cbd5e1', letterSpacing: '0.05em' }}>
+          3D LIVE
+        </span>
+      </div>
 
       {/* 3D Auto-Spin Control */}
       <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.4rem', zIndex: 10 }}>

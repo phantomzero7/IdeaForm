@@ -23,6 +23,7 @@ import {
   Layers,
   Check
 } from 'lucide-react';
+import IdeaFormLogo from '../common/IdeaFormLogo';
 
 const FONTS_LIST = [
   { id: 'Poppins', name: 'Poppins Moderna' },
@@ -514,8 +515,8 @@ const ColeccionesRoute = () => {
                   <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#FAEEEB', padding: '2rem', textAlign: 'center' }}>
                     <div
                       style={{
-                        width: '220px',
-                        height: '220px',
+                        width: '240px',
+                        height: '240px',
                         borderRadius: 'var(--radius-xl)',
                         background: selectedBaseColor?.hex || selectedBaseColor || '#176B87',
                         color: '#ffffff',
@@ -525,13 +526,27 @@ const ColeccionesRoute = () => {
                         justifyContent: 'center',
                         boxShadow: 'var(--shadow-lg)',
                         marginBottom: '1.25rem',
-                        border: `4px solid ${selectedAccentColor?.hex || selectedAccentColor || '#D4AF37'}`
+                        border: `4px solid ${selectedAccentColor?.hex || selectedAccentColor || '#D4AF37'}`,
+                        padding: '1rem',
+                        position: 'relative'
                       }}
                     >
-                      <Sparkles size={32} style={{ marginBottom: '0.5rem', opacity: 0.9, color: selectedReliefColor?.hex || selectedReliefColor || '#FFFFFF' }} />
-                      <span style={{ fontWeight: '800', fontSize: '1.15rem', fontFamily: selectedFont, padding: '0 1rem', color: selectedReliefColor?.hex || selectedReliefColor || '#FFFFFF' }}>
+                      <div style={{ transform: 'scale(0.85)', marginBottom: '0.75rem' }}>
+                        <IdeaFormLogo size="small" lightMode={true} showTagline={false} />
+                      </div>
+                      <div
+                        style={{
+                          fontWeight: '900',
+                          fontSize: '1.2rem',
+                          fontFamily: selectedFont,
+                          color: selectedReliefColor?.hex || selectedReliefColor || '#FFFFFF',
+                          textShadow: '0 2px 8px rgba(0,0,0,0.5)',
+                          wordBreak: 'break-word',
+                          textAlign: 'center'
+                        }}
+                      >
                         {customText || 'IDEAFORM'}
-                      </span>
+                      </div>
                     </div>
                     <div style={{ fontWeight: '800', color: '#A94D43' }}>{selectedProduct.name}</div>
                   </div>
