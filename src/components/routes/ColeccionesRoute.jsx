@@ -127,13 +127,13 @@ const ColeccionesRoute = () => {
       name: selectedProduct.isCustomizable ? `${selectedProduct.name} (${customText})` : selectedProduct.name,
       customText: selectedProduct.isCustomizable ? customText : null,
       fontFamily: selectedFont,
-      selectedBaseColor: { id: selectedBaseColor.id, name: selectedBaseColor.name, hex: selectedBaseColor.hex },
-      selectedAccentColor: { id: selectedAccentColor.id, name: selectedAccentColor.name, hex: selectedAccentColor.hex },
-      selectedReliefColor: { id: selectedReliefColor.id, name: selectedReliefColor.name, hex: selectedReliefColor.hex },
+      selectedBaseColor: toColorObj(selectedBaseColor, 'Color Base'),
+      selectedAccentColor: toColorObj(selectedAccentColor, 'Color Acento'),
+      selectedReliefColor: toColorObj(selectedReliefColor, 'Color Relieve'),
       selectedColor: {
-        id: selectedBaseColor.id,
-        name: `${selectedBaseColor.name} / ${selectedAccentColor.name} / ${selectedReliefColor.name}`,
-        hex: selectedBaseColor.hex
+        id: toColorObj(selectedBaseColor, 'Color Base').id,
+        name: `${toColorObj(selectedBaseColor, 'Color Base').name} / ${toColorObj(selectedAccentColor, 'Color Acento').name} / ${toColorObj(selectedReliefColor, 'Color Relieve').name}`,
+        hex: toColorObj(selectedBaseColor, 'Color Base').hex
       },
       includeGiftBox,
       finalUnitPrice: unitPrice + giftBoxPrice,
@@ -502,9 +502,9 @@ const ColeccionesRoute = () => {
                     modelType={selectedProduct.modelType || 'keychain'}
                     custom3DFileUrl={selectedProduct.custom3DFileUrl}
                     custom3DFileType={selectedProduct.custom3DFileType}
-                    baseColor={selectedBaseColor.hex}
-                    accentColor={selectedAccentColor.hex}
-                    reliefColor={selectedReliefColor.hex}
+                    baseColor={selectedBaseColor?.hex || selectedBaseColor || '#176B87'}
+                    accentColor={selectedAccentColor?.hex || selectedAccentColor || '#D4AF37'}
+                    reliefColor={selectedReliefColor?.hex || selectedReliefColor || '#FFFFFF'}
                     materialType="PLA_SILK"
                     customText={customText}
                     fontFamily={selectedFont}
@@ -517,7 +517,7 @@ const ColeccionesRoute = () => {
                         width: '220px',
                         height: '220px',
                         borderRadius: 'var(--radius-xl)',
-                        background: selectedBaseColor.hex,
+                        background: selectedBaseColor?.hex || selectedBaseColor || '#176B87',
                         color: '#ffffff',
                         display: 'flex',
                         flexDirection: 'column',
@@ -525,11 +525,11 @@ const ColeccionesRoute = () => {
                         justifyContent: 'center',
                         boxShadow: 'var(--shadow-lg)',
                         marginBottom: '1.25rem',
-                        border: `4px solid ${selectedAccentColor.hex}`
+                        border: `4px solid ${selectedAccentColor?.hex || selectedAccentColor || '#D4AF37'}`
                       }}
                     >
-                      <Sparkles size={32} style={{ marginBottom: '0.5rem', opacity: 0.9, color: selectedReliefColor.hex }} />
-                      <span style={{ fontWeight: '800', fontSize: '1.15rem', fontFamily: selectedFont, padding: '0 1rem', color: selectedReliefColor.hex }}>
+                      <Sparkles size={32} style={{ marginBottom: '0.5rem', opacity: 0.9, color: selectedReliefColor?.hex || selectedReliefColor || '#FFFFFF' }} />
+                      <span style={{ fontWeight: '800', fontSize: '1.15rem', fontFamily: selectedFont, padding: '0 1rem', color: selectedReliefColor?.hex || selectedReliefColor || '#FFFFFF' }}>
                         {customText || 'IDEAFORM'}
                       </span>
                     </div>
@@ -858,9 +858,9 @@ const ColeccionesRoute = () => {
                   modelType={selectedProduct.modelType || 'keychain'}
                   custom3DFileUrl={selectedProduct.custom3DFileUrl}
                   custom3DFileType={selectedProduct.custom3DFileType}
-                  baseColor={selectedBaseColor.hex}
-                  accentColor={selectedAccentColor.hex}
-                  reliefColor={selectedReliefColor.hex}
+                  baseColor={selectedBaseColor?.hex || selectedBaseColor || '#176B87'}
+                  accentColor={selectedAccentColor?.hex || selectedAccentColor || '#D4AF37'}
+                  reliefColor={selectedReliefColor?.hex || selectedReliefColor || '#FFFFFF'}
                   customText={customText}
                   fontFamily={selectedFont}
                   showDimensions={false}
@@ -886,24 +886,24 @@ const ColeccionesRoute = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #F0D7D2', paddingBottom: '0.4rem' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Capa 1 (Base):</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: selectedBaseColor.hex }} />
-                      <strong>{selectedBaseColor.name}</strong>
+                      <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: selectedBaseColor?.hex || selectedBaseColor || '#176B87' }} />
+                      <strong>{selectedBaseColor?.name || 'Color Base'}</strong>
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #F0D7D2', paddingBottom: '0.4rem' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Capa 2 (Acento):</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: selectedAccentColor.hex }} />
-                      <strong>{selectedAccentColor.name}</strong>
+                      <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: selectedAccentColor?.hex || selectedAccentColor || '#D4AF37' }} />
+                      <strong>{selectedAccentColor?.name || 'Color Acento'}</strong>
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #F0D7D2', paddingBottom: '0.4rem' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Capa 3 (Relieve 3D):</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: selectedReliefColor.hex }} />
-                      <strong>{selectedReliefColor.name}</strong>
+                      <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: selectedReliefColor?.hex || selectedReliefColor || '#FFFFFF' }} />
+                      <strong>{selectedReliefColor?.name || 'Color Relieve'}</strong>
                     </div>
                   </div>
 

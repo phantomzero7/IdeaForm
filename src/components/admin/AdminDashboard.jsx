@@ -1749,9 +1749,9 @@ const AdminDashboard = () => {
                                   onClick={() => {
                                     setProductFormData((prev) => ({
                                       ...prev,
-                                      previewBaseColor: preset.baseColor.hex,
-                                      previewAccentColor: preset.accentColor.hex,
-                                      previewReliefColor: preset.reliefColor.hex
+                                      previewBaseColor: preset.baseColor?.hex || preset.baseColor || '#176B87',
+                                      previewAccentColor: preset.accentColor?.hex || preset.accentColor || '#D4AF37',
+                                      previewReliefColor: preset.reliefColor?.hex || preset.reliefColor || '#FFFFFF'
                                     }));
                                   }}
                                   style={{

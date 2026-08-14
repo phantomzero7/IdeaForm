@@ -39,9 +39,16 @@ const ThreeViewer = forwardRef(({
     canvasCtx: null
   });
 
-  const activeBaseColor = baseColor || selectedColor || '#176B87';
-  const activeAccentColor = accentColor || '#D4AF37';
-  const activeTextColor = reliefColor || textColor || '#FFFFFF';
+  const resolveHex = (val, fallback = '#176B87') => {
+    if (!val) return fallback;
+    if (typeof val === 'string') return val;
+    if (typeof val === 'object' && val.hex) return String(val.hex);
+    return fallback;
+  };
+
+  const activeBaseColor = resolveHex(baseColor || selectedColor, '#176B87');
+  const activeAccentColor = resolveHex(accentColor, '#D4AF37');
+  const activeTextColor = resolveHex(reliefColor || textColor, '#FFFFFF');
 
   const [isAutoRotating, setIsAutoRotating] = useState(true);
   const isAutoRotatingRef = useRef(true);
