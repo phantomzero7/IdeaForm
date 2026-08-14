@@ -165,53 +165,93 @@ const ColeccionesRoute = () => {
 
       <div className="container" style={{ paddingTop: '2rem' }}>
         
-        {/* 2. Enhanced Stepper (Paso 1 al 6) */}
-        <div className="stepper-container" style={{ marginBottom: '2.5rem' }}>
-          {STEPS.map((s) => {
+        {/* 2. Enhanced Horizontal Stepper (Paso 1 al 6) */}
+        <div
+          style={{
+            background: '#FFFFFF',
+            borderRadius: 'var(--radius-xl)',
+            padding: '1.25rem 2rem',
+            border: '1px solid #F0D7D2',
+            boxShadow: 'var(--shadow-sm)',
+            marginBottom: '2.5rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            position: 'relative',
+            overflowX: 'auto',
+            gap: '1rem'
+          }}
+        >
+          {STEPS.map((s, idx) => {
             const isCompleted = activeStep > s.num;
             const isActive = activeStep === s.num;
 
             return (
-              <button
-                key={s.num}
-                className={`stepper-step ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
-                onClick={() => {
-                  if (s.num <= activeStep) {
-                    setActiveStep(s.num);
-                  }
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: s.num <= activeStep ? 'pointer' : 'default',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '0.4rem'
-                }}
-              >
-                <div
-                  className="stepper-circle"
+              <React.Fragment key={s.num}>
+                <button
+                  className={`stepper-step ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
+                  onClick={() => {
+                    if (s.num <= activeStep) {
+                      setActiveStep(s.num);
+                    }
+                  }}
                   style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '50%',
+                    background: 'none',
+                    border: 'none',
+                    cursor: s.num <= activeStep ? 'pointer' : 'default',
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: '800',
-                    fontSize: '0.9rem',
-                    background: isActive ? '#A94D43' : isCompleted ? '#C9685B' : '#E8C5BE',
-                    color: '#ffffff',
-                    transition: 'all 0.2s ease'
+                    gap: '0.4rem',
+                    minWidth: '70px',
+                    zIndex: 2
                   }}
                 >
-                  {isCompleted ? <CheckCircle2 size={18} /> : s.num}
-                </div>
-                <div className="stepper-label" style={{ color: isActive ? '#A94D43' : '#777', fontWeight: isActive ? '800' : '600', fontSize: '0.8rem' }}>
-                  {s.label}
-                </div>
-              </button>
+                  <div
+                    className="stepper-circle"
+                    style={{
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: '800',
+                      fontSize: '0.9rem',
+                      background: isActive ? '#A94D43' : isCompleted ? '#C9685B' : '#F0D7D2',
+                      color: isActive || isCompleted ? '#ffffff' : '#A94D43',
+                      boxShadow: isActive ? '0 0 0 4px rgba(169, 77, 67, 0.15)' : 'none',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    {isCompleted ? <CheckCircle2 size={20} /> : s.num}
+                  </div>
+                  <div
+                    className="stepper-label"
+                    style={{
+                      color: isActive ? '#A94D43' : isCompleted ? '#C9685B' : '#94a3b8',
+                      fontWeight: isActive ? '800' : '600',
+                      fontSize: '0.78rem',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {s.label}
+                  </div>
+                </button>
+
+                {/* Connecting bar between steps */}
+                {idx < STEPS.length - 1 && (
+                  <div
+                    style={{
+                      flex: 1,
+                      height: '3px',
+                      background: isCompleted ? '#C9685B' : '#F0D7D2',
+                      marginBottom: '1.2rem',
+                      minWidth: '20px'
+                    }}
+                  />
+                )}
+              </React.Fragment>
             );
           })}
         </div>
