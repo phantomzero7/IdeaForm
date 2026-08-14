@@ -285,7 +285,7 @@ const AdminDashboard = () => {
 
   // --- WHATSAPP NOTIFIER ---
   const handleSendWhatsApp = (order, templateType) => {
-    const cleanPhone = (order.customerPhone || '526121234567').replace(/\D/g, '');
+    const cleanPhone = (order.customerPhone || '526121403409').replace(/\D/g, '');
     let msg = '';
     if (templateType === 'PRODUCTION') {
       msg = `¡Hola ${order.customerName}! 🛠️ Te informamos que tu pedido de impresión 3D #${order.orderNumber} (${order.productName}) ha comenzado su fabricación en nuestro taller IdeaForm. ¡Pronto te compartiremos fotos del resultado!`;

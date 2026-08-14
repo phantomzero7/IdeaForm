@@ -68,7 +68,7 @@ const Footer = () => {
           {/* Social Media Channels */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem' }}>
             <a
-              href="https://wa.me/5215512345678?text=Hola%20IdeaForm%20quiero%20cotizar%20un%20proyecto"
+              href="https://wa.me/526121403409?text=Hola%20IdeaForm%20quiero%20cotizar%20un%20proyecto"
               target="_blank"
               rel="noopener noreferrer"
               title="WhatsApp Taller 3D"
@@ -91,10 +91,10 @@ const Footer = () => {
             </a>
 
             <a
-              href="https://instagram.com/ideaform3d"
+              href="https://www.instagram.com/ideaform.mx/"
               target="_blank"
               rel="noopener noreferrer"
-              title="Instagram @ideaform3d"
+              title="Instagram @ideaform.mx"
               style={{
                 width: '34px',
                 height: '34px',
@@ -171,7 +171,7 @@ const Footer = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Phone size={15} color="var(--color-primary)" />
-              <span>612 123 4567</span>
+              <a href="tel:+526121403409" style={{ color: 'inherit', textDecoration: 'none' }}>+52 612 140 3409</a>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Mail size={15} color="var(--color-primary)" />
