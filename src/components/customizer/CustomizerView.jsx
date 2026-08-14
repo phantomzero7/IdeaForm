@@ -86,11 +86,20 @@ const CustomizerView = () => {
   const viewerRef = useRef(null);
 
   const initialProduct = PRODUCTS.find((p) => p.id === viewParams?.productId) || PRODUCTS[0];
+  const defaultMat = FILAMENT_MATERIALS[0] || {
+    id: 'PLA_SILK',
+    name: 'PLA Seda Premium (Biodegradable)',
+    priceMultiplier: 1.0,
+    colors: [
+      { id: 'col-teal', name: 'Teal IdeaForm', hex: '#00828A' }
+    ]
+  };
+  const defaultColor = (defaultMat.colors && defaultMat.colors[0]) || { id: 'col-teal', name: 'Teal IdeaForm', hex: '#00828A' };
 
   const [selectedProduct, setSelectedProduct] = useState(initialProduct);
   const [modelType, setModelType] = useState(viewParams?.modelType || initialProduct.modelType || 'keychain');
-  const [selectedMaterial, setSelectedMaterial] = useState(FILAMENT_MATERIALS[1]); // Silk PLA
-  const [selectedColor, setSelectedColor] = useState(FILAMENT_MATERIALS[1].colors[0]);
+  const [selectedMaterial, setSelectedMaterial] = useState(defaultMat);
+  const [selectedColor, setSelectedColor] = useState(defaultColor);
   const [customText, setCustomText] = useState(viewParams?.customText || 'IDEAFORM');
   const [selectedFont, setSelectedFont] = useState('Poppins');
   const [quantity, setQuantity] = useState(1);
@@ -121,10 +130,10 @@ const CustomizerView = () => {
     setCustomText(preset.text);
     setSelectedFont(preset.font);
 
-    const mat = FILAMENT_MATERIALS.find((m) => m.id === preset.materialId) || FILAMENT_MATERIALS[1];
+    const mat = FILAMENT_MATERIALS.find((m) => m.id === preset.materialId) || FILAMENT_MATERIALS[0] || defaultMat;
     setSelectedMaterial(mat);
 
-    const col = mat.colors.find((c) => c.hex.toLowerCase() === preset.colorHex.toLowerCase()) || mat.colors[0];
+    const col = (mat.colors && mat.colors.find((c) => c.hex.toLowerCase() === preset.colorHex.toLowerCase())) || (mat.colors && mat.colors[0]) || defaultColor;
     setSelectedColor(col);
 
     showToast(`Plantilla "${preset.name}" aplicada ✨`, 'info');
@@ -521,16 +530,16 @@ const CustomizerView = () => {
                     4. COLOR DEL FILAMENTO
                   </label>
                   <span style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--color-primary)' }}>
-                    {selectedColor.name}
+                    {selectedColor?.name || 'Color Seleccionado'}
                   </span>
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
-                  {selectedMaterial.colors.map((col) => (
+                  {(selectedMaterial?.colors || []).map((col) => (
                     <button
                       key={col.id}
                       onClick={() => setSelectedColor(col)}
-                      className={`swatch-btn ${selectedColor.id === col.id ? 'selected' : ''}`}
+                      className={`swatch-btn ${selectedColor?.id === col.id ? 'selected' : ''}`}
                       style={{ background: col.hex }}
                       title={col.name}
                     />

@@ -33,9 +33,20 @@ const FONTS_LIST = [
 ];
 
 const toColorObj = (c, defaultName = 'Color') => {
-  if (c && typeof c === 'object' && c.hex) return c;
-  if (typeof c === 'string') return { id: `col-${c}`, name: defaultName, hex: c };
-  return { id: 'col-default', name: defaultName, hex: '#176B87' };
+  if (c && typeof c === 'object' && c.hex) {
+    return {
+      id: c.id || `col-${c.hex}`,
+      name: c.name || defaultName,
+      hex: c.hex,
+      priceMultiplier: c.priceMultiplier || 1.0
+    };
+  }
+  if (typeof c === 'string') {
+    const found = FILAMENT_COLORS.find((f) => f.hex.toLowerCase() === c.toLowerCase() || f.id.toLowerCase() === c.toLowerCase());
+    if (found) return found;
+    return { id: `col-${c}`, name: defaultName, hex: c, priceMultiplier: 1.0 };
+  }
+  return FILAMENT_COLORS[0] || { id: 'col-default', name: defaultName, hex: '#176B87', priceMultiplier: 1.0 };
 };
 
 const ColeccionesRoute = () => {
@@ -43,26 +54,31 @@ const ColeccionesRoute = () => {
   const viewerRef = useRef(null);
 
   const availableProducts = products || PRODUCTS;
-  const availableFilaments = filamentInventory || FILAMENT_COLORS;
+  const availableFilaments = (filamentInventory && filamentInventory.length > 0) ? filamentInventory : FILAMENT_COLORS;
 
   // Stepper State (1 to 6)
   const [activeStep, setActiveStep] = useState(1);
   const [selectedSubcollection, setSelectedSubcollection] = useState('escolar');
 
   // Customization State for Chosen Product
-  const [selectedProduct, setSelectedProduct] = useState(availableProducts[0]);
+  const [selectedProduct, setSelectedProduct] = useState(availableProducts[0] || PRODUCTS[0]);
   const [customText, setCustomText] = useState('VALENTINA');
   const [selectedFont, setSelectedFont] = useState('Poppins');
 
   // Multi-Layer Color State (Nike By You style)
   const [activeLayer, setActiveLayer] = useState('BASE'); // 'BASE' | 'ACCENT' | 'RELIEF'
   const [selectedBaseColor, setSelectedBaseColor] = useState(availableFilaments[0] || FILAMENT_COLORS[0]);
-  const [selectedAccentColor, setSelectedAccentColor] = useState(availableFilaments[1] || FILAMENT_COLORS[1]);
-  const [selectedReliefColor, setSelectedReliefColor] = useState(availableFilaments[2] || FILAMENT_COLORS[2]);
+  const [selectedAccentColor, setSelectedAccentColor] = useState(availableFilaments[1] || FILAMENT_COLORS[1] || FILAMENT_COLORS[0]);
+  const [selectedReliefColor, setSelectedReliefColor] = useState(availableFilaments[2] || FILAMENT_COLORS[2] || FILAMENT_COLORS[0]);
 
   const [viewMode, setViewMode] = useState('3D'); // '3D' | '2D'
   const [quantity, setQuantity] = useState(1);
   const [includeGiftBox, setIncludeGiftBox] = useState(false);
+
+  const safeBaseColor = toColorObj(selectedBaseColor, 'Color Base');
+  const safeAccentColor = toColorObj(selectedAccentColor, 'Color Acento');
+  const safeReliefColor = toColorObj(selectedReliefColor, 'Color Relieve');
+  const currentLayerColor = activeLayer === 'BASE' ? safeBaseColor : activeLayer === 'ACCENT' ? safeAccentColor : safeReliefColor;
 
   const STEPS = [
     { num: 1, label: '1. Colección' },
@@ -79,7 +95,7 @@ const ColeccionesRoute = () => {
     : availableProducts.filter((p) => p.subcollection === selectedSubcollection && p.isActive !== false);
 
   // Price calculations
-  const unitPrice = selectedProduct ? selectedProduct.basePrice * (selectedBaseColor?.priceMultiplier || 1.0) : 85;
+  const unitPrice = selectedProduct ? selectedProduct.basePrice * (safeBaseColor?.priceMultiplier || 1.0) : 85;
   const giftBoxPrice = includeGiftBox ? 35.00 : 0;
   const subtotal = (unitPrice + giftBoxPrice) * quantity;
 
@@ -101,16 +117,14 @@ const ColeccionesRoute = () => {
     }
   };
 
-  // Current active color based on activeLayer
-  const currentLayerColor = activeLayer === 'BASE' ? selectedBaseColor : activeLayer === 'ACCENT' ? selectedAccentColor : selectedReliefColor;
-
   const handleColorSelect = (col) => {
+    const validCol = toColorObj(col, 'Color');
     if (activeLayer === 'BASE') {
-      setSelectedBaseColor(col);
+      setSelectedBaseColor(validCol);
     } else if (activeLayer === 'ACCENT') {
-      setSelectedAccentColor(col);
+      setSelectedAccentColor(validCol);
     } else {
-      setSelectedReliefColor(col);
+      setSelectedReliefColor(validCol);
     }
   };
 
@@ -752,7 +766,7 @@ const ColeccionesRoute = () => {
                           gap: '0.2rem'
                         }}
                       >
-                        <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: selectedBaseColor.hex, border: '1px solid rgba(0,0,0,0.2)' }} />
+                        <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: safeBaseColor.hex, border: '1px solid rgba(0,0,0,0.2)' }} />
                         <span>1. Base</span>
                       </button>
 
@@ -773,7 +787,7 @@ const ColeccionesRoute = () => {
                           gap: '0.2rem'
                         }}
                       >
-                        <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: selectedAccentColor.hex, border: '1px solid rgba(0,0,0,0.2)' }} />
+                        <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: safeAccentColor.hex, border: '1px solid rgba(0,0,0,0.2)' }} />
                         <span>2. Acento</span>
                       </button>
 
@@ -794,7 +808,7 @@ const ColeccionesRoute = () => {
                           gap: '0.2rem'
                         }}
                       >
-                        <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: selectedReliefColor.hex, border: '1px solid rgba(0,0,0,0.2)' }} />
+                        <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: safeReliefColor.hex, border: '1px solid rgba(0,0,0,0.2)' }} />
                         <span>3. Letras 3D</span>
                       </button>
                     </div>
@@ -805,7 +819,7 @@ const ColeccionesRoute = () => {
                         Color para {activeLayer === 'BASE' ? 'Base' : activeLayer === 'ACCENT' ? 'Acento' : 'Letras 3D'}:
                       </span>
                       <strong style={{ fontSize: '0.8rem', color: '#A94D43' }}>
-                        {currentLayerColor.name}
+                        {currentLayerColor?.name || 'Color'}
                       </strong>
                     </div>
 
@@ -823,8 +837,8 @@ const ColeccionesRoute = () => {
                               height: '34px',
                               borderRadius: '50%',
                               background: col.hex,
-                              border: currentLayerColor.id === col.id ? '3px solid #A94D43' : isAvail ? '2px solid rgba(0,0,0,0.15)' : '2px dashed #dc2626',
-                              boxShadow: currentLayerColor.id === col.id ? '0 0 0 2px #ffffff' : 'none',
+                              border: currentLayerColor?.id === col.id ? '3px solid #A94D43' : isAvail ? '2px solid rgba(0,0,0,0.15)' : '2px dashed #dc2626',
+                              boxShadow: currentLayerColor?.id === col.id ? '0 0 0 2px #ffffff' : 'none',
                               cursor: isAvail ? 'pointer' : 'not-allowed',
                               opacity: isAvail ? 1 : 0.35,
                               transition: 'transform 0.15s ease',
@@ -901,24 +915,24 @@ const ColeccionesRoute = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #F0D7D2', paddingBottom: '0.4rem' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Capa 1 (Base):</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: selectedBaseColor?.hex || selectedBaseColor || '#176B87' }} />
-                      <strong>{selectedBaseColor?.name || 'Color Base'}</strong>
+                      <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: safeBaseColor.hex }} />
+                      <strong>{safeBaseColor.name}</strong>
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #F0D7D2', paddingBottom: '0.4rem' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Capa 2 (Acento):</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: selectedAccentColor?.hex || selectedAccentColor || '#D4AF37' }} />
-                      <strong>{selectedAccentColor?.name || 'Color Acento'}</strong>
+                      <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: safeAccentColor.hex }} />
+                      <strong>{safeAccentColor.name}</strong>
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #F0D7D2', paddingBottom: '0.4rem' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Capa 3 (Relieve 3D):</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: selectedReliefColor?.hex || selectedReliefColor || '#FFFFFF' }} />
-                      <strong>{selectedReliefColor?.name || 'Color Relieve'}</strong>
+                      <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: safeReliefColor.hex }} />
+                      <strong>{safeReliefColor.name}</strong>
                     </div>
                   </div>
 
@@ -1039,7 +1053,7 @@ const ColeccionesRoute = () => {
               ¡Tu pieza ha sido agregada al Carrito!
             </h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2rem' }}>
-              Hemos guardado tus especificaciones 3D multi-capa ({selectedBaseColor.name}, {selectedAccentColor.name}, {selectedReliefColor.name}).
+              Hemos guardado tus especificaciones 3D multi-capa ({safeBaseColor.name}, {safeAccentColor.name}, {safeReliefColor.name}).
             </p>
 
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
