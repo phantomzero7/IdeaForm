@@ -6,12 +6,11 @@ import {
   Lock,
   Mail,
   User,
-  ArrowRight,
-  ShieldCheck
+  ArrowRight
 } from 'lucide-react';
 
 const AuthModal = () => {
-  const { isAuthModalOpen, setIsAuthModalOpen, setUser, setUserRole, navigateTo, showToast } = useApp();
+  const { isAuthModalOpen, setIsAuthModalOpen, loginWithGoogle, signIn, signUp, showToast } = useApp();
 
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [email, setEmail] = useState('');
@@ -21,36 +20,17 @@ const AuthModal = () => {
 
   if (!isAuthModalOpen) return null;
 
-  // 1. Google 1-Click Authentication
-  const handleGoogleAuth = (e) => {
+  // 1. Google 1-Click Instant Login
+  const handleGoogleClick = (e) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-
-    const googleUser = {
-      id: `usr-google-${Date.now()}`,
-      email: email || 'carlos.fregoso@gmail.com',
-      firstName: 'Carlos',
-      lastName: 'Fregoso',
-      provider: 'google',
-      phone: '55 1234 5678',
-      role: 'CUSTOMER'
-    };
-
-    // Save to App State & LocalStorage
-    setUser(googleUser);
-    setUserRole('CUSTOMER');
-    localStorage.setItem('ideaform_user', JSON.stringify(googleUser));
-    localStorage.setItem('ideaform_user_role', 'CUSTOMER');
-
-    setIsAuthModalOpen(false);
-    showToast('¡Bienvenido! Sesión iniciada con Google ✨', 'success');
-    navigateTo('profile');
+    loginWithGoogle(email);
   };
 
   // 2. Email / Password Submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
       showToast('Por favor completa todos los campos requeridos', 'error');
@@ -59,33 +39,25 @@ const AuthModal = () => {
 
     setIsSubmitting(true);
 
-    const firstName = fullName ? fullName.split(' ')[0] : email.split('@')[0];
-    const lastName = fullName && fullName.split(' ').length > 1 ? fullName.split(' ').slice(1).join(' ') : '';
-
-    const loggedUser = {
-      id: `usr-${Date.now()}`,
-      email,
-      firstName: firstName.charAt(0).toUpperCase() + firstName.slice(1),
-      lastName,
-      phone: '55 9876 5432',
-      role: 'CUSTOMER'
-    };
-
-    setUser(loggedUser);
-    setUserRole('CUSTOMER');
-    localStorage.setItem('ideaform_user', JSON.stringify(loggedUser));
-    localStorage.setItem('ideaform_user_role', 'CUSTOMER');
-
-    setIsAuthModalOpen(false);
-    setIsSubmitting(false);
-
-    showToast(
-      mode === 'login'
-        ? `¡Bienvenido de nuevo, ${loggedUser.firstName}!`
-        : `¡Cuenta creada exitosamente para ${loggedUser.firstName}!`,
-      'success'
-    );
-    navigateTo('profile');
+    try {
+      if (mode === 'login') {
+        const success = await signIn(email, password);
+        if (success) {
+          setIsAuthModalOpen(false);
+        }
+      } else {
+        const firstName = fullName ? fullName.split(' ')[0] : email.split('@')[0];
+        const lastName = fullName && fullName.split(' ').length > 1 ? fullName.split(' ').slice(1).join(' ') : '';
+        const success = await signUp(email, password, { firstName, lastName });
+        if (success) {
+          setIsAuthModalOpen(false);
+        }
+      }
+    } catch (err) {
+      console.error('Error in auth:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -93,7 +65,7 @@ const AuthModal = () => {
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(15, 23, 42, 0.7)',
+        backgroundColor: 'rgba(15, 23, 42, 0.72)',
         backdropFilter: 'blur(8px)',
         zIndex: 9999,
         display: 'flex',
@@ -118,6 +90,7 @@ const AuthModal = () => {
       >
         {/* Close Button */}
         <button
+          type="button"
           onClick={() => setIsAuthModalOpen(false)}
           aria-label="Cerrar modal"
           style={{
@@ -165,7 +138,7 @@ const AuthModal = () => {
           {/* 1. Google 1-Click Fast Button */}
           <button
             type="button"
-            onClick={handleGoogleAuth}
+            onClick={handleGoogleClick}
             style={{
               width: '100%',
               display: 'flex',
@@ -223,6 +196,7 @@ const AuthModal = () => {
                   <input
                     type="text"
                     required
+                    autoComplete="name"
                     placeholder="Carlos Morales"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
@@ -250,6 +224,7 @@ const AuthModal = () => {
                 <input
                   type="email"
                   required
+                  autoComplete="email"
                   placeholder="usuario@ejemplo.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -287,6 +262,7 @@ const AuthModal = () => {
                 <input
                   type="password"
                   required
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

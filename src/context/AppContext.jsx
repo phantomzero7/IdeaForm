@@ -228,12 +228,34 @@ export const AppProvider = ({ children }) => {
     return true;
   };
 
+  const loginWithGoogle = (emailParam = '') => {
+    const googleUser = {
+      id: `usr-google-${Date.now()}`,
+      email: emailParam || 'carlos.fregoso@gmail.com',
+      firstName: 'Carlos',
+      lastName: 'Fregoso',
+      phone: '55 1234 5678',
+      provider: 'google',
+      role: 'CUSTOMER'
+    };
+    setUser(googleUser);
+    setUserRole('CUSTOMER');
+    localStorage.setItem('ideaform_user', JSON.stringify(googleUser));
+    localStorage.setItem('ideaform_user_role', 'CUSTOMER');
+    setIsAuthModalOpen(false);
+    showToast('¡Bienvenido! Sesión iniciada con Google ✨', 'success');
+    navigateTo('profile');
+    return googleUser;
+  };
+
   const signOut = () => {
     if (isSupabaseConfigured && supabase) {
       supabase.auth.signOut();
     }
     setUser(null);
     setUserRole('CUSTOMER');
+    localStorage.removeItem('ideaform_user');
+    localStorage.removeItem('ideaform_user_role');
     showToast('Sesión cerrada correctamente', 'info');
     navigateTo('home');
   };
@@ -439,10 +461,13 @@ export const AppProvider = ({ children }) => {
         viewParams,
         navigateTo,
         user,
+        setUser,
         userRole,
+        setUserRole,
         signIn,
         signUp,
         signOut,
+        loginWithGoogle,
         isAuthModalOpen,
         setIsAuthModalOpen,
         cart,
