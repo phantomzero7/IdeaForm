@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { FILAMENT_MATERIALS, PRODUCTS, B2B_PRICE_TIERS, SUBCOLLECTIONS, DEFAULT_COLOR_PRESETS } from '../../data/mockData';
 import { shippingService } from '../../services/shippingService';
@@ -67,7 +67,11 @@ import {
   ToggleRight,
   Smartphone,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Download,
+  RotateCcw,
+  Shield,
+  FolderArchive
 } from 'lucide-react';
 
 const KANBAN_STAGES = [
@@ -118,9 +122,13 @@ const AdminDashboard = () => {
     botSettings,
     saveBotIntent,
     deleteBotIntent,
+    archiveBotIntent,
+    restoreBotIntent,
     toggleBotIntent,
     updateBotSettings,
     resetBotKnowledge,
+    exportBotBackup,
+    importBotBackup,
     navigateTo,
     showToast
   } = useApp();
@@ -239,7 +247,9 @@ const AdminDashboard = () => {
     image2D: null
   });
 
-  // 7. IdeaForm Bot AI State & Modals
+  // 7. Protected CRUD IdeaForm Bot AI State & Modals
+  const [botSubTab, setBotSubTab] = useState('active'); // 'active' | 'archived'
+  const [botSearchTerm, setBotSearchTerm] = useState('');
   const [isIntentModalOpen, setIsIntentModalOpen] = useState(false);
   const [editingIntent, setEditingIntent] = useState(null);
   const [intentFormData, setIntentFormData] = useState({
@@ -251,8 +261,14 @@ const AdminDashboard = () => {
     actionRoute: '',
     actionType: 'WHATSAPP',
     intent: 'CUSTOM',
-    isActive: true
+    isActive: true,
+    isSystem: false
   });
+  const [intentToDelete, setIntentToDelete] = useState(null);
+  const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
+  const [isResetBotConfirmModalOpen, setIsResetBotConfirmModalOpen] = useState(false);
+  const botFileInputRef = useRef(null);
+
   const [botTestInput, setBotTestInput] = useState('');
   const [botTestResult, setBotTestResult] = useState(null);
 
@@ -360,6 +376,47 @@ const AdminDashboard = () => {
     };
   }, [productionOrders, operatingExpenses]);
 
+  // Bot Filtered Intents (Active vs Archived & Search Filter)
+  const activeBotIntents = useMemo(() => {
+    return (botIntents || []).filter((i) => !i.isArchived);
+  }, [botIntents]);
+
+  const archivedBotIntents = useMemo(() => {
+    return (botIntents || []).filter((i) => i.isArchived === true);
+  }, [botIntents]);
+
+  const displayedBotIntents = useMemo(() => {
+    const list = botSubTab === 'archived' ? archivedBotIntents : activeBotIntents;
+    if (!botSearchTerm.trim()) return list;
+    const q = botSearchTerm.toLowerCase();
+    return list.filter((item) => {
+      const kw = Array.isArray(item.keywords) ? item.keywords.join(' ') : String(item.keywords || '');
+      return (
+        item.title?.toLowerCase().includes(q) ||
+        item.chipLabel?.toLowerCase().includes(q) ||
+        item.response?.toLowerCase().includes(q) ||
+        kw.toLowerCase().includes(q)
+      );
+    });
+  }, [botSubTab, activeBotIntents, archivedBotIntents, botSearchTerm]);
+
+  // File Upload Handler for JSON Backup Restoration
+  const handleBackupFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const content = event.target?.result;
+        importBotBackup(content);
+      } catch (err) {
+        showToast('Error al leer el archivo JSON de respaldo', 'error');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   // Real-time Bot Simulator tester function
   const handleTestBotQuery = (e) => {
     e.preventDefault();
@@ -372,7 +429,7 @@ const AdminDashboard = () => {
     let highestScore = 0;
     let matchedKeywords = [];
 
-    const activeList = (botIntents || []).filter((i) => i.isActive !== false);
+    const activeList = activeBotIntents.filter((i) => i.isActive !== false);
 
     for (const intent of activeList) {
       let score = 0;
@@ -464,6 +521,15 @@ const AdminDashboard = () => {
   return (
     <div style={{ background: '#f8fafc', minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       
+      {/* Hidden File Input for Restoring Bot Backups */}
+      <input
+        type="file"
+        ref={botFileInputRef}
+        onChange={handleBackupFileSelect}
+        accept=".json"
+        style={{ display: 'none' }}
+      />
+
       {/* Top Banner: Workshop Workspace Status */}
       <div style={{ background: '#0F172A', color: '#ffffff', padding: '1rem 0', borderBottom: '1px solid #1e293b' }}>
         <div className="container" style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
@@ -676,7 +742,7 @@ const AdminDashboard = () => {
             }}
           >
             <Bot size={15} />
-            <span>8. IdeaForm Bot AI ({(botIntents || []).length})</span>
+            <span>8. IdeaForm Bot AI ({activeBotIntents.length})</span>
           </button>
         </div>
       </div>
@@ -800,7 +866,6 @@ const AdminDashboard = () => {
 
             {/* Filters Bar: Search, Priority Filter, Channel Filter */}
             <div style={{ background: '#ffffff', padding: '0.85rem 1rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', marginBottom: '1.25rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-              {/* Search input */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f8fafc', padding: '0.45rem 0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', width: '280px' }}>
                 <Search size={15} color="#94a3b8" />
                 <input
@@ -1925,11 +1990,11 @@ const AdminDashboard = () => {
         )}
 
         {/* =========================================================================
-            TAB 8: CONFIGURADOR DEL IDEAFORM BOT AI (Respuestas, Opciones & Errores)
+            TAB 8: PROTECTED CRUD IDEAFORM BOT AI (Respuestas, Respaldo JSON & Papelera)
            ========================================================================= */}
         {activeTab === 'chatbot' && (
           <div>
-            {/* Header */}
+            {/* Header & Main Backup Controls */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                 <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#0F172A', border: '2px solid #00e5ff', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1937,24 +2002,47 @@ const AdminDashboard = () => {
                 </div>
                 <div>
                   <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0F172A', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span>Configurador del IdeaForm Bot AI</span>
-                    <span style={{ fontSize: '0.72rem', background: '#dcfce7', color: '#15803d', padding: '0.2rem 0.55rem', borderRadius: 'var(--radius-full)' }}>
-                      AUTOMATIZACIÓN ACTIVA
+                    <span>IdeaForm Bot AI • Base de Conocimiento CRUD</span>
+                    <span style={{ fontSize: '0.72rem', background: '#dcfce7', color: '#15803d', padding: '0.2rem 0.55rem', borderRadius: 'var(--radius-full)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <Shield size={12} /> SISTEMA PROTEGIDO
                     </span>
                   </h2>
                   <p style={{ color: '#64748b', fontSize: '0.82rem', margin: 0, marginTop: '0.15rem' }}>
-                    Gestiona las respuestas según las preguntas de los clientes, configura la tolerancia a errores/faltas y personaliza las transferencias a WhatsApp.
+                    Administración segura (Crear, Editar, Archivar, Restaurar y Respaldar en JSON) con protección contra borrado accidental.
                   </p>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {/* Action Toolbar: Backups & New Item */}
+              <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
                 <button
-                  onClick={resetBotKnowledge}
+                  onClick={exportBotBackup}
                   className="btn btn-secondary btn-sm"
-                  style={{ fontSize: '0.78rem' }}
+                  style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                  title="Descargar copia de seguridad en archivo JSON"
                 >
-                  Restaurar Fábrica
+                  <Download size={13} />
+                  <span>Respaldar (JSON)</span>
+                </button>
+
+                <button
+                  onClick={() => botFileInputRef.current?.click()}
+                  className="btn btn-secondary btn-sm"
+                  style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                  title="Restaurar base de conocimientos desde archivo JSON"
+                >
+                  <Upload size={13} />
+                  <span>Importar (JSON)</span>
+                </button>
+
+                <button
+                  onClick={() => setIsResetBotConfirmModalOpen(true)}
+                  className="btn btn-secondary btn-sm"
+                  style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#64748b' }}
+                  title="Restablecer respuestas de fábrica"
+                >
+                  <RotateCcw size={13} />
+                  <span>Restablecer</span>
                 </button>
 
                 <button
@@ -1969,7 +2057,8 @@ const AdminDashboard = () => {
                       actionRoute: '',
                       actionType: 'WHATSAPP',
                       intent: 'CUSTOM_INTENT',
-                      isActive: true
+                      isActive: true,
+                      isSystem: false
                     });
                     setIsIntentModalOpen(true);
                   }}
@@ -1977,7 +2066,7 @@ const AdminDashboard = () => {
                   style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
                 >
                   <Plus size={15} />
-                  <span>+ Nueva Respuesta de Bot</span>
+                  <span>+ Nueva Respuesta</span>
                 </button>
               </div>
             </div>
@@ -2047,17 +2136,86 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* Grid Layout: Configured Intents + Real-time Interactive Simulator */}
+            {/* Sub Tabs: Active vs Archived (Recycle Bin) + Live Simulator */}
             <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.9fr', gap: '1.5rem', alignItems: 'start' }}>
               
-              {/* Left Column: List of Configured Intents */}
+              {/* Left Column: Protected Intents List */}
               <div>
-                <h3 style={{ fontSize: '1rem', fontWeight: '800', color: '#0F172A', marginBottom: '0.85rem' }}>
-                  Intenciones & Respuestas Programadas ({(botIntents || []).length})
-                </h3>
+                {/* View Switcher: Active vs Archived */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', gap: '0.35rem', background: '#ffffff', padding: '0.25rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1' }}>
+                    <button
+                      onClick={() => setBotSubTab('active')}
+                      style={{
+                        padding: '0.35rem 0.75rem',
+                        borderRadius: 'var(--radius-sm)',
+                        border: 'none',
+                        background: botSubTab === 'active' ? '#176B87' : 'transparent',
+                        color: botSubTab === 'active' ? '#ffffff' : '#64748b',
+                        fontSize: '0.75rem',
+                        fontWeight: '800',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.3rem'
+                      }}
+                    >
+                      <CheckCircle2 size={13} />
+                      <span>Respuestas Activas ({activeBotIntents.length})</span>
+                    </button>
 
+                    <button
+                      onClick={() => setBotSubTab('archived')}
+                      style={{
+                        padding: '0.35rem 0.75rem',
+                        borderRadius: 'var(--radius-sm)',
+                        border: 'none',
+                        background: botSubTab === 'archived' ? '#d97706' : 'transparent',
+                        color: botSubTab === 'archived' ? '#ffffff' : '#64748b',
+                        fontSize: '0.75rem',
+                        fontWeight: '800',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.3rem'
+                      }}
+                    >
+                      <FolderArchive size={13} />
+                      <span>Papelera / Archivadas ({archivedBotIntents.length})</span>
+                    </button>
+                  </div>
+
+                  {/* Search filter input */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#ffffff', padding: '0.35rem 0.65rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1' }}>
+                    <Search size={14} color="#94a3b8" />
+                    <input
+                      type="text"
+                      placeholder="Buscar por palabra clave..."
+                      value={botSearchTerm}
+                      onChange={(e) => setBotSearchTerm(e.target.value)}
+                      style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '0.75rem', width: '160px' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Empty State */}
+                {displayedBotIntents.length === 0 && (
+                  <div className="card card-elevated" style={{ padding: '2.5rem', textAlign: 'center', background: '#ffffff', borderRadius: 'var(--radius-lg)' }}>
+                    <Bot size={36} color="#94a3b8" style={{ margin: '0 auto 0.75rem' }} />
+                    <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.95rem' }}>
+                      {botSubTab === 'archived' ? 'No hay respuestas en la papelera' : 'No se encontraron respuestas'}
+                    </div>
+                    <p style={{ color: '#64748b', fontSize: '0.78rem', margin: '0.25rem 0 1rem' }}>
+                      {botSubTab === 'archived'
+                        ? 'Todas las respuestas están activas en el bot.'
+                        : 'Crea una nueva intención o restaura los valores de fábrica.'}
+                    </p>
+                  </div>
+                )}
+
+                {/* Intents Cards */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                  {(botIntents || []).map((intent) => {
+                  {displayedBotIntents.map((intent) => {
                     const kwList = Array.isArray(intent.keywords)
                       ? intent.keywords
                       : String(intent.keywords || '').split(',').map((k) => k.trim());
@@ -2070,69 +2228,108 @@ const AdminDashboard = () => {
                           background: '#ffffff',
                           padding: '1.25rem',
                           borderRadius: 'var(--radius-lg)',
-                          border: intent.isActive !== false ? '1px solid #e2e8f0' : '1px dashed #cbd5e1',
-                          opacity: intent.isActive !== false ? 1 : 0.65,
+                          border: intent.isArchived
+                            ? '1.5px dashed #f59e0b'
+                            : intent.isActive !== false
+                            ? '1px solid #e2e8f0'
+                            : '1px dashed #cbd5e1',
+                          opacity: intent.isArchived ? 0.75 : intent.isActive !== false ? 1 : 0.65,
                           display: 'flex',
                           flexDirection: 'column',
                           gap: '0.65rem'
                         }}
                       >
-                        {/* Intent Top */}
+                        {/* Intent Top Header */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                           <div>
-                            <div style={{ fontWeight: '800', fontSize: '0.95rem', color: '#0F172A' }}>
-                              {intent.title}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                              <span style={{ fontWeight: '800', fontSize: '0.95rem', color: '#0F172A' }}>
+                                {intent.title}
+                              </span>
+                              {intent.isSystem && (
+                                <span style={{ fontSize: '0.65rem', background: '#e0f2fe', color: '#0369a1', padding: '0.1rem 0.4rem', borderRadius: '3px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                                  <Shield size={10} /> Sistema
+                                </span>
+                              )}
                             </div>
                             <div style={{ fontSize: '0.72rem', color: '#176B87', fontWeight: '700', marginTop: '0.15rem' }}>
                               Botón Rápido: <span style={{ background: '#f1f5f9', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>{intent.chipLabel || intent.title}</span>
                             </div>
                           </div>
 
+                          {/* Action Buttons: Active vs Archived */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            <button
-                              onClick={() => toggleBotIntent(intent.id)}
-                              style={{
-                                background: intent.isActive !== false ? '#dcfce7' : '#f1f5f9',
-                                color: intent.isActive !== false ? '#15803d' : '#64748b',
-                                border: 'none',
-                                padding: '0.25rem 0.55rem',
-                                borderRadius: '4px',
-                                fontSize: '0.7rem',
-                                fontWeight: '800',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              {intent.isActive !== false ? '✓ ACTIVO' : 'PAUSADO'}
-                            </button>
+                            {!intent.isArchived ? (
+                              <>
+                                <button
+                                  onClick={() => toggleBotIntent(intent.id)}
+                                  style={{
+                                    background: intent.isActive !== false ? '#dcfce7' : '#f1f5f9',
+                                    color: intent.isActive !== false ? '#15803d' : '#64748b',
+                                    border: 'none',
+                                    padding: '0.25rem 0.55rem',
+                                    borderRadius: '4px',
+                                    fontSize: '0.7rem',
+                                    fontWeight: '800',
+                                    cursor: 'pointer'
+                                  }}
+                                  title={intent.isActive !== false ? 'Pausar respuesta' : 'Activar respuesta'}
+                                >
+                                  {intent.isActive !== false ? '✓ ACTIVO' : 'PAUSADO'}
+                                </button>
 
-                            <button
-                              onClick={() => {
-                                setEditingIntent(intent);
-                                setIntentFormData({
-                                  ...intent,
-                                  keywords: Array.isArray(intent.keywords) ? intent.keywords.join(', ') : intent.keywords
-                                });
-                                setIsIntentModalOpen(true);
-                              }}
-                              style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', padding: '0.2rem' }}
-                              title="Editar respuesta"
-                            >
-                              <Edit3 size={15} />
-                            </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingIntent(intent);
+                                    setIntentFormData({
+                                      ...intent,
+                                      keywords: Array.isArray(intent.keywords) ? intent.keywords.join(', ') : intent.keywords
+                                    });
+                                    setIsIntentModalOpen(true);
+                                  }}
+                                  style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', padding: '0.2rem' }}
+                                  title="Editar respuesta"
+                                >
+                                  <Edit3 size={15} />
+                                </button>
 
-                            <button
-                              onClick={() => deleteBotIntent(intent.id)}
-                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.2rem' }}
-                              title="Eliminar respuesta"
-                            >
-                              <Trash2 size={15} />
-                            </button>
+                                <button
+                                  onClick={() => {
+                                    setIntentToDelete(intent);
+                                    setIsDeleteConfirmModalOpen(true);
+                                  }}
+                                  style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.2rem' }}
+                                  title="Mover a papelera o eliminar"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => restoreBotIntent(intent.id)}
+                                  className="btn btn-sm"
+                                  style={{ background: '#10b981', color: '#fff', border: 'none', padding: '0.25rem 0.55rem', fontSize: '0.7rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                >
+                                  <RotateCcw size={12} />
+                                  <span>Restaurar</span>
+                                </button>
+
+                                <button
+                                  onClick={() => deleteBotIntent(intent.id)}
+                                  style={{ background: '#fee2e2', color: '#dc2626', border: 'none', padding: '0.25rem 0.45rem', borderRadius: '4px', cursor: 'pointer' }}
+                                  title="Eliminar definitivamente"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </div>
 
                         {/* Keywords Pill tags */}
                         <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                          <span style={{ fontSize: '0.68rem', fontWeight: '800', color: '#64748b' }}>Palabras Clave:</span>
+                          <span style={{ fontSize: '0.68rem', fontWeight: '800', color: '#64748b' }}>Palabras Clave ({kwList.length}):</span>
                           {kwList.map((kw, i) => (
                             <span key={i} style={{ background: '#f1f5f9', color: '#475569', fontSize: '0.68rem', fontWeight: '700', padding: '0.1rem 0.4rem', borderRadius: '3px' }}>
                               {kw}
@@ -2369,6 +2566,101 @@ const AdminDashboard = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: CONFIRMACIÓN PROTEGIDA DE ELIMINACIÓN / ARCHIVADO
+         ========================================================================= */}
+      {isDeleteConfirmModalOpen && intentToDelete && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '1rem' }}>
+          <div className="card card-elevated" style={{ background: '#ffffff', borderRadius: 'var(--radius-xl)', maxWidth: '480px', width: '100%', padding: '1.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+              <AlertTriangle size={24} color="#f59e0b" />
+              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: '#0F172A' }}>
+                Protección de Base de Conocimientos
+              </h3>
+            </div>
+
+            <p style={{ fontSize: '0.85rem', color: '#334155', lineHeight: '1.5', marginBottom: '1rem' }}>
+              ¿Qué deseas hacer con la respuesta <strong>"{intentToDelete.title}"</strong>?
+            </p>
+
+            {intentToDelete.isSystem && (
+              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 'var(--radius-md)', padding: '0.75rem', fontSize: '0.78rem', color: '#92400e', marginBottom: '1rem' }}>
+                <strong>⚠️ Intención Clave del Sistema:</strong> Te recomendamos <strong>Archivarla / Mover a papelera</strong> en lugar de eliminarla para no interrumpir el flujo automático.
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <button
+                onClick={() => {
+                  archiveBotIntent(intentToDelete.id);
+                  setIsDeleteConfirmModalOpen(false);
+                  setIntentToDelete(null);
+                }}
+                className="btn btn-primary"
+                style={{ background: '#d97706', borderColor: '#d97706', fontWeight: '800' }}
+              >
+                📦 Mover a la Papelera / Archivar (Recomendado)
+              </button>
+
+              <button
+                onClick={() => {
+                  deleteBotIntent(intentToDelete.id);
+                  setIsDeleteConfirmModalOpen(false);
+                  setIntentToDelete(null);
+                }}
+                style={{ background: 'none', border: '1px solid #fecaca', color: '#dc2626', padding: '0.55rem', borderRadius: 'var(--radius-md)', fontSize: '0.78rem', fontWeight: '700', cursor: 'pointer' }}
+              >
+                Eliminar Permanentemente
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsDeleteConfirmModalOpen(false);
+                  setIntentToDelete(null);
+                }}
+                className="btn btn-secondary"
+                style={{ marginTop: '0.25rem' }}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: CONFIRMACIÓN RESTABLECER FÁBRICA
+         ========================================================================= */}
+      {isResetBotConfirmModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '1rem' }}>
+          <div className="card card-elevated" style={{ background: '#ffffff', borderRadius: 'var(--radius-xl)', maxWidth: '440px', width: '100%', padding: '1.75rem', textAlign: 'center' }}>
+            <RotateCcw size={32} color="#0284c7" style={{ margin: '0 auto 0.75rem' }} />
+            <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: '#0F172A', marginBottom: '0.5rem' }}>
+              ¿Restablecer Base de Fábrica?
+            </h3>
+            <p style={{ fontSize: '0.82rem', color: '#64748b', lineHeight: '1.5', marginBottom: '1.25rem' }}>
+              Se restablecerán las intenciones por defecto y los saludos. Puedes descargar una copia de seguridad en JSON antes de continuar.
+            </p>
+
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button onClick={() => setIsResetBotConfirmModalOpen(false)} className="btn btn-secondary" style={{ flex: 1 }}>
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  resetBotKnowledge();
+                  setIsResetBotConfirmModalOpen(false);
+                }}
+                className="btn btn-primary"
+                style={{ flex: 1, fontWeight: '800' }}
+              >
+                Confirmar
+              </button>
+            </div>
           </div>
         </div>
       )}

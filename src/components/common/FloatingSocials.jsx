@@ -56,9 +56,9 @@ const FloatingSocials = () => {
   const [isTyping, setIsTyping] = useState(false);
   const chatBottomRef = useRef(null);
 
-  // Active intents for quick chips
+  // Active non-archived intents for quick chips
   const activeIntents = useMemo(() => {
-    return (botIntents || []).filter((i) => i.isActive !== false);
+    return (botIntents || []).filter((i) => i.isActive !== false && !i.isArchived);
   }, [botIntents]);
 
   useEffect(() => {

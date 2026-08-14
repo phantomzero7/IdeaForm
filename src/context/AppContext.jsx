@@ -315,24 +315,48 @@ export const AppProvider = ({ children }) => {
       const exists = prev.some((i) => i.id === newOrUpdatedIntent.id);
       let updated;
       if (exists) {
-        updated = prev.map((i) => (i.id === newOrUpdatedIntent.id ? { ...i, ...newOrUpdatedIntent } : i));
+        updated = prev.map((i) => (i.id === newOrUpdatedIntent.id ? { ...i, ...newOrUpdatedIntent, updatedAt: new Date().toISOString() } : i));
       } else {
         const id = newOrUpdatedIntent.id || `intent-${Date.now()}`;
-        updated = [...prev, { ...newOrUpdatedIntent, id }];
+        updated = [...prev, { ...newOrUpdatedIntent, id, createdAt: new Date().toISOString(), isArchived: false }];
       }
       localStorage.setItem('ideaform_bot_intents', JSON.stringify(updated));
       return updated;
     });
-    showToast(`Respuesta del Bot "${newOrUpdatedIntent.title}" guardada`, 'success');
+    showToast(`Respuesta del Bot "${newOrUpdatedIntent.title}" guardada exitosamente`, 'success');
   };
 
-  const deleteBotIntent = (intentId) => {
+  // Soft Delete / Archiving
+  const archiveBotIntent = (intentId) => {
     setBotIntents((prev) => {
-      const updated = prev.filter((i) => i.id !== intentId);
+      const target = prev.find((i) => i.id === intentId);
+      const updated = prev.map((i) => (i.id === intentId ? { ...i, isArchived: true, isActive: false } : i));
       localStorage.setItem('ideaform_bot_intents', JSON.stringify(updated));
+      showToast(`Respuesta "${target?.title || 'del Bot'}" movida a la papelera / archivada`, 'warning');
       return updated;
     });
-    showToast('Intención del Bot eliminada', 'warning');
+  };
+
+  // Restore from Archive
+  const restoreBotIntent = (intentId) => {
+    setBotIntents((prev) => {
+      const target = prev.find((i) => i.id === intentId);
+      const updated = prev.map((i) => (i.id === intentId ? { ...i, isArchived: false, isActive: true } : i));
+      localStorage.setItem('ideaform_bot_intents', JSON.stringify(updated));
+      showToast(`Respuesta "${target?.title || 'del Bot'}" restaurada con éxito`, 'success');
+      return updated;
+    });
+  };
+
+  // Permanent Delete (Hard Delete with explicit confirmation)
+  const deleteBotIntent = (intentId) => {
+    setBotIntents((prev) => {
+      const target = prev.find((i) => i.id === intentId);
+      const updated = prev.filter((i) => i.id !== intentId);
+      localStorage.setItem('ideaform_bot_intents', JSON.stringify(updated));
+      showToast(`Respuesta "${target?.title || 'del Bot'}" eliminada permanentemente`, 'error');
+      return updated;
+    });
   };
 
   const toggleBotIntent = (intentId) => {
@@ -349,7 +373,7 @@ export const AppProvider = ({ children }) => {
       localStorage.setItem('ideaform_bot_settings', JSON.stringify(updated));
       return updated;
     });
-    showToast('Configuración general del Bot actualizada', 'success');
+    showToast('Configuración general del Bot guardada', 'success');
   };
 
   const resetBotKnowledge = () => {
@@ -358,6 +382,42 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('ideaform_bot_settings', JSON.stringify(DEFAULT_BOT_SETTINGS));
     localStorage.setItem('ideaform_bot_intents', JSON.stringify(DEFAULT_BOT_INTENTS));
     showToast('Base de conocimientos del Bot restaurada a valores de fábrica', 'info');
+  };
+
+  // Export JSON Backup
+  const exportBotBackup = () => {
+    const backupData = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      botSettings,
+      botIntents
+    };
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ideaform_bot_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Copia de seguridad del Bot descargada (JSON)', 'success');
+  };
+
+  // Import JSON Backup
+  const importBotBackup = (jsonData) => {
+    try {
+      const parsed = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
+      if (parsed.botSettings) {
+        setBotSettings(parsed.botSettings);
+        localStorage.setItem('ideaform_bot_settings', JSON.stringify(parsed.botSettings));
+      }
+      if (Array.isArray(parsed.botIntents)) {
+        setBotIntents(parsed.botIntents);
+        localStorage.setItem('ideaform_bot_intents', JSON.stringify(parsed.botIntents));
+      }
+      showToast('Copia de seguridad del Bot restaurada exitosamente', 'success');
+    } catch (err) {
+      showToast('Error al importar archivo de respaldo JSON', 'error');
+    }
   };
 
   // Toasts
@@ -851,9 +911,13 @@ export const AppProvider = ({ children }) => {
         botSettings,
         saveBotIntent,
         deleteBotIntent,
+        archiveBotIntent,
+        restoreBotIntent,
         toggleBotIntent,
         updateBotSettings,
         resetBotKnowledge,
+        exportBotBackup,
+        importBotBackup,
         toasts,
         showToast,
         removeToast
