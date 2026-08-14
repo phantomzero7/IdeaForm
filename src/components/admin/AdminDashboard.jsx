@@ -47,7 +47,9 @@ import {
   Sparkles,
   Upload,
   Box,
-  Palette
+  Palette,
+  FileUp,
+  Maximize2
 } from 'lucide-react';
 
 const KANBAN_STAGES = [
@@ -79,6 +81,9 @@ const AdminDashboard = () => {
     updateFilamentStock,
     b2bQuotes,
     saveB2BQuote,
+    products,
+    saveProduct,
+    deleteProduct,
     navigateTo,
     showToast
   } = useApp();
@@ -137,8 +142,7 @@ const AdminDashboard = () => {
   const [metricsPeriod, setMetricsPeriod] = useState('MONTH'); // 'TODAY' | 'WEEK' | 'MONTH' | 'ALL'
 
   // 7. Product Catalog & 3D Multi-Color Zone Configurator State
-  const [productsCatalog, setProductsCatalog] = useState(PRODUCTS);
-  const [productCategoryFilter, setProductCategoryFilter] = useState('ALL');
+  const productsCatalog = products || PRODUCTS;
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productFormData, setProductFormData] = useState({
@@ -146,7 +150,9 @@ const AdminDashboard = () => {
     subcollection: 'hogar',
     basePrice: 180,
     description: '',
-    modelType: 'sphere', // keychain | trophy | sphere | car | cup | planter
+    modelType: 'sphere', // keychain | trophy | sphere | car | cup | planter | custom_file
+    custom3DFileUrl: null,
+    custom3DFileType: null,
     filamentGrams: 60,
     printTimeMins: 120,
     allowBaseColor: true,
@@ -158,7 +164,7 @@ const AdminDashboard = () => {
     previewAccentColor: '#D4AF37',
     previewReliefColor: '#FFFFFF',
     isActive: true,
-    image2D: ''
+    image2D: null
   });
 
   // RBAC GUARD
@@ -364,15 +370,17 @@ const AdminDashboard = () => {
     window.open(`https://wa.me/526121234567?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
-  // --- PRODUCT CATALOG & 3D ZONE CONFIGURATOR HANDLERS ---
+  // --- PRODUCT CATALOG & DIRECT 2D/3D FILE UPLOADER ---
   const handleOpenNewProductModal = () => {
     setEditingProduct(null);
     setProductFormData({
       name: '',
       subcollection: 'hogar',
       basePrice: 180,
-      description: 'Pieza de manufactura aditiva con relieve 3D personalizable.',
+      description: 'Pieza de manufactura aditiva con zonas de color personalizables.',
       modelType: 'sphere',
+      custom3DFileUrl: null,
+      custom3DFileType: null,
       filamentGrams: 55,
       printTimeMins: 110,
       allowBaseColor: true,
@@ -384,7 +392,7 @@ const AdminDashboard = () => {
       previewAccentColor: '#D4AF37',
       previewReliefColor: '#FFFFFF',
       isActive: true,
-      image2D: ''
+      image2D: null
     });
     setIsProductModalOpen(true);
   };
@@ -397,6 +405,8 @@ const AdminDashboard = () => {
       basePrice: prod.basePrice,
       description: prod.description || '',
       modelType: prod.modelType || 'keychain',
+      custom3DFileUrl: prod.custom3DFileUrl || null,
+      custom3DFileType: prod.custom3DFileType || null,
       filamentGrams: prod.filamentGrams || 50,
       printTimeMins: prod.printTimeMins || 100,
       allowBaseColor: prod.allowBaseColor !== false,
@@ -408,73 +418,80 @@ const AdminDashboard = () => {
       previewAccentColor: '#D4AF37',
       previewReliefColor: '#FFFFFF',
       isActive: prod.isActive !== false,
-      image2D: prod.image || ''
+      image2D: prod.image || null
     });
     setIsProductModalOpen(true);
   };
 
+  // 2D Image Reader (Converts to Data URL for instant rendering & offline persistence)
+  const handle2DImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setProductFormData((prev) => ({
+          ...prev,
+          image2D: event.target.result
+        }));
+        showToast(`Imagen 2D cargada: ${file.name}`, 'success');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // 3D Model File Reader (.GLB, .GLTF, .STL)
+  const handle3DModelFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!['glb', 'gltf', 'stl'].includes(ext)) {
+        showToast('Formato 3D no compatible. Usa .GLB, .GLTF o .STL', 'error');
+        return;
+      }
+
+      const fileUrl = URL.createObjectURL(file);
+      setProductFormData((prev) => ({
+        ...prev,
+        modelType: 'custom_file',
+        custom3DFileUrl: fileUrl,
+        custom3DFileType: ext
+      }));
+      showToast(`¡Modelo 3D (${ext.toUpperCase()}) cargado en visor!`, 'success');
+    }
+  };
+
   const handleSaveProduct = (e) => {
     e.preventDefault();
-    if (editingProduct) {
-      const updated = productsCatalog.map((p) =>
-        p.id === editingProduct.id
-          ? {
-              ...p,
-              name: productFormData.name,
-              subcollection: productFormData.subcollection,
-              basePrice: Number(productFormData.basePrice),
-              description: productFormData.description,
-              modelType: productFormData.modelType,
-              filamentGrams: Number(productFormData.filamentGrams),
-              printTimeMins: Number(productFormData.printTimeMins),
-              allowBaseColor: productFormData.allowBaseColor,
-              allowAccentColor: productFormData.allowAccentColor,
-              allowReliefColor: productFormData.allowReliefColor,
-              isCustomizable: productFormData.allowCustomText,
-              allowLogoUpload: productFormData.allowLogoUpload,
-              isActive: productFormData.isActive
-            }
-          : p
-      );
-      setProductsCatalog(updated);
-      showToast(`Producto "${productFormData.name}" actualizado con éxito`, 'success');
-    } else {
-      const newProd = {
-        id: `prod-custom-${Date.now()}`,
-        name: productFormData.name,
-        categoryName: SUBCOLLECTIONS.find((s) => s.id === productFormData.subcollection)?.name || 'Colección General',
-        subcollection: productFormData.subcollection,
-        basePrice: Number(productFormData.basePrice),
-        description: productFormData.description,
-        modelType: productFormData.modelType,
-        filamentGrams: Number(productFormData.filamentGrams),
-        printTimeMins: Number(productFormData.printTimeMins),
-        allowBaseColor: productFormData.allowBaseColor,
-        allowAccentColor: productFormData.allowAccentColor,
-        allowReliefColor: productFormData.allowReliefColor,
-        isCustomizable: productFormData.allowCustomText,
-        allowLogoUpload: productFormData.allowLogoUpload,
-        isActive: productFormData.isActive
-      };
-      setProductsCatalog([newProd, ...productsCatalog]);
-      showToast(`¡Nuevo producto "${newProd.name}" publicado en tienda!`, 'success');
-    }
+    const productToSave = {
+      id: editingProduct ? editingProduct.id : `prod-${Date.now()}`,
+      name: productFormData.name,
+      categoryName: SUBCOLLECTIONS.find((s) => s.id === productFormData.subcollection)?.name || 'Colección General',
+      subcollection: productFormData.subcollection,
+      basePrice: Number(productFormData.basePrice),
+      description: productFormData.description,
+      modelType: productFormData.modelType,
+      custom3DFileUrl: productFormData.custom3DFileUrl,
+      custom3DFileType: productFormData.custom3DFileType,
+      filamentGrams: Number(productFormData.filamentGrams),
+      printTimeMins: Number(productFormData.printTimeMins),
+      allowBaseColor: productFormData.allowBaseColor,
+      allowAccentColor: productFormData.allowAccentColor,
+      allowReliefColor: productFormData.allowReliefColor,
+      isCustomizable: productFormData.allowCustomText,
+      allowLogoUpload: productFormData.allowLogoUpload,
+      isActive: productFormData.isActive,
+      image: productFormData.image2D || (editingProduct ? editingProduct.image : null)
+    };
+
+    saveProduct(productToSave);
+    showToast(`¡Producto "${productToSave.name}" guardado y publicado en la tienda!`, 'success');
     setIsProductModalOpen(false);
   };
 
-  const handleToggleProductActive = (id) => {
-    const updated = productsCatalog.map((p) => (p.id === id ? { ...p, isActive: p.isActive === false ? true : false } : p));
-    setProductsCatalog(updated);
-    showToast('Estado de visibilidad en tienda actualizado', 'info');
-  };
-
-  // --- 2D Image Upload Handler ---
-  const handleImage2DUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setProductFormData({ ...productFormData, image2D: url });
-      showToast(`Imagen 2D cargada: ${file.name}`, 'success');
+  const handleDeleteProduct = (id, name) => {
+    if (window.confirm(`¿Estás seguro de eliminar "${name}" del catálogo?`)) {
+      deleteProduct(id);
+      showToast(`Producto "${name}" eliminado`, 'info');
     }
   };
 
@@ -624,7 +641,7 @@ const AdminDashboard = () => {
             }}
           >
             <Tag size={17} />
-            <span>5. Catálogo & Zonas 3D ({productsCatalog.length})</span>
+            <span>5. Catálogo & Archivos 2D/3D ({productsCatalog.length})</span>
           </button>
         </div>
       </div>
@@ -633,7 +650,7 @@ const AdminDashboard = () => {
       <div className="container" style={{ maxWidth: '1280px', margin: '0 auto', paddingTop: '2rem' }}>
         
         {/* =========================================================================
-            TAB 1: TABLERO KANBAN DE MANUFACTURA (AVANZAR/RETROCEDER, WHATSAPP, NOTAS)
+            TAB 1: TABLERO KANBAN DE MANUFACTURA
            ========================================================================= */}
         {activeTab === 'kanban' && (
           <div>
@@ -707,7 +724,6 @@ const AdminDashboard = () => {
                               gap: '0.6rem'
                             }}
                           >
-                            {/* Card Top */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                               <div>
                                 <span style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.88rem' }}>
@@ -721,7 +737,6 @@ const AdminDashboard = () => {
                               </span>
                             </div>
 
-                            {/* Product Info */}
                             <div style={{ background: '#f8fafc', padding: '0.5rem 0.65rem', borderRadius: '4px', fontSize: '0.78rem' }}>
                               <div style={{ fontWeight: '700', color: '#0F172A' }}>{ord.productName}</div>
                               <div style={{ color: '#64748b', fontSize: '0.72rem' }}>
@@ -729,7 +744,6 @@ const AdminDashboard = () => {
                               </div>
                             </div>
 
-                            {/* Printer Assignment Selector */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                               <Printer size={13} color="#64748b" />
                               <select
@@ -744,7 +758,6 @@ const AdminDashboard = () => {
                               </select>
                             </div>
 
-                            {/* Quick Action Buttons (WhatsApp, Notes, Inspector) */}
                             <div style={{ display: 'flex', gap: '0.35rem', borderTop: '1px solid #f1f5f9', paddingTop: '0.5rem' }}>
                               <button
                                 title="Enviar WhatsApp al cliente"
@@ -773,7 +786,6 @@ const AdminDashboard = () => {
                               </button>
                             </div>
 
-                            {/* Move Forward / Move Backward Stage Navigation */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.4rem', marginTop: '0.2rem' }}>
                               <button
                                 disabled={stage.id === 'QUEUED'}
@@ -833,7 +845,7 @@ const AdminDashboard = () => {
         )}
 
         {/* =========================================================================
-            TAB 2: INVENTARIO DE FILAMENTOS (KARDEX, NUEVOS MATERIALES, OBSOLETOS)
+            TAB 2: INVENTARIO DE FILAMENTOS
            ========================================================================= */}
         {activeTab === 'inventory' && (
           <div>
@@ -857,7 +869,6 @@ const AdminDashboard = () => {
               </button>
             </div>
 
-            {/* Materials Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
               {inventoryList.map((mat) => {
                 const isLowStock = mat.stockGrams < 200;
@@ -892,7 +903,6 @@ const AdminDashboard = () => {
                         Tipo: <strong>{mat.type}</strong> • Prov: {mat.supplier || 'Polymaker'}
                       </div>
 
-                      {/* Stock Bar */}
                       <div style={{ marginBottom: '1rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '0.3rem' }}>
                           <span style={{ color: '#64748b' }}>Stock Disponible:</span>
@@ -932,7 +942,6 @@ const AdminDashboard = () => {
               })}
             </div>
 
-            {/* Kardex Movements History */}
             <div className="card" style={{ background: '#ffffff', borderRadius: 'var(--radius-lg)', padding: '1.5rem' }}>
               <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#0F172A', marginBottom: '1rem' }}>
                 Historial de Movimientos de Almacén (Kardex)
@@ -970,7 +979,7 @@ const AdminDashboard = () => {
         )}
 
         {/* =========================================================================
-            TAB 3: GESTOR COMPLETO DE COTIZACIONES B2B (EDICIÓN, WHATSAPP, PDF, SAT)
+            TAB 3: GESTOR DE COTIZACIONES B2B
            ========================================================================= */}
         {activeTab === 'quotes' && (
           <div>
@@ -998,7 +1007,6 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* Quotes Table */}
             <div className="card" style={{ background: '#ffffff', borderRadius: 'var(--radius-lg)', padding: '1.25rem' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
@@ -1072,7 +1080,7 @@ const AdminDashboard = () => {
         )}
 
         {/* =========================================================================
-            TAB 4: MÉTRICAS & ANALÍTICA INTERACTIVA DEL TALLER
+            TAB 4: MÉTRICAS & ANALÍTICA
            ========================================================================= */}
         {activeTab === 'metrics' && (
           <div>
@@ -1086,7 +1094,6 @@ const AdminDashboard = () => {
                 </p>
               </div>
 
-              {/* Interactive Period Filter */}
               <div style={{ display: 'flex', gap: '0.4rem', background: '#ffffff', padding: '0.3rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1' }}>
                 <button
                   onClick={() => setMetricsPeriod('TODAY')}
@@ -1115,7 +1122,6 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* KPI Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
               <div className="card" style={{ padding: '1.5rem', background: '#ffffff', borderRadius: 'var(--radius-lg)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
@@ -1173,17 +1179,17 @@ const AdminDashboard = () => {
         )}
 
         {/* =========================================================================
-            TAB 5: CATÁLOGO DE PRODUCTOS & CONFIGURACIÓN DE ZONAS 3D
+            TAB 5: CATÁLOGO DE PRODUCTOS & CARGA DIRECTA DE ARCHIVOS 2D / 3D
            ========================================================================= */}
         {activeTab === 'products' && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
                 <h2 style={{ fontSize: '1.45rem', fontWeight: '800', color: '#0F172A', margin: 0 }}>
-                  Catálogo de Productos & Zonas de Personalización 3D
+                  Gestión Total de Catálogo & Archivos 2D / 3D
                 </h2>
                 <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0, marginTop: '0.2rem' }}>
-                  Publica nuevos artículos (esferas, autos, tazas, trofeos) y configura qué zonas/colores puede modificar el cliente.
+                  Sube fotos 2D o modelos 3D (.GLB, .GLTF, .STL), configura colores por zonas y publica directamente sin tocar código.
                 </p>
               </div>
 
@@ -1193,7 +1199,7 @@ const AdminDashboard = () => {
                 style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
               >
                 <Plus size={16} />
-                <span>+ Crear Nuevo Producto 3D</span>
+                <span>+ Crear / Subir Nuevo Producto</span>
               </button>
             </div>
 
@@ -1223,8 +1229,18 @@ const AdminDashboard = () => {
                       </span>
                     </div>
 
-                    <div style={{ height: '140px', background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.75rem' }}>
-                      <Box size={36} color="#176B87" style={{ opacity: 0.8 }} />
+                    {/* 2D Image or 3D Icon */}
+                    <div style={{ height: '140px', background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.75rem', overflow: 'hidden' }}>
+                      {prod.image ? (
+                        <img src={prod.image} alt={prod.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <div style={{ textAlign: 'center' }}>
+                          <Box size={36} color="#176B87" style={{ opacity: 0.8 }} />
+                          <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '0.25rem', fontWeight: '700' }}>
+                            {prod.modelType === 'custom_file' ? `3D Custom (${(prod.custom3DFileType || '3D').toUpperCase()})` : `3D ${prod.modelType}`}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#0F172A', marginBottom: '0.25rem' }}>
@@ -1237,7 +1253,7 @@ const AdminDashboard = () => {
                     {/* Enabled Zones Badges */}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginBottom: '0.75rem' }}>
                       <span style={{ fontSize: '0.68rem', fontWeight: '700', padding: '0.15rem 0.45rem', borderRadius: '4px', background: 'rgba(23, 107, 135, 0.1)', color: '#176B87' }}>
-                        🎨 Color Base
+                        🎨 Base
                       </span>
                       {prod.allowAccentColor !== false && (
                         <span style={{ fontSize: '0.68rem', fontWeight: '700', padding: '0.15rem 0.45rem', borderRadius: '4px', background: '#fef3c7', color: '#b45309' }}>
@@ -1265,15 +1281,15 @@ const AdminDashboard = () => {
                         onClick={() => handleEditProduct(prod)}
                       >
                         <Edit3 size={13} />
-                        <span>Configurar Zonas</span>
+                        <span>Editar / Zonas</span>
                       </button>
 
                       <button
-                        title={prod.isActive !== false ? 'Ocultar de la tienda' : 'Mostrar en la tienda'}
-                        onClick={() => handleToggleProductActive(prod.id)}
-                        style={{ padding: '0.4rem 0.6rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }}
+                        title="Eliminar Producto"
+                        onClick={() => handleDeleteProduct(prod.id, prod.name)}
+                        style={{ padding: '0.4rem 0.6rem', background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '4px', cursor: 'pointer', color: '#dc2626' }}
                       >
-                        {prod.isActive !== false ? <Ban size={14} color="#dc2626" /> : <Check size={14} color="#059669" />}
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   </div>
@@ -1285,7 +1301,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* =========================================================================
-          MODAL 5: ALTA Y CONFIGURACIÓN DE PRODUCTOS & ZONAS 3D MULTI-COLOR
+          MODAL 5: ALTA / EDICIÓN CON CARGA DIRECTA 2D Y 3D
          ========================================================================= */}
       {isProductModalOpen && (
         <div
@@ -1307,7 +1323,7 @@ const AdminDashboard = () => {
               background: '#ffffff',
               borderRadius: 'var(--radius-xl)',
               width: '100%',
-              maxWidth: '920px',
+              maxWidth: '960px',
               maxHeight: '90vh',
               overflowY: 'auto',
               padding: '2rem',
@@ -1318,10 +1334,10 @@ const AdminDashboard = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: '800', color: '#0F172A' }}>
-                  {editingProduct ? `Editar Producto: ${editingProduct.name}` : 'Crear Nuevo Producto & Zonas 3D'}
+                  {editingProduct ? `Editar Producto: ${editingProduct.name}` : 'Cargar & Publicar Nuevo Producto'}
                 </h3>
                 <p style={{ color: '#64748b', fontSize: '0.82rem', margin: 0, marginTop: '0.2rem' }}>
-                  Define el modelo 3D, carga imagen 2D y configura los elementos personalizables por el cliente.
+                  Sube tus fotos 2D o archivos 3D directamente desde tu equipo sin tocar código.
                 </p>
               </div>
               <button onClick={() => setIsProductModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
@@ -1341,7 +1357,7 @@ const AdminDashboard = () => {
                     <input
                       type="text"
                       required
-                      placeholder="Ej. Esfera Navideña con Nombre 3D"
+                      placeholder="Ej. Esfera Navideña Personalizada"
                       value={productFormData.name}
                       onChange={(e) => setProductFormData({ ...productFormData, name: e.target.value })}
                       style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
@@ -1350,7 +1366,7 @@ const AdminDashboard = () => {
 
                   <div>
                     <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>
-                      Subcolección *
+                      Subcolección / Categoría *
                     </label>
                     <select
                       value={productFormData.subcollection}
@@ -1385,7 +1401,7 @@ const AdminDashboard = () => {
 
                   <div>
                     <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>
-                      Modelo 3D Base *
+                      Geometría 3D Base
                     </label>
                     <select
                       value={productFormData.modelType}
@@ -1398,6 +1414,7 @@ const AdminDashboard = () => {
                       <option value="cup">Taza / Cilindro</option>
                       <option value="planter">Maceta Geométrica</option>
                       <option value="trophy">Trofeo Ejecutivo</option>
+                      <option value="custom_file">📁 Archivo 3D Propio (.GLB / .STL)</option>
                     </select>
                   </div>
 
@@ -1414,68 +1431,78 @@ const AdminDashboard = () => {
                   </div>
                 </div>
 
-                <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>
-                    Descripción para la Tienda
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={productFormData.description}
-                    onChange={(e) => setProductFormData({ ...productFormData, description: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                {/* Direct 3D Model File Uploader */}
+                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px dashed #94a3b8', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.4rem' }}>
+                    <FileUp size={16} color="#176B87" />
+                    <strong style={{ fontSize: '0.82rem', color: '#0F172A' }}>
+                      Cargar Archivo 3D Directo (.GLB / .GLTF / .STL)
+                    </strong>
+                  </div>
+                  <input
+                    type="file"
+                    accept=".glb,.gltf,.stl"
+                    onChange={handle3DModelFileChange}
+                    style={{ fontSize: '0.82rem', width: '100%' }}
+                  />
+                  <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.25rem' }}>
+                    Soporta modelos 3D exportados de Blender, Fusion 360, Tinkercad o STL.
+                  </div>
+                </div>
+
+                {/* Direct 2D Image Uploader */}
+                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px dashed #94a3b8', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.4rem' }}>
+                    <ImageIcon size={16} color="#176B87" />
+                    <strong style={{ fontSize: '0.82rem', color: '#0F172A' }}>
+                      Cargar Imagen 2D / Render Fotográfico (.PNG / .JPG)
+                    </strong>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handle2DImageChange}
+                    style={{ fontSize: '0.82rem', width: '100%' }}
                   />
                 </div>
 
-                {/* Multi-Color Zones Configuration (Like Sneaker Customizers) */}
-                <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', marginBottom: '1.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                {/* Multi-Color Zones Configuration */}
+                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem' }}>
                     <Palette size={16} color="#176B87" />
-                    <strong style={{ fontSize: '0.88rem', color: '#0F172A' }}>
+                    <strong style={{ fontSize: '0.85rem', color: '#0F172A' }}>
                       Zonas Personalizables por el Cliente
                     </strong>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.82rem', cursor: 'pointer' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8rem', cursor: 'pointer' }}>
                       <input
                         type="checkbox"
                         checked={productFormData.allowBaseColor}
                         onChange={(e) => setProductFormData({ ...productFormData, allowBaseColor: e.target.checked })}
                       />
-                      <span><strong>Zona 1: Color Base / Cuerpo Principal</strong> (Permitido para el cliente)</span>
+                      <span><strong>Zona 1: Color Base / Cuerpo Principal</strong></span>
                     </label>
 
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.82rem', cursor: 'pointer' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8rem', cursor: 'pointer' }}>
                       <input
                         type="checkbox"
                         checked={productFormData.allowAccentColor}
                         onChange={(e) => setProductFormData({ ...productFormData, allowAccentColor: e.target.checked })}
                       />
-                      <span><strong>Zona 2: Color de Acentos / Detalles / Trim</strong> (Permitido para el cliente)</span>
+                      <span><strong>Zona 2: Color de Acentos / Detalles</strong></span>
                     </label>
 
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.82rem', cursor: 'pointer' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8rem', cursor: 'pointer' }}>
                       <input
                         type="checkbox"
                         checked={productFormData.allowReliefColor}
                         onChange={(e) => setProductFormData({ ...productFormData, allowReliefColor: e.target.checked })}
                       />
-                      <span><strong>Zona 3: Relieve 3D de Texto / Logotipo</strong> (Permitido para el cliente)</span>
+                      <span><strong>Zona 3: Relieve 3D de Texto o Logotipo</strong></span>
                     </label>
                   </div>
-                </div>
-
-                {/* 2D Image Upload Input */}
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.35rem' }}>
-                    Subir Imagen 2D / Render Fotográfico
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImage2DUpload}
-                    style={{ fontSize: '0.85rem' }}
-                  />
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
@@ -1498,6 +1525,8 @@ const AdminDashboard = () => {
                 <div style={{ height: '320px', background: '#ffffff', borderRadius: 'var(--radius-md)', overflow: 'hidden', position: 'relative' }}>
                   <ThreeViewer
                     modelType={productFormData.modelType}
+                    custom3DFileUrl={productFormData.custom3DFileUrl}
+                    custom3DFileType={productFormData.custom3DFileType}
                     baseColor={productFormData.previewBaseColor}
                     accentColor={productFormData.previewAccentColor}
                     reliefColor={productFormData.previewReliefColor}
@@ -1731,7 +1760,6 @@ const AdminDashboard = () => {
               </button>
             </div>
 
-            {/* Existing Notes */}
             <div style={{ maxHeight: '240px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.25rem' }}>
               {(orderNotesMap[selectedOrderForNotes.orderNumber] || []).length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem', padding: '1rem' }}>
@@ -1750,7 +1778,6 @@ const AdminDashboard = () => {
               )}
             </div>
 
-            {/* Add Note Form */}
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <input
                 type="text"
@@ -1897,7 +1924,7 @@ const AdminDashboard = () => {
       )}
 
       {/* =========================================================================
-          MODAL 4: REGISTRO DE MOVIMIENTO KARDEX (ENTRADA / SALIDA)
+          MODAL 4: REGISTRO DE MOVIMIENTO KARDEX
          ========================================================================= */}
       {movementModal.isOpen && movementModal.material && (
         <div

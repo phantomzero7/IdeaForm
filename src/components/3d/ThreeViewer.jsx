@@ -1,9 +1,13 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef, useCallback } from 'react';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { RotateCw, Eye, Sparkles } from 'lucide-react';
 
 const ThreeViewer = forwardRef(({
-  modelType = 'keychain', // keychain | trophy | sphere | car | cup | planter | organizer | lamp
+  modelType = 'keychain', // keychain | trophy | sphere | car | cup | planter | custom_file
+  custom3DFileUrl = null, // string ObjectURL or data URL for .GLB / .GLTF / .STL
+  custom3DFileType = null, // 'glb' | 'gltf' | 'stl' | null
   selectedColor = '#176B87', // Base / Body color
   baseColor = null,
   accentColor = '#D4AF37', // Secondary / Accent color (oro, plata, etc.)
@@ -31,6 +35,7 @@ const ThreeViewer = forwardRef(({
   const [isAutoRotating, setIsAutoRotating] = useState(true);
   const isAutoRotatingRef = useRef(true);
   const isDraggingRef = useRef(false);
+  const [loading3D, setLoading3D] = useState(false);
 
   useEffect(() => {
     isAutoRotatingRef.current = isAutoRotating;
@@ -93,7 +98,75 @@ const ThreeViewer = forwardRef(({
       roughness: 0.1
     });
 
-    // Helper: Canvas Texture with embossed logo/text and custom relief color
+    // --- CASE A: CUSTOM UPLOADED 3D FILE (.GLB / .GLTF / .STL) ---
+    if (custom3DFileUrl) {
+      setLoading3D(true);
+      const isSTL = custom3DFileType === 'stl' || custom3DFileUrl.toLowerCase().includes('.stl');
+
+      if (isSTL) {
+        const loader = new STLLoader();
+        loader.load(
+          custom3DFileUrl,
+          (geometry) => {
+            geometry.computeVertexNormals();
+            geometry.center();
+            const mesh = new THREE.Mesh(geometry, mainMaterial);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+
+            const box = new THREE.Box3().setFromObject(mesh);
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z) || 1;
+            const scale = 4.0 / maxDim;
+            mesh.scale.set(scale, scale, scale);
+
+            group.add(mesh);
+            setLoading3D(false);
+          },
+          undefined,
+          (error) => {
+            console.error('Error loading STL:', error);
+            setLoading3D(false);
+          }
+        );
+      } else {
+        // GLTF / GLB Loader
+        const loader = new GLTFLoader();
+        loader.load(
+          custom3DFileUrl,
+          (gltf) => {
+            const model = gltf.scene;
+            model.traverse((child) => {
+              if (child.isMesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+                child.material = mainMaterial;
+              }
+            });
+
+            const box = new THREE.Box3().setFromObject(model);
+            const size = box.getSize(new THREE.Vector3());
+            const center = box.getCenter(new THREE.Vector3());
+            model.position.sub(center);
+
+            const maxDim = Math.max(size.x, size.y, size.z) || 1;
+            const scale = 4.0 / maxDim;
+            model.scale.set(scale, scale, scale);
+
+            group.add(model);
+            setLoading3D(false);
+          },
+          undefined,
+          (error) => {
+            console.error('Error loading GLTF/GLB:', error);
+            setLoading3D(false);
+          }
+        );
+      }
+      return;
+    }
+
+    // --- CASE B: BUILT-IN PARAMETRIC 3D GEOMETRIES ---
     const createTextCanvasTexture = () => {
       const canvas = document.createElement('canvas');
       canvas.width = 1024;
@@ -143,24 +216,20 @@ const ThreeViewer = forwardRef(({
         const isDefault = !customText || customText.trim().toUpperCase() === 'IDEAFORM';
 
         if (isDefault) {
-          // Draw official vector bulb + text
           ctx.strokeStyle = activeAccentColor;
           ctx.lineWidth = 14;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
 
-          // Bulb dome
           ctx.beginPath();
           ctx.arc(280, 256, 75, 0, Math.PI * 2);
           ctx.stroke();
 
-          // Dot
           ctx.fillStyle = activeAccentColor;
           ctx.beginPath();
           ctx.arc(250, 220, 12, 0, Math.PI * 2);
           ctx.fill();
 
-          // Typography
           ctx.font = `bold 105px 'Space Grotesk', sans-serif`;
           ctx.fillStyle = activeTextColor;
           ctx.fillText('Idea', 420, 290);
@@ -168,7 +237,6 @@ const ThreeViewer = forwardRef(({
           ctx.fillStyle = activeAccentColor;
           ctx.fillText('Form', 660, 290);
         } else {
-          // Custom embossed text
           const displayStr = customText.toUpperCase();
           const fontSize = Math.min(110, Math.floor(820 / Math.max(displayStr.length, 1)));
           ctx.font = `bold ${fontSize}px sans-serif`;
@@ -187,7 +255,7 @@ const ThreeViewer = forwardRef(({
 
     let mainMesh = null;
 
-    // --- 1. KEYCHAIN (LLAVERO BICAPA) ---
+    // 1. KEYCHAIN
     if (modelType === 'keychain') {
       const plateGeo = new THREE.BoxGeometry(4.2, 0.4, 2.2);
       const textTexture = createTextCanvasTexture();
@@ -206,13 +274,11 @@ const ThreeViewer = forwardRef(({
       mainMesh.receiveShadow = true;
       group.add(mainMesh);
 
-      // Accent border rim
       const rimGeo = new THREE.BoxGeometry(4.35, 0.15, 2.35);
       const rimMesh = new THREE.Mesh(rimGeo, accentMat);
       rimMesh.position.y = 0.18;
       group.add(rimMesh);
 
-      // Keychain Ring
       const ringGeo = new THREE.TorusGeometry(0.45, 0.08, 16, 32);
       const ringMesh = new THREE.Mesh(ringGeo, steelMaterial);
       ringMesh.rotation.x = Math.PI / 2;
@@ -220,15 +286,13 @@ const ThreeViewer = forwardRef(({
       group.add(ringMesh);
     }
 
-    // --- 2. TROPHY / CORPORATE AWARD (TROFEO EJECUTIVO) ---
+    // 2. TROPHY
     else if (modelType === 'trophy') {
-      // Base (Accent color)
       const baseGeo = new THREE.CylinderGeometry(1.6, 1.8, 0.7, 32);
       const baseMesh = new THREE.Mesh(baseGeo, accentMat);
       baseMesh.position.y = -1.2;
       group.add(baseMesh);
 
-      // Main Crystal / Polymer Body (Base color)
       const columnGeo = new THREE.BoxGeometry(2.4, 3.2, 0.45);
       const textTexture = createTextCanvasTexture();
       const columnMat = [
@@ -244,7 +308,6 @@ const ThreeViewer = forwardRef(({
       mainMesh.castShadow = true;
       group.add(mainMesh);
 
-      // Crown / Peak
       const peakGeo = new THREE.ConeGeometry(0.8, 0.9, 4);
       const peakMesh = new THREE.Mesh(peakGeo, accentMat);
       peakMesh.position.y = 2.8;
@@ -252,10 +315,9 @@ const ThreeViewer = forwardRef(({
       group.add(peakMesh);
     }
 
-    // --- 3. SPHERE / CHRISTMAS ORNAMENT (ESFERA PERSONALIZADA) ---
+    // 3. SPHERE
     else if (modelType === 'sphere') {
       const sphereGeo = new THREE.SphereGeometry(1.8, 48, 48);
-      const textTexture = createTextCanvasTexture();
       const sphereMat = new THREE.MeshPhysicalMaterial({
         color: new THREE.Color(activeBaseColor),
         roughness: 0.2,
@@ -266,13 +328,11 @@ const ThreeViewer = forwardRef(({
       mainMesh.castShadow = true;
       group.add(mainMesh);
 
-      // Accent Ribbon / Band
       const bandGeo = new THREE.TorusGeometry(1.82, 0.12, 16, 48);
       const bandMesh = new THREE.Mesh(bandGeo, accentMat);
       bandMesh.rotation.x = Math.PI / 2;
       group.add(bandMesh);
 
-      // Top Cap and Ring
       const capGeo = new THREE.CylinderGeometry(0.35, 0.45, 0.35, 24);
       const capMesh = new THREE.Mesh(capGeo, steelMaterial);
       capMesh.position.y = 1.95;
@@ -284,21 +344,18 @@ const ThreeViewer = forwardRef(({
       group.add(topRingMesh);
     }
 
-    // --- 4. CAR / SCALE MODEL (AUTO A ESCALA) ---
+    // 4. CAR
     else if (modelType === 'car') {
-      // Body (Base color)
       const bodyGeo = new THREE.BoxGeometry(4.2, 1.1, 2.0);
       const bodyMesh = new THREE.Mesh(bodyGeo, mainMaterial);
       bodyMesh.position.y = 0.2;
       group.add(bodyMesh);
 
-      // Cabin / Roof (Accent color)
       const cabinGeo = new THREE.BoxGeometry(2.4, 0.9, 1.7);
       const cabinMesh = new THREE.Mesh(cabinGeo, accentMat);
       cabinMesh.position.set(-0.2, 1.0, 0);
       group.add(cabinMesh);
 
-      // 4 Wheels (Metallic Steel / Black)
       const wheelGeo = new THREE.CylinderGeometry(0.55, 0.55, 0.35, 24);
       const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.6 });
 
@@ -322,27 +379,23 @@ const ThreeViewer = forwardRef(({
       });
     }
 
-    // --- 5. CUP / CYLINDER ORGANIZER (TAZA / ORGANIZADOR) ---
+    // 5. CUP
     else if (modelType === 'cup') {
-      // Outer Cylinder
       const cupGeo = new THREE.CylinderGeometry(1.6, 1.4, 3.2, 36, 1, true);
       const cupMesh = new THREE.Mesh(cupGeo, mainMaterial);
       group.add(cupMesh);
 
-      // Base bottom
       const botGeo = new THREE.CylinderGeometry(1.4, 1.4, 0.2, 36);
       const botMesh = new THREE.Mesh(botGeo, mainMaterial);
       botMesh.position.y = -1.5;
       group.add(botMesh);
 
-      // Accent Rim top & base
       const topRimGeo = new THREE.TorusGeometry(1.6, 0.08, 16, 36);
       const topRimMesh = new THREE.Mesh(topRimGeo, accentMat);
       topRimMesh.rotation.x = Math.PI / 2;
       topRimMesh.position.y = 1.6;
       group.add(topRimMesh);
 
-      // Handle (Torus segment)
       const handleGeo = new THREE.TorusGeometry(0.9, 0.16, 16, 32, Math.PI);
       const handleMesh = new THREE.Mesh(handleGeo, accentMat);
       handleMesh.rotation.z = -Math.PI / 2;
@@ -350,23 +403,22 @@ const ThreeViewer = forwardRef(({
       group.add(handleMesh);
     }
 
-    // --- 6. GEOMETRIC PLANTER (MACETA GEOMÉTRICA) ---
+    // 6. PLANTER
     else {
       const planterGeo = new THREE.DodecahedronGeometry(1.8, 0);
       const planterMesh = new THREE.Mesh(planterGeo, mainMaterial);
       planterMesh.castShadow = true;
       group.add(planterMesh);
 
-      // Accent top tray
       const trayGeo = new THREE.TorusGeometry(1.85, 0.1, 16, 6);
       const trayMesh = new THREE.Mesh(trayGeo, accentMat);
       trayMesh.rotation.x = Math.PI / 2;
       group.add(trayMesh);
     }
 
-  }, [modelType, activeBaseColor, activeAccentColor, activeTextColor, customText, logoImage, noEngraving]);
+  }, [modelType, custom3DFileUrl, custom3DFileType, activeBaseColor, activeAccentColor, activeTextColor, customText, logoImage, noEngraving]);
 
-  // Three.js Scene Setup & Animation Loop
+  // Three.js Setup Loop
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
@@ -391,7 +443,6 @@ const ThreeViewer = forwardRef(({
 
     mount.appendChild(renderer.domElement);
 
-    // Lights
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
     scene.add(ambientLight);
 
@@ -410,7 +461,6 @@ const ThreeViewer = forwardRef(({
 
     buildGeometry();
 
-    // Mouse Interaction
     let mouseX = 0;
     let mouseY = 0;
 
@@ -440,7 +490,6 @@ const ThreeViewer = forwardRef(({
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
 
-    // Render loop
     const animate = () => {
       animFrameId.current = requestAnimationFrame(animate);
 
@@ -486,6 +535,12 @@ const ThreeViewer = forwardRef(({
         userSelect: 'none'
       }}
     >
+      {loading3D && (
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20 }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: '700', color: '#176B87' }}>Cargando modelo 3D...</span>
+        </div>
+      )}
+
       {/* 3D Controls Overlays */}
       <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.4rem', zIndex: 10 }}>
         <button

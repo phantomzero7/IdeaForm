@@ -51,6 +51,34 @@ export const AppProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : MOCK_B2B_QUOTES;
   });
 
+  // Products Catalog (Persisted in localStorage for client self-management)
+  const [products, setProducts] = useState(() => {
+    const saved = localStorage.getItem('ideaform_products');
+    return saved ? JSON.parse(saved) : PRODUCTS;
+  });
+
+  const saveProduct = (newOrUpdatedProduct) => {
+    setProducts((prev) => {
+      const exists = prev.some((p) => p.id === newOrUpdatedProduct.id);
+      let updated;
+      if (exists) {
+        updated = prev.map((p) => (p.id === newOrUpdatedProduct.id ? newOrUpdatedProduct : p));
+      } else {
+        updated = [newOrUpdatedProduct, ...prev];
+      }
+      localStorage.setItem('ideaform_products', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const deleteProduct = (id) => {
+    setProducts((prev) => {
+      const updated = prev.filter((p) => p.id !== id);
+      localStorage.setItem('ideaform_products', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   // Toasts
   const [toasts, setToasts] = useState([]);
 
@@ -470,6 +498,10 @@ export const AppProvider = ({ children }) => {
         createOrder,
         b2bQuotes,
         saveB2BQuote,
+        products,
+        setProducts,
+        saveProduct,
+        deleteProduct,
         toasts,
         showToast,
         removeToast
