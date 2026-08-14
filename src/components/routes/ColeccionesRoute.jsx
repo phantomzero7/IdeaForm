@@ -67,10 +67,11 @@ const ColeccionesRoute = () => {
   const [selectedFont, setSelectedFont] = useState('Poppins');
 
   // Multi-Layer Color State (Nike By You style)
+  const [colorModeTab, setColorModeTab] = useState('PRESETS'); // 'PRESETS' | 'LAYERS'
   const [activeLayer, setActiveLayer] = useState('BASE'); // 'BASE' | 'ACCENT' | 'RELIEF'
   const [selectedBaseColor, setSelectedBaseColor] = useState(availableFilaments[0] || FILAMENT_COLORS[0]);
-  const [selectedAccentColor, setSelectedAccentColor] = useState(availableFilaments[1] || FILAMENT_COLORS[1] || FILAMENT_COLORS[0]);
-  const [selectedReliefColor, setSelectedReliefColor] = useState(availableFilaments[2] || FILAMENT_COLORS[2] || FILAMENT_COLORS[0]);
+  const [selectedAccentColor, setSelectedAccentColor] = useState(availableFilaments[6] || FILAMENT_COLORS[6] || FILAMENT_COLORS[2]);
+  const [selectedReliefColor, setSelectedReliefColor] = useState(availableFilaments[1] || FILAMENT_COLORS[1]);
 
   const [viewMode, setViewMode] = useState('3D'); // '3D' | '2D'
   const [quantity, setQuantity] = useState(1);
@@ -110,6 +111,10 @@ const ColeccionesRoute = () => {
         setSelectedAccentColor(toColorObj(firstAvail.accentColor, 'Color Acento'));
         setSelectedReliefColor(toColorObj(firstAvail.reliefColor, 'Color Relieve'));
       }
+    } else {
+      setSelectedBaseColor(toColorObj(FILAMENT_COLORS[0], 'Carbón Mate'));
+      setSelectedAccentColor(toColorObj(FILAMENT_COLORS[6] || FILAMENT_COLORS[2], 'Naranja Fuego'));
+      setSelectedReliefColor(toColorObj(FILAMENT_COLORS[1], 'Blanco Puro'));
     }
     if (product.isCustomizable) {
       setActiveStep(3); // Go to Personaliza step
@@ -623,17 +628,60 @@ const ColeccionesRoute = () => {
                   ))}
                 </div>
               </div>
-              {/* Color Customization: Predefined Combos (Option 1, Option 2...) vs Free Layer Selection */}
+              {/* Color Customization: Dual Tabs (Paletas 1-Click vs Capa por Capa) */}
               <div style={{ marginBottom: '1.5rem', background: '#FAEEEB', padding: '1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #F0D7D2' }}>
                 
-                {selectedProduct.colorMode === 'PRESETS' || (selectedProduct.colorPresets && selectedProduct.colorPresets.length > 0) ? (
+                {/* Mode Switcher Tabs */}
+                <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1rem', background: 'rgba(255,255,255,0.7)', padding: '0.25rem', borderRadius: 'var(--radius-md)', border: '1px solid #F0D7D2' }}>
+                  <button
+                    onClick={() => setColorModeTab('PRESETS')}
+                    style={{
+                      flex: 1,
+                      padding: '0.45rem 0.5rem',
+                      borderRadius: 'var(--radius-sm)',
+                      border: 'none',
+                      background: colorModeTab === 'PRESETS' ? '#A94D43' : 'transparent',
+                      color: colorModeTab === 'PRESETS' ? '#ffffff' : '#A94D43',
+                      fontWeight: '700',
+                      fontSize: '0.78rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.35rem',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <Palette size={14} />
+                    <span>Paletas 1-Click</span>
+                  </button>
+
+                  <button
+                    onClick={() => setColorModeTab('LAYERS')}
+                    style={{
+                      flex: 1,
+                      padding: '0.45rem 0.5rem',
+                      borderRadius: 'var(--radius-sm)',
+                      border: 'none',
+                      background: colorModeTab === 'LAYERS' ? '#A94D43' : 'transparent',
+                      color: colorModeTab === 'LAYERS' ? '#ffffff' : '#A94D43',
+                      fontWeight: '700',
+                      fontSize: '0.78rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.35rem',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <Layers size={14} />
+                    <span>Capa por Capa</span>
+                  </button>
+                </div>
+
+                {colorModeTab === 'PRESETS' ? (
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.4rem' }}>
-                      <Palette size={16} color="#A94D43" />
-                      <strong style={{ fontSize: '0.85rem', color: '#A94D43' }}>
-                        ELIGE TU COMBINACIÓN DE COLORES:
-                      </strong>
-                    </div>
                     <p style={{ fontSize: '0.75rem', color: '#64748b', margin: 0, marginBottom: '0.85rem' }}>
                       Selecciona una de las combinaciones predefinidas creadas por IdeaForm para esta pieza:
                     </p>
@@ -648,9 +696,9 @@ const ColeccionesRoute = () => {
 
                         const isComboSelected =
                           availability.available &&
-                          getHex(selectedBaseColor) === getHex(baseHex) &&
-                          getHex(selectedAccentColor) === getHex(accentHex) &&
-                          getHex(selectedReliefColor) === getHex(reliefHex);
+                          getHex(safeBaseColor.hex) === getHex(baseHex) &&
+                          getHex(safeAccentColor.hex) === getHex(accentHex) &&
+                          getHex(safeReliefColor.hex) === getHex(reliefHex);
 
                         return (
                           <div
@@ -815,18 +863,19 @@ const ColeccionesRoute = () => {
                     </div>
 
                     {/* Active Layer Filament Color Swatches */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
                       <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
                         Color para {activeLayer === 'BASE' ? 'Base' : activeLayer === 'ACCENT' ? 'Acento' : 'Letras 3D'}:
                       </span>
-                      <strong style={{ fontSize: '0.8rem', color: '#A94D43' }}>
+                      <strong style={{ fontSize: '0.82rem', color: '#A94D43' }}>
                         {currentLayerColor?.name || 'Color'}
                       </strong>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
                       {availableFilaments.filter((f) => !f.isArchived).map((col) => {
                         const isAvail = isColorAvailable(col.id || col.hex);
+                        const isSelected = currentLayerColor?.id === col.id || (currentLayerColor?.hex && col.hex && currentLayerColor.hex.toLowerCase() === col.hex.toLowerCase());
 
                         return (
                           <button
@@ -834,19 +883,25 @@ const ColeccionesRoute = () => {
                             disabled={!isAvail}
                             onClick={() => handleColorSelect(col)}
                             style={{
-                              width: '34px',
-                              height: '34px',
+                              width: '36px',
+                              height: '36px',
                               borderRadius: '50%',
-                              background: col.hex,
-                              border: currentLayerColor?.id === col.id ? '3px solid #A94D43' : isAvail ? '2px solid rgba(0,0,0,0.15)' : '2px dashed #dc2626',
-                              boxShadow: currentLayerColor?.id === col.id ? '0 0 0 2px #ffffff' : 'none',
+                              background: col.hex || '#176B87',
+                              border: isSelected ? '3px solid #A94D43' : isAvail ? '2px solid rgba(0,0,0,0.18)' : '2px dashed #dc2626',
+                              boxShadow: isSelected ? '0 0 0 2px #ffffff, 0 2px 8px rgba(169, 77, 67, 0.4)' : 'none',
                               cursor: isAvail ? 'pointer' : 'not-allowed',
                               opacity: isAvail ? 1 : 0.35,
-                              transition: 'transform 0.15s ease',
-                              position: 'relative'
+                              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#ffffff',
+                              transform: isSelected ? 'scale(1.08)' : 'scale(1)'
                             }}
                             title={`${col.name} ${!isAvail ? '(Agotado o Bloqueado)' : `(${col.stockGrams}g disponibles)`}`}
-                          />
+                          >
+                            {isSelected && <Check size={16} strokeWidth={3} style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.7))' }} />}
+                          </button>
                         );
                       })}
                     </div>

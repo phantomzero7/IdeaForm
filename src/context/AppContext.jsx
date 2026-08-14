@@ -45,10 +45,57 @@ export const AppProvider = ({ children }) => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState(null);
 
+  const sanitizeFilamentInventory = (savedData) => {
+    let parsed = [];
+    try {
+      if (savedData) parsed = JSON.parse(savedData);
+    } catch {
+      parsed = [];
+    }
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return FILAMENT_COLORS;
+    }
+
+    // Merge saved data with official FILAMENT_COLORS ensuring valid hex and stock
+    const merged = FILAMENT_COLORS.map((official) => {
+      const existing = parsed.find((p) => p && (p.id === official.id || (p.name && String(p.name).toLowerCase() === String(official.name).toLowerCase())));
+      if (existing) {
+        return {
+          ...official,
+          ...existing,
+          hex: existing.hex || official.hex,
+          name: existing.name || official.name,
+          stockGrams: typeof existing.stockGrams === 'number' ? existing.stockGrams : official.stockGrams,
+          isBlocked: Boolean(existing.isBlocked),
+          isArchived: Boolean(existing.isArchived)
+        };
+      }
+      return official;
+    });
+
+    // Add any custom filaments created by admin
+    parsed.forEach((custom) => {
+      if (custom && custom.id && !merged.some((m) => m.id === custom.id)) {
+        if (custom.hex) {
+          merged.push({
+            stockGrams: 1000,
+            isBlocked: false,
+            isArchived: false,
+            priceMultiplier: 1.0,
+            ...custom
+          });
+        }
+      }
+    });
+
+    return merged;
+  };
+
   // Raw Materials (Filaments Stock in Grams - Unified Store Stock)
   const [filamentInventory, setFilamentInventory] = useState(() => {
     const saved = localStorage.getItem('ideaform_filaments');
-    return saved ? JSON.parse(saved) : FILAMENT_COLORS;
+    return sanitizeFilamentInventory(saved);
   });
 
   const saveFilament = (newOrUpdatedFilament) => {

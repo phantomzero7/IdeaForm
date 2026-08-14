@@ -71,9 +71,9 @@ const ThreeViewer = forwardRef(({
     },
     resetCamera: () => {
       if (cameraRef.current && meshGroupRef.current) {
-        cameraRef.current.position.set(0, 3.5, 5.0);
+        cameraRef.current.position.set(0, 0.4, 7.2);
         cameraRef.current.lookAt(0, 0, 0);
-        meshGroupRef.current.rotation.set(0.35, -0.3, 0);
+        meshGroupRef.current.rotation.set(0.45, -0.35, 0);
       }
     }
   }));
@@ -392,7 +392,7 @@ const ThreeViewer = forwardRef(({
 
     // 1. KEYCHAIN / TAG (Both +Z and -Z faces get reliefFaceMat so text is never hidden during rotation)
     if (modelType === 'keychain') {
-      const plateGeo = new THREE.BoxGeometry(4.8, 2.4, 0.45);
+      const plateGeo = new THREE.BoxGeometry(4.2, 2.0, 0.4);
       
       const plateMaterials = [
         mainMaterial, // +X right
@@ -409,15 +409,15 @@ const ThreeViewer = forwardRef(({
       group.add(mainMesh);
 
       // Accent border rim (Zone 2)
-      const rimGeo = new THREE.BoxGeometry(4.96, 2.56, 0.15);
+      const rimGeo = new THREE.BoxGeometry(4.36, 2.16, 0.12);
       const rimMesh = new THREE.Mesh(rimGeo, accentMat);
-      rimMesh.position.z = -0.16;
+      rimMesh.position.z = -0.15;
       group.add(rimMesh);
 
       // Keychain Ring (Steel)
-      const ringGeo = new THREE.TorusGeometry(0.55, 0.09, 16, 32);
+      const ringGeo = new THREE.TorusGeometry(0.48, 0.08, 16, 32);
       const ringMesh = new THREE.Mesh(ringGeo, steelMaterial);
-      ringMesh.position.set(-2.95, 0, 0);
+      ringMesh.position.set(-2.55, 0, 0);
       group.add(ringMesh);
     }
 
@@ -689,7 +689,7 @@ const ThreeViewer = forwardRef(({
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(0, 0.4, 5.2);
+    camera.position.set(0, 0.4, 7.2);
     camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
