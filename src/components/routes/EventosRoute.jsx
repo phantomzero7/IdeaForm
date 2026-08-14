@@ -415,7 +415,7 @@ const EventosRoute = () => {
               <ThreeViewer
                 ref={viewerRef}
                 modelType={selectedProduct.modelType || 'lamp'}
-                selectedColor={selectedColor.hex}
+                selectedColor={selectedColor?.hex || selectedColor || '#FAEEEB'}
                 materialType="PLA_SILK"
                 customText={`${celebrantNames}`}
                 fontFamily="Dancing Script"
@@ -443,7 +443,7 @@ const EventosRoute = () => {
                     COLOR DEL RECUERDO
                   </label>
                   <span style={{ fontSize: '0.82rem', fontWeight: '700', color: '#B77B21' }}>
-                    {selectedColor.name}
+                    {selectedColor?.name || 'Color Seleccionado'}
                   </span>
                 </div>
 

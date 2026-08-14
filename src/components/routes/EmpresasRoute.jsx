@@ -451,7 +451,7 @@ const EmpresasRoute = () => {
               <ThreeViewer
                 ref={viewerRef}
                 modelType={selectedProduct.modelType || 'trophy'}
-                selectedColor={selectedColor.hex}
+                selectedColor={selectedColor?.hex || selectedColor || '#21658A'}
                 materialType="PLA_SILK"
                 customText={customizationType === 'text' ? customBrandText : customizationType === 'none' ? '' : 'IDEAFORM'}
                 logoImage={customizationType === 'logo' ? logoPreviewUrl : null}
@@ -610,7 +610,7 @@ const EmpresasRoute = () => {
                     COLOR DE FILAMENTO CORPORATIVO
                   </label>
                   <span style={{ fontSize: '0.82rem', fontWeight: '700', color: '#21658A' }}>
-                    {selectedColor.name}
+                    {selectedColor?.name || 'Color Seleccionado'}
                   </span>
                 </div>
 

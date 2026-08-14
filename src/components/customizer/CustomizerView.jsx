@@ -284,8 +284,8 @@ const CustomizerView = () => {
                 <ThreeViewer
                   ref={viewerRef}
                   modelType={modelType}
-                  selectedColor={selectedColor.hex}
-                  materialType={selectedMaterial.typeCode}
+                  selectedColor={selectedColor?.hex || selectedColor || '#00828A'}
+                  materialType={selectedMaterial?.typeCode || selectedMaterial?.id || 'PLA_SILK'}
                   customText={customText}
                   fontFamily={selectedFont}
                   showDimensions={true}
@@ -298,7 +298,7 @@ const CustomizerView = () => {
                       width: '240px',
                       height: '240px',
                       borderRadius: 'var(--radius-xl)',
-                      background: selectedColor.hex,
+                      background: selectedColor?.hex || '#00828A',
                       color: '#ffffff',
                       display: 'flex',
                       flexDirection: 'column',
@@ -315,15 +315,15 @@ const CustomizerView = () => {
                       {customText || 'IDEAFORM'}
                     </span>
                     <span style={{ fontSize: '0.75rem', opacity: 0.8, marginTop: '0.4rem' }}>
-                      {selectedMaterial.name}
+                      {selectedMaterial?.name || 'PLA Seda Premium'}
                     </span>
                   </div>
 
                   <div style={{ fontWeight: '800', fontSize: '1.1rem', color: '#1A1A1A' }}>
-                    {selectedProduct.name}
+                    {selectedProduct?.name || 'Producto Personalizado'}
                   </div>
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                    Color: {selectedColor.name} ({selectedColor.hex})
+                    Color: {selectedColor?.name || 'Color'} ({selectedColor?.hex || '#00828A'})
                   </div>
                 </div>
               )}

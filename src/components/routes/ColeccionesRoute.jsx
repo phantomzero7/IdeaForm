@@ -517,9 +517,9 @@ const ColeccionesRoute = () => {
                     modelType={selectedProduct.modelType || 'keychain'}
                     custom3DFileUrl={selectedProduct.custom3DFileUrl}
                     custom3DFileType={selectedProduct.custom3DFileType}
-                    baseColor={selectedBaseColor?.hex || selectedBaseColor || '#176B87'}
-                    accentColor={selectedAccentColor?.hex || selectedAccentColor || '#D4AF37'}
-                    reliefColor={selectedReliefColor?.hex || selectedReliefColor || '#FFFFFF'}
+                    baseColor={safeBaseColor.hex}
+                    accentColor={safeAccentColor.hex}
+                    reliefColor={safeReliefColor.hex}
                     materialType="PLA_SILK"
                     customText={customText}
                     fontFamily={selectedFont}
@@ -532,7 +532,7 @@ const ColeccionesRoute = () => {
                         width: '240px',
                         height: '240px',
                         borderRadius: 'var(--radius-xl)',
-                        background: selectedBaseColor?.hex || selectedBaseColor || '#176B87',
+                        background: safeBaseColor.hex,
                         color: '#ffffff',
                         display: 'flex',
                         flexDirection: 'column',
@@ -540,7 +540,7 @@ const ColeccionesRoute = () => {
                         justifyContent: 'center',
                         boxShadow: 'var(--shadow-lg)',
                         marginBottom: '1.25rem',
-                        border: `4px solid ${selectedAccentColor?.hex || selectedAccentColor || '#D4AF37'}`,
+                        border: `4px solid ${safeAccentColor.hex}`,
                         padding: '1rem',
                         position: 'relative'
                       }}
@@ -553,7 +553,7 @@ const ColeccionesRoute = () => {
                           fontWeight: '900',
                           fontSize: '1.2rem',
                           fontFamily: selectedFont,
-                          color: selectedReliefColor?.hex || selectedReliefColor || '#FFFFFF',
+                          color: safeReliefColor.hex,
                           textShadow: '0 2px 8px rgba(0,0,0,0.5)',
                           wordBreak: 'break-word',
                           textAlign: 'center'
@@ -562,7 +562,7 @@ const ColeccionesRoute = () => {
                         {customText || 'IDEAFORM'}
                       </div>
                     </div>
-                    <div style={{ fontWeight: '800', color: '#A94D43' }}>{selectedProduct.name}</div>
+                    <div style={{ fontWeight: '800', color: '#A94D43' }}>{selectedProduct?.name || 'Producto'}</div>
                   </div>
                 )}
               </div>

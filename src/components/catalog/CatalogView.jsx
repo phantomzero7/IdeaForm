@@ -33,13 +33,15 @@ const CatalogView = () => {
     if (product.isCustomizable) {
       navigateTo('customizer', { productId: product.id });
     } else {
+      const defaultMat = FILAMENT_MATERIALS[0] || { id: 'PLA_SILK', name: 'PLA Seda Premium' };
+      const defaultCol = (defaultMat.colors && defaultMat.colors[0]) || { id: 'col-teal', name: 'Teal IdeaForm', hex: '#00828A' };
       addToCart({
         id: product.id,
         name: product.name,
         basePrice: product.basePrice,
         finalUnitPrice: product.basePrice,
-        selectedMaterial: FILAMENT_MATERIALS[0],
-        selectedColor: FILAMENT_MATERIALS[0].colors[0],
+        selectedMaterial: defaultMat,
+        selectedColor: defaultCol,
         quantity: 1,
         weightGrams: product.weightGrams,
         printTimeMins: product.printTimeMins

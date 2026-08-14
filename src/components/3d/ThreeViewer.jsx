@@ -558,7 +558,66 @@ const ThreeViewer = forwardRef(({
       group.add(handleMesh);
     }
 
-    // 6. PLANTER
+    // 6. ORGANIZER (HexaDesk / Desk Station)
+    else if (modelType === 'organizer') {
+      // Main Organizer Body (Hexagonal / Beveled tray)
+      const bodyGeo = new THREE.CylinderGeometry(2.4, 2.6, 1.8, 6);
+      const bodyMesh = new THREE.Mesh(bodyGeo, mainMaterial);
+      bodyMesh.castShadow = true;
+      group.add(bodyMesh);
+
+      // Accent Base Rim
+      const baseRimGeo = new THREE.CylinderGeometry(2.7, 2.7, 0.25, 6);
+      const baseRimMesh = new THREE.Mesh(baseRimGeo, accentMat);
+      baseRimMesh.position.y = -0.95;
+      group.add(baseRimMesh);
+
+      // Front 3D Relief Plate
+      const plateGeo = new THREE.BoxGeometry(3.2, 1.0, 0.15);
+      const plateMaterials = [mainMaterial, mainMaterial, mainMaterial, mainMaterial, reliefFaceMat, mainMaterial];
+      const plateMesh = new THREE.Mesh(plateGeo, plateMaterials);
+      plateMesh.position.set(0, 0.1, 2.15);
+      group.add(plateMesh);
+
+      // Pen Cup / Compartment Ring
+      const cupGeo = new THREE.CylinderGeometry(0.8, 0.8, 1.2, 16);
+      const cupMesh = new THREE.Mesh(cupGeo, accentMat);
+      cupMesh.position.set(0.9, 0.8, -0.6);
+      group.add(cupMesh);
+    }
+
+    // 7. LAMP / LITOFANÍA
+    else if (modelType === 'lamp') {
+      // Lamp Base
+      const baseGeo = new THREE.CylinderGeometry(1.8, 2.0, 0.5, 32);
+      const baseMesh = new THREE.Mesh(baseGeo, accentMat);
+      baseMesh.position.y = -1.5;
+      group.add(baseMesh);
+
+      // Lamp Shade / Litofanía Screen with 3D Relief
+      const shadeGeo = new THREE.BoxGeometry(2.8, 3.2, 1.2);
+      const shadeMaterials = [
+        mainMaterial,
+        mainMaterial,
+        accentMat,
+        accentMat,
+        reliefFaceMat, // Front
+        reliefFaceMat  // Back
+      ];
+      const shadeMesh = new THREE.Mesh(shadeGeo, shadeMaterials);
+      shadeMesh.position.y = 0.4;
+      shadeMesh.castShadow = true;
+      group.add(shadeMesh);
+
+      // Glowing Core Accent
+      const coreGeo = new THREE.SphereGeometry(0.5, 16, 16);
+      const coreMat = new THREE.MeshBasicMaterial({ color: 0xfff7ed });
+      const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+      coreMesh.position.y = 0.4;
+      group.add(coreMesh);
+    }
+
+    // 8. PLANTER / DEFAULT
     else {
       const planterGeo = new THREE.DodecahedronGeometry(1.8, 0);
       const planterMesh = new THREE.Mesh(planterGeo, mainMaterial);

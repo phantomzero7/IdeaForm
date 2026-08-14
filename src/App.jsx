@@ -28,10 +28,18 @@ function App() {
         navigateTo('admin');
       } else if (hash === 'colecciones') {
         navigateTo('colecciones');
-      } else if (hash === 'empresas') {
+      } else if (hash === 'empresas' || hash === 'b2b') {
         navigateTo('empresas');
       } else if (hash === 'eventos') {
         navigateTo('eventos');
+      } else if (hash === 'customizer' || hash === 'personalizar') {
+        navigateTo('customizer');
+      } else if (hash === 'catalog' || hash === 'catalogo') {
+        navigateTo('catalog');
+      } else if (hash === 'checkout') {
+        navigateTo('checkout');
+      } else if (hash === 'tracking' || hash === 'rastreo') {
+        navigateTo('tracking');
       }
     };
 
