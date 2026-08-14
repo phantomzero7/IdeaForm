@@ -18,7 +18,9 @@ import {
   Gift,
   ImageIcon,
   ShieldCheck,
-  Truck
+  Truck,
+  Palette,
+  Layers
 } from 'lucide-react';
 
 const FONTS_LIST = [
@@ -29,18 +31,26 @@ const FONTS_LIST = [
 ];
 
 const ColeccionesRoute = () => {
-  const { navigateTo, addToCart, showToast } = useApp();
+  const { navigateTo, addToCart, showToast, products } = useApp();
   const viewerRef = useRef(null);
+
+  const availableProducts = products || PRODUCTS;
 
   // Stepper State (1 to 6)
   const [activeStep, setActiveStep] = useState(1);
   const [selectedSubcollection, setSelectedSubcollection] = useState('escolar');
 
   // Customization State for Chosen Product
-  const [selectedProduct, setSelectedProduct] = useState(PRODUCTS[0]);
+  const [selectedProduct, setSelectedProduct] = useState(availableProducts[0]);
   const [customText, setCustomText] = useState('VALENTINA');
   const [selectedFont, setSelectedFont] = useState('Poppins');
-  const [selectedColor, setSelectedColor] = useState(FILAMENT_COLORS[0]); // Coral Terracota (#C9685B)
+
+  // Multi-Layer Color State (Nike By You style)
+  const [activeLayer, setActiveLayer] = useState('BASE'); // 'BASE' | 'ACCENT' | 'RELIEF'
+  const [selectedBaseColor, setSelectedBaseColor] = useState(FILAMENT_COLORS[1] || FILAMENT_COLORS[0]); // Azul Océano
+  const [selectedAccentColor, setSelectedAccentColor] = useState(FILAMENT_COLORS[2] || FILAMENT_COLORS[0]); // Oro Imperial
+  const [selectedReliefColor, setSelectedReliefColor] = useState(FILAMENT_COLORS[5] || FILAMENT_COLORS[0]); // Blanco Nieve
+
   const [viewMode, setViewMode] = useState('3D'); // '3D' | '2D'
   const [quantity, setQuantity] = useState(1);
   const [includeGiftBox, setIncludeGiftBox] = useState(false);
@@ -56,11 +66,11 @@ const ColeccionesRoute = () => {
 
   // Filter Products accurately by subcollection
   const filteredProducts = selectedSubcollection === 'all'
-    ? PRODUCTS.filter((p) => p.subcollection !== 'empresas' && p.subcollection !== 'eventos')
-    : PRODUCTS.filter((p) => p.subcollection === selectedSubcollection);
+    ? availableProducts.filter((p) => p.subcollection !== 'empresas' && p.subcollection !== 'eventos' && p.isActive !== false)
+    : availableProducts.filter((p) => p.subcollection === selectedSubcollection && p.isActive !== false);
 
   // Price calculations
-  const unitPrice = selectedProduct ? selectedProduct.basePrice * (selectedColor.priceMultiplier || 1.0) : 85;
+  const unitPrice = selectedProduct ? selectedProduct.basePrice * (selectedBaseColor.priceMultiplier || 1.0) : 85;
   const giftBoxPrice = includeGiftBox ? 35.00 : 0;
   const subtotal = (unitPrice + giftBoxPrice) * quantity;
 
@@ -71,6 +81,19 @@ const ColeccionesRoute = () => {
       setActiveStep(3); // Go to Personaliza step
     } else {
       setActiveStep(5); // Go straight to Paquete / Quantity
+    }
+  };
+
+  // Current active color based on activeLayer
+  const currentLayerColor = activeLayer === 'BASE' ? selectedBaseColor : activeLayer === 'ACCENT' ? selectedAccentColor : selectedReliefColor;
+
+  const handleColorSelect = (col) => {
+    if (activeLayer === 'BASE') {
+      setSelectedBaseColor(col);
+    } else if (activeLayer === 'ACCENT') {
+      setSelectedAccentColor(col);
+    } else {
+      setSelectedReliefColor(col);
     }
   };
 
@@ -88,16 +111,19 @@ const ColeccionesRoute = () => {
       name: selectedProduct.isCustomizable ? `${selectedProduct.name} (${customText})` : selectedProduct.name,
       customText: selectedProduct.isCustomizable ? customText : null,
       fontFamily: selectedFont,
+      selectedBaseColor: { id: selectedBaseColor.id, name: selectedBaseColor.name, hex: selectedBaseColor.hex },
+      selectedAccentColor: { id: selectedAccentColor.id, name: selectedAccentColor.name, hex: selectedAccentColor.hex },
+      selectedReliefColor: { id: selectedReliefColor.id, name: selectedReliefColor.name, hex: selectedReliefColor.hex },
       selectedColor: {
-        id: selectedColor.id,
-        name: selectedColor.name,
-        hex: selectedColor.hex
+        id: selectedBaseColor.id,
+        name: `${selectedBaseColor.name} / ${selectedAccentColor.name} / ${selectedReliefColor.name}`,
+        hex: selectedBaseColor.hex
       },
       includeGiftBox,
       finalUnitPrice: unitPrice + giftBoxPrice,
       quantity,
       snapshotUrl,
-      weightGrams: selectedProduct.weightGrams || 20,
+      weightGrams: selectedProduct.filamentGrams || selectedProduct.weightGrams || 25,
       printTimeMins: selectedProduct.printTimeMins || 40
     };
 
@@ -118,30 +144,29 @@ const ColeccionesRoute = () => {
                 color: '#ffffff',
                 fontWeight: '800',
                 fontSize: '0.82rem',
-                padding: '0.4rem 0.9rem',
-                borderRadius: 'var(--radius-full)',
-                letterSpacing: '0.04em'
+                padding: '0.3rem 0.8rem',
+                borderRadius: 'var(--radius-full)'
               }}
             >
               COLECCIONES
             </span>
-            <span style={{ fontSize: '1.15rem', fontWeight: '700', color: '#A94D43' }}>
-              Diseña algo que sea tuyo
-            </span>
+            <h1 style={{ fontSize: '1.45rem', fontWeight: '800', color: '#A94D43', margin: 0 }}>
+              Personalizador Multi-Capa 3D
+            </h1>
           </div>
 
-          <div style={{ fontSize: '0.82rem', color: '#A94D43', fontWeight: '600' }}>
-            ✨ Manufactura 3D de alta precisión y calidad garantizada
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <button className="btn btn-secondary btn-sm" onClick={() => navigateTo('home')}>
+              ← Volver al Inicio
+            </button>
           </div>
         </div>
       </div>
 
-      {/* 2. Interactive Stepper Bar */}
-      <div className="container" style={{ paddingTop: '2rem', paddingBottom: '1.5rem' }}>
-        <div className="stepper-nav" style={{ maxWidth: '840px', margin: '0 auto 2.5rem auto' }}>
-          <div className="stepper-progress-bg" style={{ backgroundColor: '#F0D7D2' }} />
-          <div className="stepper-progress-fill" style={{ background: '#C9685B', width: `${((activeStep - 1) / (STEPS.length - 1)) * 88}%` }} />
-
+      <div className="container" style={{ paddingTop: '2rem' }}>
+        
+        {/* 2. Enhanced Stepper (Paso 1 al 6) */}
+        <div className="stepper-container" style={{ marginBottom: '2.5rem' }}>
           {STEPS.map((s) => {
             const isCompleted = activeStep > s.num;
             const isActive = activeStep === s.num;
@@ -151,23 +176,39 @@ const ColeccionesRoute = () => {
                 key={s.num}
                 className={`stepper-step ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
                 onClick={() => {
-                  // Only allow jumping back or to reachable step
-                  if (s.num <= activeStep || isCompleted) {
+                  if (s.num <= activeStep) {
                     setActiveStep(s.num);
                   }
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: s.num <= activeStep ? 'pointer' : 'default',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '0.4rem'
                 }}
               >
                 <div
                   className="stepper-circle"
                   style={{
-                    backgroundColor: isActive ? '#A94D43' : isCompleted ? '#FAEEEB' : '#FFFFFF',
-                    borderColor: isActive ? '#A94D43' : isCompleted ? '#C9685B' : '#F0D7D2',
-                    color: isActive ? '#FFFFFF' : isCompleted ? '#A94D43' : '#A89279'
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: '800',
+                    fontSize: '0.9rem',
+                    background: isActive ? '#A94D43' : isCompleted ? '#C9685B' : '#E8C5BE',
+                    color: '#ffffff',
+                    transition: 'all 0.2s ease'
                   }}
                 >
-                  {isCompleted ? <CheckCircle2 size={16} color="#A94D43" /> : s.num}
+                  {isCompleted ? <CheckCircle2 size={18} /> : s.num}
                 </div>
-                <div className="stepper-label" style={{ color: isActive ? '#A94D43' : '#777' }}>
+                <div className="stepper-label" style={{ color: isActive ? '#A94D43' : '#777', fontWeight: isActive ? '800' : '600', fontSize: '0.8rem' }}>
                   {s.label}
                 </div>
               </button>
@@ -259,71 +300,76 @@ const ColeccionesRoute = () => {
                   onClick={() => setActiveStep(1)}
                   style={{ borderColor: '#F0D7D2', color: '#A94D43' }}
                 >
-                  <ArrowLeft size={14} />
-                  <span>Cambiar Colección</span>
+                  ← Cambiar Colección
                 </button>
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: '1.5rem' }}>
+            {/* Products Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
               {filteredProducts.map((product) => (
                 <div
                   key={product.id}
                   className="card card-elevated"
                   style={{
+                    padding: '1.5rem',
+                    background: '#FFFFFF',
+                    borderRadius: 'var(--radius-xl)',
+                    border: '1px solid #F0D7D2',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
-                    padding: '1.5rem',
-                    background: '#ffffff',
-                    border: '1px solid #F0D7D2',
-                    borderRadius: 'var(--radius-lg)'
+                    transition: 'all 0.2s ease'
                   }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-4px)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
                 >
                   <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                      <span className="badge" style={{ background: '#FAEEEB', color: '#A94D43', border: '1px solid #F0D7D2' }}>
-                        {product.categoryName}
-                      </span>
+                    <div style={{ position: 'relative', width: '100%', height: '180px', borderRadius: 'var(--radius-lg)', overflow: 'hidden', background: '#FAEEEB', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {product.image ? (
+                        <img src={product.image} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <Box size={48} color="#C9685B" style={{ opacity: 0.8 }} />
+                      )}
+
                       {product.isCustomizable && (
-                        <span className="badge" style={{ background: 'rgba(201, 104, 91, 0.1)', color: '#C9685B', fontSize: '0.7rem' }}>
-                          <Sparkles size={11} /> Grabable 3D
+                        <span
+                          style={{
+                            position: 'absolute',
+                            top: '0.75rem',
+                            right: '0.75rem',
+                            background: '#A94D43',
+                            color: '#ffffff',
+                            padding: '0.2rem 0.55rem',
+                            borderRadius: 'var(--radius-full)',
+                            fontSize: '0.7rem',
+                            fontWeight: '800',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.3rem',
+                            boxShadow: 'var(--shadow-sm)'
+                          }}
+                        >
+                          <Sparkles size={11} />
+                          <span>Personalizable</span>
                         </span>
                       )}
                     </div>
 
-                    <div
-                      style={{
-                        height: '180px',
-                        background: 'linear-gradient(135deg, #FAEEEB 0%, #F5DDD8 100%)',
-                        borderRadius: 'var(--radius-md)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginBottom: '1rem'
-                      }}
-                    >
-                      <Box size={44} color="#C9685B" style={{ opacity: 0.85 }} />
-                      <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#A94D43', marginTop: '0.5rem' }}>
-                        {product.has3d ? 'Modelo 3D Interactivo' : 'Fotografía 2D'}
-                      </span>
-                    </div>
-
-                    <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#A94D43', marginBottom: '0.35rem' }}>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#A94D43', marginBottom: '0.35rem' }}>
                       {product.name}
                     </h3>
-                    <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '1rem' }}>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: '1.4', marginBottom: '1rem' }}>
                       {product.description}
                     </p>
                   </div>
 
                   <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1rem', borderTop: '1px solid #F0D7D2', paddingTop: '0.75rem' }}>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)' }}>Precio Base:</span>
-                      <span style={{ fontSize: '1.3rem', fontWeight: '800', color: '#A94D43' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderTop: '1px solid #F0D7D2', paddingTop: '0.75rem' }}>
+                      <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Desde</span>
+                      <strong style={{ fontSize: '1.25rem', color: '#A94D43', fontWeight: '800' }}>
                         {formatCurrency(product.basePrice)}
-                      </span>
+                      </strong>
                     </div>
 
                     <button
@@ -350,16 +396,16 @@ const ColeccionesRoute = () => {
           </div>
         )}
 
-        {/* PASO 3: PERSONALIZA TU PIEZA SELECCIONADA */}
+        {/* PASO 3: PERSONALIZA TU PIEZA SELECCIONADA CON ZONAS MULTI-COLOR */}
         {activeStep === 3 && selectedProduct && (
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 1.2fr) minmax(300px, 0.8fr)', gap: '2rem' }}>
             
             {/* Left: 2D/3D Live Canvas */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div className="card card-elevated" style={{ padding: '0', background: '#ffffff', position: 'relative', overflow: 'hidden', height: '480px' }}>
+              <div className="card card-elevated" style={{ padding: '0', background: '#ffffff', position: 'relative', overflow: 'hidden', height: '490px', borderRadius: 'var(--radius-xl)', border: '1px solid #F0D7D2' }}>
                 
                 {/* 2D / 3D Toggle */}
-                {selectedProduct.has3d && (
+                {selectedProduct.has3d !== false && (
                   <div style={{ position: 'absolute', top: '1rem', right: '1rem', zIndex: 30, display: 'flex', background: 'rgba(255,255,255,0.95)', padding: '0.2rem', borderRadius: 'var(--radius-full)', border: '1px solid #F0D7D2' }}>
                     <button
                       onClick={() => setViewMode('3D')}
@@ -394,11 +440,15 @@ const ColeccionesRoute = () => {
                   </div>
                 )}
 
-                {viewMode === '3D' && selectedProduct.has3d ? (
+                {viewMode === '3D' && selectedProduct.has3d !== false ? (
                   <ThreeViewer
                     ref={viewerRef}
                     modelType={selectedProduct.modelType || 'keychain'}
-                    selectedColor={selectedColor.hex}
+                    custom3DFileUrl={selectedProduct.custom3DFileUrl}
+                    custom3DFileType={selectedProduct.custom3DFileType}
+                    baseColor={selectedBaseColor.hex}
+                    accentColor={selectedAccentColor.hex}
+                    reliefColor={selectedReliefColor.hex}
                     materialType="PLA_SILK"
                     customText={customText}
                     fontFamily={selectedFont}
@@ -411,23 +461,23 @@ const ColeccionesRoute = () => {
                         width: '220px',
                         height: '220px',
                         borderRadius: 'var(--radius-xl)',
-                        background: selectedColor.hex,
+                        background: selectedBaseColor.hex,
                         color: '#ffffff',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
                         boxShadow: 'var(--shadow-lg)',
-                        marginBottom: '1.25rem'
+                        marginBottom: '1.25rem',
+                        border: `4px solid ${selectedAccentColor.hex}`
                       }}
                     >
-                      <Sparkles size={32} style={{ marginBottom: '0.5rem', opacity: 0.9 }} />
-                      <span style={{ fontWeight: '800', fontSize: '1.15rem', fontFamily: selectedFont, padding: '0 1rem' }}>
+                      <Sparkles size={32} style={{ marginBottom: '0.5rem', opacity: 0.9, color: selectedReliefColor.hex }} />
+                      <span style={{ fontWeight: '800', fontSize: '1.15rem', fontFamily: selectedFont, padding: '0 1rem', color: selectedReliefColor.hex }}>
                         {customText || 'IDEAFORM'}
                       </span>
                     </div>
                     <div style={{ fontWeight: '800', color: '#A94D43' }}>{selectedProduct.name}</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Color: {selectedColor.name}</div>
                   </div>
                 )}
               </div>
@@ -435,15 +485,15 @@ const ColeccionesRoute = () => {
 
             {/* Right: Customization Controls */}
             <div style={{ background: '#ffffff', border: '1px solid #F0D7D2', borderRadius: 'var(--radius-xl)', padding: '2rem' }}>
-              <h2 style={{ fontSize: '1.35rem', fontWeight: '800', color: '#A94D43', marginBottom: '0.4rem' }}>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: '800', color: '#A94D43', marginBottom: '0.3rem' }}>
                 Paso 3: Personaliza "{selectedProduct.name}"
               </h2>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-                Escribe tu grabado y selecciona el color deseado.
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
+                Escribe tu grabado 3D y personaliza los colores de cada capa o detalle.
               </p>
 
               {/* Text Engraving */}
-              <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ marginBottom: '1.25rem' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#A94D43', display: 'block', marginBottom: '0.4rem' }}>
                   TEXTO EN RELIEVE 3D
                 </label>
@@ -488,24 +538,98 @@ const ColeccionesRoute = () => {
                 </div>
               </div>
 
-              {/* Color Swatches */}
-              <div style={{ marginBottom: '1.75rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#A94D43' }}>
-                    COLOR DEL FILAMENTO
-                  </label>
-                  <span style={{ fontSize: '0.82rem', fontWeight: '700', color: '#C9685B' }}>
-                    {selectedColor.name}
-                  </span>
+              {/* Multi-Layer Color Customization Tabs (Nike By You style) */}
+              <div style={{ marginBottom: '1.5rem', background: '#FAEEEB', padding: '1rem', borderRadius: 'var(--radius-lg)', border: '1px solid #F0D7D2' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                  <Layers size={16} color="#A94D43" />
+                  <strong style={{ fontSize: '0.82rem', color: '#A94D43' }}>
+                    SELECCIONA LA CAPA A COLOREAR:
+                  </strong>
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
+                {/* Layer Selector Tabs */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem', marginBottom: '1rem' }}>
+                  <button
+                    onClick={() => setActiveLayer('BASE')}
+                    style={{
+                      padding: '0.5rem 0.3rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: activeLayer === 'BASE' ? '2px solid #A94D43' : '1px solid #F0D7D2',
+                      background: activeLayer === 'BASE' ? '#ffffff' : 'rgba(255,255,255,0.6)',
+                      color: activeLayer === 'BASE' ? '#A94D43' : '#64748b',
+                      fontSize: '0.75rem',
+                      fontWeight: '800',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '0.2rem'
+                    }}
+                  >
+                    <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: selectedBaseColor.hex, border: '1px solid rgba(0,0,0,0.2)' }} />
+                    <span>1. Base</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveLayer('ACCENT')}
+                    style={{
+                      padding: '0.5rem 0.3rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: activeLayer === 'ACCENT' ? '2px solid #A94D43' : '1px solid #F0D7D2',
+                      background: activeLayer === 'ACCENT' ? '#ffffff' : 'rgba(255,255,255,0.6)',
+                      color: activeLayer === 'ACCENT' ? '#A94D43' : '#64748b',
+                      fontSize: '0.75rem',
+                      fontWeight: '800',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '0.2rem'
+                    }}
+                  >
+                    <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: selectedAccentColor.hex, border: '1px solid rgba(0,0,0,0.2)' }} />
+                    <span>2. Acento</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveLayer('RELIEF')}
+                    style={{
+                      padding: '0.5rem 0.3rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: activeLayer === 'RELIEF' ? '2px solid #A94D43' : '1px solid #F0D7D2',
+                      background: activeLayer === 'RELIEF' ? '#ffffff' : 'rgba(255,255,255,0.6)',
+                      color: activeLayer === 'RELIEF' ? '#A94D43' : '#64748b',
+                      fontSize: '0.75rem',
+                      fontWeight: '800',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '0.2rem'
+                    }}
+                  >
+                    <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: selectedReliefColor.hex, border: '1px solid rgba(0,0,0,0.2)' }} />
+                    <span>3. Letras 3D</span>
+                  </button>
+                </div>
+
+                {/* Active Layer Filament Color Swatches */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    Color para {activeLayer === 'BASE' ? 'Base' : activeLayer === 'ACCENT' ? 'Acento' : 'Letras 3D'}:
+                  </span>
+                  <strong style={{ fontSize: '0.8rem', color: '#A94D43' }}>
+                    {currentLayerColor.name}
+                  </strong>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap' }}>
                   {FILAMENT_COLORS.map((col) => (
                     <button
                       key={col.id}
-                      onClick={() => setSelectedColor(col)}
-                      className={`swatch-btn ${selectedColor.id === col.id ? 'selected' : ''}`}
-                      style={{ background: col.hex }}
+                      onClick={() => handleColorSelect(col)}
+                      className={`swatch-btn ${currentLayerColor.id === col.id ? 'selected' : ''}`}
+                      style={{ background: col.hex, width: '32px', height: '32px', borderRadius: '50%', border: currentLayerColor.id === col.id ? '3px solid #A94D43' : '2px solid #ffffff', cursor: 'pointer', boxShadow: 'var(--shadow-sm)' }}
                       title={col.name}
                     />
                   ))}
@@ -515,175 +639,217 @@ const ColeccionesRoute = () => {
               {/* Next Step */}
               <button
                 className="btn btn-colecciones btn-lg"
-                style={{ width: '100%', fontWeight: '800' }}
+                style={{ width: '100%', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                 onClick={() => setActiveStep(4)}
               >
                 <span>Paso 4: Ver Vista Previa y Medidas</span>
-                <ArrowRight size={16} />
+                <ArrowRight size={18} />
               </button>
             </div>
           </div>
         )}
 
-        {/* PASO 4: VISTA PREVIA Y VALIDACIÓN */}
+        {/* PASO 4: VISTA PREVIA TÉCNICA & MEDIDAS */}
         {activeStep === 4 && selectedProduct && (
-          <div style={{ maxWidth: '750px', margin: '0 auto', background: '#ffffff', border: '1px solid #F0D7D2', borderRadius: 'var(--radius-xl)', padding: '2.5rem' }}>
-            <h2 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#A94D43', marginBottom: '0.5rem', textAlign: 'center' }}>
-              Paso 4: Validación de tu Pieza 3D
-            </h2>
-            <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '2rem' }}>
-              Revisa los detalles técnicos antes de elegir empaque y cantidad.
-            </p>
-
-            <div style={{ background: '#FAEEEB', borderRadius: 'var(--radius-lg)', padding: '1.5rem', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
-              <div>
-                <div style={{ fontSize: '0.78rem', color: '#A94D43', fontWeight: '800' }}>PRODUCTO CONFIGURADO</div>
-                <div style={{ fontSize: '1.3rem', fontWeight: '800', color: '#1A1A1A' }}>{selectedProduct.name}</div>
-                <div style={{ fontSize: '0.9rem', color: '#C9685B', fontWeight: '700', marginTop: '0.2rem' }}>
-                  Grabado: "{customText}" • Color: {selectedColor.name}
-                </div>
-              </div>
-
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '0.78rem', color: '#777' }}>DIMENSIONES / PESO</div>
-                <div style={{ fontWeight: '700', color: '#1A1A1A' }}>{selectedProduct.dimensions || '65 x 24 x 6 mm'}</div>
-                <div style={{ fontSize: '0.8rem', color: '#777' }}>{formatGrams(selectedProduct.weightGrams || 20)} • PLA Seda</div>
-              </div>
+          <div style={{ maxWidth: '850px', margin: '0 auto', background: '#FFFFFF', borderRadius: 'var(--radius-xl)', padding: '2.5rem', border: '1px solid #F0D7D2' }}>
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+              <span className="badge" style={{ background: '#FAEEEB', color: '#A94D43', marginBottom: '0.5rem' }}>
+                HOJA DE ESPECIFICACIONES 3D
+              </span>
+              <h2 style={{ fontSize: '1.65rem', fontWeight: '800', color: '#A94D43' }}>
+                Paso 4: Vista Previa y Medidas de Fabricación
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
+                Verifica las dimensiones, colores de cada capa y el grabado antes de continuar.
+              </p>
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <button
-                className="btn btn-secondary"
-                style={{ flex: 1, borderColor: '#F0D7D2', color: '#A94D43' }}
-                onClick={() => setActiveStep(3)}
-              >
-                <ArrowLeft size={16} />
-                <span>Modificar Grabado</span>
-              </button>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem', alignItems: 'center', marginBottom: '2rem' }}>
+              <div style={{ height: '320px', background: '#FAEEEB', borderRadius: 'var(--radius-lg)', overflow: 'hidden', position: 'relative' }}>
+                <ThreeViewer
+                  modelType={selectedProduct.modelType || 'keychain'}
+                  custom3DFileUrl={selectedProduct.custom3DFileUrl}
+                  custom3DFileType={selectedProduct.custom3DFileType}
+                  baseColor={selectedBaseColor.hex}
+                  accentColor={selectedAccentColor.hex}
+                  reliefColor={selectedReliefColor.hex}
+                  customText={customText}
+                  fontFamily={selectedFont}
+                  showDimensions={false}
+                />
+              </div>
 
-              <button
-                className="btn btn-colecciones"
-                style={{ flex: 1.5, fontWeight: '800' }}
-                onClick={() => setActiveStep(5)}
-              >
-                <span>Paso 5: Seleccionar Paquete</span>
-                <ArrowRight size={16} />
-              </button>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#A94D43', marginBottom: '1rem' }}>
+                  {selectedProduct.name}
+                </h3>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #F0D7D2', paddingBottom: '0.4rem' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Grabado 3D:</span>
+                    <strong>"{customText}"</strong>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #F0D7D2', paddingBottom: '0.4rem' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Tipografía:</span>
+                    <strong>{FONTS_LIST.find((f) => f.id === selectedFont)?.name || selectedFont}</strong>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #F0D7D2', paddingBottom: '0.4rem' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Capa 1 (Base):</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: selectedBaseColor.hex }} />
+                      <strong>{selectedBaseColor.name}</strong>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #F0D7D2', paddingBottom: '0.4rem' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Capa 2 (Acento):</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: selectedAccentColor.hex }} />
+                      <strong>{selectedAccentColor.name}</strong>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #F0D7D2', paddingBottom: '0.4rem' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Capa 3 (Relieve 3D):</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: selectedReliefColor.hex }} />
+                      <strong>{selectedReliefColor.name}</strong>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #F0D7D2', paddingBottom: '0.4rem' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Dimensiones:</span>
+                    <strong>85 mm x 30 mm x 4 mm</strong>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setActiveStep(3)}>
+                    ← Editar Grabado o Colores
+                  </button>
+                  <button className="btn btn-colecciones btn-sm" style={{ flex: 1 }} onClick={() => setActiveStep(5)}>
+                    Avanzar a Paso 5 →
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* PASO 5: PAQUETE Y CANTIDAD */}
+        {/* PASO 5: OPCIONES DE PAQUETE, REGALO Y CANTIDAD */}
         {activeStep === 5 && selectedProduct && (
-          <div style={{ maxWidth: '750px', margin: '0 auto', background: '#ffffff', border: '1px solid #F0D7D2', borderRadius: 'var(--radius-xl)', padding: '2.5rem' }}>
-            <h2 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#A94D43', marginBottom: '0.5rem', textAlign: 'center' }}>
-              Paso 5: Opciones de Paquete & Unidades
+          <div style={{ maxWidth: '680px', margin: '0 auto', background: '#FFFFFF', borderRadius: 'var(--radius-xl)', padding: '2.5rem', border: '1px solid #F0D7D2' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#A94D43', marginBottom: '0.4rem', textAlign: 'center' }}>
+              Paso 5: Selecciona Cantidad y Presentación
             </h2>
-            <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '2rem' }}>
-              Selecciona cuántas piezas deseas y si requieres empaque especial para regalo.
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '2rem', textAlign: 'center' }}>
+              Añade una caja de regalo premium o incrementa el número de piezas con descuento.
             </p>
 
-            {/* Quantity Selector */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem', background: '#FAEEEB', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem' }}>
-              <div>
-                <div style={{ fontWeight: '800', color: '#A94D43', fontSize: '1.05rem' }}>Cantidad de Piezas</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Precio unitario: {formatCurrency(unitPrice)}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '2rem' }}>
+              
+              {/* Gift Box Addon */}
+              <div
+                style={{
+                  border: includeGiftBox ? '2px solid #A94D43' : '1px solid #F0D7D2',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  background: includeGiftBox ? '#FAEEEB' : '#ffffff'
+                }}
+                onClick={() => setIncludeGiftBox(!includeGiftBox)}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <Gift size={28} color="#A94D43" />
+                  <div>
+                    <strong style={{ fontSize: '0.95rem', color: '#A94D43' }}>Caja de Regalo IdeaForm (+ $35.00 MXN)</strong>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Incluye empaque rígido kraft, listón de tela y tarjeta personalizada.</div>
+                  </div>
+                </div>
+
+                <input
+                  type="checkbox"
+                  checked={includeGiftBox}
+                  onChange={() => {}}
+                  style={{ width: '18px', height: '18px', accentColor: '#A94D43' }}
+                />
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', background: '#ffffff', borderRadius: 'var(--radius-md)', border: '1px solid #F0D7D2', padding: '0.25rem' }}>
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  style={{ width: '36px', height: '36px', border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: '800', fontSize: '1.1rem', color: '#A94D43' }}
-                >
-                  -
-                </button>
-                <span style={{ width: '40px', textAlign: 'center', fontWeight: '800', fontSize: '1rem', color: '#A94D43' }}>{quantity}</span>
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  style={{ width: '36px', height: '36px', border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: '800', fontSize: '1.1rem', color: '#A94D43' }}
-                >
-                  +
-                </button>
-              </div>
-            </div>
-
-            {/* Gift Packaging Box */}
-            <div
-              onClick={() => setIncludeGiftBox(!includeGiftBox)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '1.25rem',
-                borderRadius: 'var(--radius-md)',
-                border: includeGiftBox ? '2px solid #C9685B' : '1px solid #F0D7D2',
-                background: includeGiftBox ? '#FAEEEB' : '#ffffff',
-                cursor: 'pointer',
-                marginBottom: '2rem'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <Gift size={24} color="#C9685B" />
-                <div>
-                  <div style={{ fontWeight: '800', color: '#A94D43', fontSize: '0.95rem' }}>Caja de Regalo Ecológica IdeaForm</div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Incluye tarjeta con dedicatoria personalizada y moño satinado</div>
+              {/* Quantity Selector */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FAEEEB', padding: '1rem 1.25rem', borderRadius: 'var(--radius-lg)' }}>
+                <span style={{ fontWeight: '700', color: '#A94D43' }}>Cantidad de Piezas:</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid #F0D7D2', background: '#ffffff', fontWeight: '800', cursor: 'pointer', color: '#A94D43' }}
+                  >
+                    -
+                  </button>
+                  <strong style={{ fontSize: '1.1rem', color: '#A94D43', minWidth: '24px', textAlign: 'center' }}>
+                    {quantity}
+                  </strong>
+                  <button
+                    onClick={() => setQuantity(quantity + 1)}
+                    style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid #F0D7D2', background: '#ffffff', fontWeight: '800', cursor: 'pointer', color: '#A94D43' }}
+                  >
+                    +
+                  </button>
                 </div>
               </div>
-              <div style={{ fontWeight: '800', color: '#A94D43' }}>+ $35.00 MXN</div>
             </div>
 
-            {/* Summary & Proceed */}
-            <div style={{ borderTop: '1px solid #F0D7D2', paddingTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            {/* Total Calculations */}
+            <div style={{ borderTop: '1px solid #F0D7D2', paddingTop: '1.25rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>Total del Paquete:</div>
-                <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#A94D43' }}>{formatCurrency(subtotal)}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Total Final Calculado:</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#A94D43' }}>
+                  {formatCurrency(subtotal)}
+                </div>
               </div>
 
-              <button
-                className="btn btn-colecciones btn-lg"
-                style={{ fontWeight: '800' }}
-                onClick={handleFinalAddToCart}
-              >
-                <ShoppingBag size={18} />
-                <span>Paso 6: Añadir al Carrito</span>
-              </button>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button className="btn btn-secondary" onClick={() => setActiveStep(4)}>
+                  ← Atrás
+                </button>
+                <button className="btn btn-colecciones btn-lg" onClick={handleFinalAddToCart} style={{ fontWeight: '800' }}>
+                  <ShoppingBag size={18} />
+                  <span>Paso 6: Agregar al Carrito</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
 
-        {/* PASO 6: CARRITO Y CONFIRMACIÓN */}
+        {/* PASO 6: CONFIRMACIÓN Y CHECKOUT */}
         {activeStep === 6 && (
-          <div style={{ maxWidth: '650px', margin: '0 auto', background: '#ffffff', border: '1px solid #F0D7D2', borderRadius: 'var(--radius-xl)', padding: '3rem 2rem', textAlign: 'center' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#FAEEEB', color: '#A94D43', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
+          <div style={{ maxWidth: '580px', margin: '0 auto', background: '#FFFFFF', borderRadius: 'var(--radius-xl)', padding: '3rem 2rem', textAlign: 'center', border: '1px solid #F0D7D2' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
               <CheckCircle2 size={36} />
             </div>
 
-            <h2 style={{ fontSize: '1.8rem', fontWeight: '800', color: '#A94D43', marginBottom: '0.5rem' }}>
-              ¡Pieza Añadida a tu Carrito!
+            <h2 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#A94D43', marginBottom: '0.5rem' }}>
+              ¡Tu pieza ha sido agregada al Carrito!
             </h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
-              Tu producto personalizado está listo. Puedes proceder al pago con envío inmediato o seguir explorando otras colecciones.
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2rem' }}>
+              Hemos guardado tus especificaciones 3D multi-capa ({selectedBaseColor.name}, {selectedAccentColor.name}, {selectedReliefColor.name}).
             </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <button
-                className="btn btn-colecciones btn-lg"
-                onClick={() => navigateTo('checkout')}
-              >
-                <span>Proceder al Pago Seguro ({formatCurrency(subtotal)})</span>
-                <ArrowRight size={16} />
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button className="btn btn-secondary" onClick={() => setActiveStep(1)}>
+                Seguir Explorando Colecciones
               </button>
-
-              <button
-                className="btn btn-secondary"
-                onClick={() => setActiveStep(1)}
-                style={{ borderColor: '#F0D7D2', color: '#A94D43' }}
-              >
-                Diseñar Otra Pieza
+              <button className="btn btn-colecciones btn-lg" onClick={() => navigateTo('checkout')} style={{ fontWeight: '800' }}>
+                Proceder al Pago Seguro →
               </button>
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

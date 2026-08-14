@@ -2,21 +2,21 @@ import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef, us
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
-import { RotateCw, Eye, Sparkles } from 'lucide-react';
+import { RotateCw, Sparkles, Layers } from 'lucide-react';
 
 const ThreeViewer = forwardRef(({
   modelType = 'keychain', // keychain | trophy | sphere | car | cup | planter | custom_file
-  custom3DFileUrl = null, // string ObjectURL or data URL for .GLB / .GLTF / .STL
-  custom3DFileType = null, // 'glb' | 'gltf' | 'stl' | null
-  selectedColor = '#176B87', // Base / Body color
+  custom3DFileUrl = null,
+  custom3DFileType = null,
+  selectedColor = '#176B87',
   baseColor = null,
-  accentColor = '#D4AF37', // Secondary / Accent color (oro, plata, etc.)
-  textColor = '#FFFFFF', // Relief / Text color
+  accentColor = '#D4AF37',
+  textColor = '#FFFFFF',
   reliefColor = null,
   materialType = 'PLA_SILK',
   customText = 'IDEAFORM',
   fontFamily = 'Space Grotesk',
-  logoImage = null, // string URL / DataURL or null
+  logoImage = null,
   noEngraving = false,
   scaleMultiplier = 1,
   showDimensions = true
@@ -27,6 +27,16 @@ const ThreeViewer = forwardRef(({
   const cameraRef = useRef(null);
   const meshGroupRef = useRef(null);
   const animFrameId = useRef(null);
+
+  // References to keep textures and materials for instant, fluid color updates without rebuilding
+  const materialsRef = useRef({
+    mainMat: null,
+    accentMat: null,
+    steelMat: null,
+    canvasTexture: null,
+    canvasElem: null,
+    canvasCtx: null
+  });
 
   const activeBaseColor = baseColor || selectedColor || '#176B87';
   const activeAccentColor = accentColor || '#D4AF37';
@@ -51,16 +61,135 @@ const ThreeViewer = forwardRef(({
     },
     resetCamera: () => {
       if (cameraRef.current && meshGroupRef.current) {
-        cameraRef.current.position.set(0, 3.2, 6.8);
-        cameraRef.current.lookAt(0, 0.2, 0);
-        meshGroupRef.current.rotation.set(0, 0, 0);
+        cameraRef.current.position.set(0, 3.5, 5.0);
+        cameraRef.current.lookAt(0, 0, 0);
+        meshGroupRef.current.rotation.set(0.35, -0.3, 0);
       }
     }
   }));
 
+  // Function to draw text/logo texture onto the canvas
+  const updateCanvasTexture = useCallback(() => {
+    let canvas = materialsRef.current.canvasElem;
+    let ctx = materialsRef.current.canvasCtx;
+
+    if (!canvas) {
+      canvas = document.createElement('canvas');
+      canvas.width = 2048;
+      canvas.height = 1024;
+      ctx = canvas.getContext('2d');
+      materialsRef.current.canvasElem = canvas;
+      materialsRef.current.canvasCtx = ctx;
+    }
+
+    // 1. Fill base background in activeBaseColor
+    ctx.fillStyle = activeBaseColor;
+    ctx.fillRect(0, 0, 2048, 1024);
+
+    // 2. Multi-layer inner chamfer / accent border
+    ctx.strokeStyle = activeAccentColor;
+    ctx.lineWidth = 28;
+    ctx.lineJoin = 'round';
+    ctx.strokeRect(40, 40, 1968, 944);
+
+    // Subtle inner accent line
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(80, 80, 1888, 864);
+
+    if (!noEngraving) {
+      ctx.save();
+      
+      // Embossed 3D Drop Shadow Effect
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+      ctx.shadowBlur = 16;
+      ctx.shadowOffsetX = 6;
+      ctx.shadowOffsetY = 8;
+
+      if (logoImage) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = logoImage;
+        img.onload = () => {
+          ctx.drawImage(img, 624, 212, 800, 600);
+          if (materialsRef.current.canvasTexture) {
+            materialsRef.current.canvasTexture.needsUpdate = true;
+          }
+        };
+      } else {
+        const isDefault = !customText || customText.trim().toUpperCase() === 'IDEAFORM';
+
+        if (isDefault) {
+          // Draw official vector bulb + IdeaForm text
+          ctx.strokeStyle = activeAccentColor;
+          ctx.lineWidth = 26;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+
+          // Bulb dome
+          ctx.beginPath();
+          ctx.arc(580, 512, 140, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Dot
+          ctx.fillStyle = activeAccentColor;
+          ctx.beginPath();
+          ctx.arc(530, 450, 22, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Typography
+          ctx.font = `bold 200px 'Space Grotesk', sans-serif`;
+          ctx.fillStyle = activeTextColor;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('Idea', 840, 520);
+
+          ctx.fillStyle = activeAccentColor;
+          ctx.fillText('Form', 1300, 520);
+        } else {
+          // Custom embossed text - dynamically scaled & centered perfectly
+          const displayStr = customText.toUpperCase();
+          const charLen = Math.max(displayStr.length, 1);
+          const fontSize = Math.min(220, Math.floor(1700 / (charLen * 0.65)));
+
+          let cleanFont = fontFamily;
+          if (cleanFont.includes('Poppins')) cleanFont = 'Poppins, sans-serif';
+          else if (cleanFont.includes('Tech')) cleanFont = `'Space Grotesk', monospace`;
+          else if (cleanFont.includes('Serif')) cleanFont = `'Playfair Display', serif`;
+          else if (cleanFont.includes('Cursiva')) cleanFont = `'Dancing Script', cursive`;
+          else cleanFont = 'sans-serif';
+
+          ctx.font = `800 ${fontSize}px ${cleanFont}`;
+          ctx.fillStyle = activeTextColor;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(displayStr, 1024, 512);
+        }
+      }
+      ctx.restore();
+    }
+
+    if (!materialsRef.current.canvasTexture) {
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.needsUpdate = true;
+      materialsRef.current.canvasTexture = tex;
+    } else {
+      materialsRef.current.canvasTexture.needsUpdate = true;
+    }
+
+    return materialsRef.current.canvasTexture;
+  }, [activeBaseColor, activeAccentColor, activeTextColor, customText, fontFamily, logoImage, noEngraving]);
+
+  // Build / Rebuild Geometry when modelType changes, preserving current rotation!
   const buildGeometry = useCallback(() => {
     if (!meshGroupRef.current) return;
     const group = meshGroupRef.current;
+
+    // Preserve existing rotation so it doesn't snap or restart!
+    const currentRotX = group.rotation.x;
+    const currentRotY = group.rotation.y;
+    const currentRotZ = group.rotation.z;
 
     while (group.children.length > 0) {
       const obj = group.children[0];
@@ -83,6 +212,7 @@ const ThreeViewer = forwardRef(({
       clearcoat: 0.6,
       clearcoatRoughness: 0.1
     });
+    materialsRef.current.mainMat = mainMaterial;
 
     // Material 2: Accent (Trim, Borders, Stand)
     const accentMat = new THREE.MeshStandardMaterial({
@@ -90,6 +220,7 @@ const ThreeViewer = forwardRef(({
       roughness: 0.25,
       metalness: 0.7
     });
+    materialsRef.current.accentMat = accentMat;
 
     // Material 3: Metallic Steel / Ring
     const steelMaterial = new THREE.MeshStandardMaterial({
@@ -97,8 +228,9 @@ const ThreeViewer = forwardRef(({
       metalness: 0.95,
       roughness: 0.1
     });
+    materialsRef.current.steelMat = steelMaterial;
 
-    // --- CASE A: CUSTOM UPLOADED 3D FILE (.GLB / .GLTF / .STL) ---
+    // --- CASE A: CUSTOM UPLOADED 3D FILE ---
     if (custom3DFileUrl) {
       setLoading3D(true);
       const isSTL = custom3DFileType === 'stl' || custom3DFileUrl.toLowerCase().includes('.stl');
@@ -124,13 +256,9 @@ const ThreeViewer = forwardRef(({
             setLoading3D(false);
           },
           undefined,
-          (error) => {
-            console.error('Error loading STL:', error);
-            setLoading3D(false);
-          }
+          () => setLoading3D(false)
         );
       } else {
-        // GLTF / GLB Loader
         const loader = new GLTFLoader();
         loader.load(
           custom3DFileUrl,
@@ -157,132 +285,44 @@ const ThreeViewer = forwardRef(({
             setLoading3D(false);
           },
           undefined,
-          (error) => {
-            console.error('Error loading GLTF/GLB:', error);
-            setLoading3D(false);
-          }
+          () => setLoading3D(false)
         );
       }
       return;
     }
 
-    // --- CASE B: BUILT-IN PARAMETRIC 3D GEOMETRIES ---
-    const createTextCanvasTexture = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 1024;
-      canvas.height = 512;
-      const ctx = canvas.getContext('2d');
+    // --- CASE B: PARAMETRIC 3D MODELS ---
+    const textTexture = updateCanvasTexture();
 
-      // Base background
-      ctx.fillStyle = activeBaseColor;
-      ctx.fillRect(0, 0, 1024, 512);
-
-      // Accent border
-      ctx.strokeStyle = activeAccentColor;
-      ctx.lineWidth = 16;
-      ctx.strokeRect(20, 20, 984, 472);
-
-      if (noEngraving) {
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.needsUpdate = true;
-        return texture;
-      }
-
-      ctx.save();
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-      ctx.shadowBlur = 10;
-      ctx.shadowOffsetX = 3;
-      ctx.shadowOffsetY = 4;
-
-      if (logoImage) {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.src = logoImage;
-        img.onload = () => {
-          ctx.drawImage(img, 312, 106, 400, 300);
-          const dynamicTexture = new THREE.CanvasTexture(canvas);
-          dynamicTexture.needsUpdate = true;
-          if (mainMesh) {
-            if (Array.isArray(mainMesh.material)) {
-              mainMesh.material[4].map = dynamicTexture;
-              mainMesh.material[4].needsUpdate = true;
-            } else {
-              mainMesh.material.map = dynamicTexture;
-              mainMesh.material.needsUpdate = true;
-            }
-          }
-        };
-      } else {
-        const isDefault = !customText || customText.trim().toUpperCase() === 'IDEAFORM';
-
-        if (isDefault) {
-          ctx.strokeStyle = activeAccentColor;
-          ctx.lineWidth = 14;
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-
-          ctx.beginPath();
-          ctx.arc(280, 256, 75, 0, Math.PI * 2);
-          ctx.stroke();
-
-          ctx.fillStyle = activeAccentColor;
-          ctx.beginPath();
-          ctx.arc(250, 220, 12, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.font = `bold 105px 'Space Grotesk', sans-serif`;
-          ctx.fillStyle = activeTextColor;
-          ctx.fillText('Idea', 420, 290);
-
-          ctx.fillStyle = activeAccentColor;
-          ctx.fillText('Form', 660, 290);
-        } else {
-          const displayStr = customText.toUpperCase();
-          const fontSize = Math.min(110, Math.floor(820 / Math.max(displayStr.length, 1)));
-          ctx.font = `bold ${fontSize}px sans-serif`;
-          ctx.fillStyle = activeTextColor;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(displayStr, 512, 256);
-        }
-      }
-
-      ctx.restore();
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.needsUpdate = true;
-      return texture;
-    };
-
-    let mainMesh = null;
-
-    // 1. KEYCHAIN
+    // 1. KEYCHAIN / MOCHILA TAG (Elevated 3D View with Top Face Text)
     if (modelType === 'keychain') {
-      const plateGeo = new THREE.BoxGeometry(4.2, 0.4, 2.2);
-      const textTexture = createTextCanvasTexture();
-
+      const plateGeo = new THREE.BoxGeometry(4.6, 0.45, 2.3);
+      
       const plateMaterials = [
-        mainMaterial,
-        mainMaterial,
-        mainMaterial,
-        mainMaterial,
-        new THREE.MeshPhysicalMaterial({ map: textTexture, roughness: 0.22, metalness: 0.25 }),
-        mainMaterial
+        mainMaterial, // +X right
+        mainMaterial, // -X left
+        new THREE.MeshPhysicalMaterial({ map: textTexture, roughness: 0.2, metalness: 0.2 }), // +Y TOP SURFACE
+        mainMaterial, // -Y bottom
+        mainMaterial, // +Z front
+        mainMaterial  // -Z back
       ];
 
-      mainMesh = new THREE.Mesh(plateGeo, plateMaterials);
+      const mainMesh = new THREE.Mesh(plateGeo, plateMaterials);
       mainMesh.castShadow = true;
       mainMesh.receiveShadow = true;
       group.add(mainMesh);
 
-      const rimGeo = new THREE.BoxGeometry(4.35, 0.15, 2.35);
+      // Accent border rim (Zone 2)
+      const rimGeo = new THREE.BoxGeometry(4.75, 0.15, 2.45);
       const rimMesh = new THREE.Mesh(rimGeo, accentMat);
-      rimMesh.position.y = 0.18;
+      rimMesh.position.y = 0.22;
       group.add(rimMesh);
 
-      const ringGeo = new THREE.TorusGeometry(0.45, 0.08, 16, 32);
+      // Keychain Ring (Steel)
+      const ringGeo = new THREE.TorusGeometry(0.5, 0.08, 16, 32);
       const ringMesh = new THREE.Mesh(ringGeo, steelMaterial);
       ringMesh.rotation.x = Math.PI / 2;
-      ringMesh.position.set(-2.5, 0, 0);
+      ringMesh.position.set(-2.8, 0, 0);
       group.add(ringMesh);
     }
 
@@ -294,7 +334,6 @@ const ThreeViewer = forwardRef(({
       group.add(baseMesh);
 
       const columnGeo = new THREE.BoxGeometry(2.4, 3.2, 0.45);
-      const textTexture = createTextCanvasTexture();
       const columnMat = [
         mainMaterial,
         mainMaterial,
@@ -303,7 +342,7 @@ const ThreeViewer = forwardRef(({
         new THREE.MeshPhysicalMaterial({ map: textTexture, roughness: 0.15, metalness: 0.2 }),
         mainMaterial
       ];
-      mainMesh = new THREE.Mesh(columnGeo, columnMat);
+      const mainMesh = new THREE.Mesh(columnGeo, columnMat);
       mainMesh.position.y = 0.8;
       mainMesh.castShadow = true;
       group.add(mainMesh);
@@ -315,7 +354,7 @@ const ThreeViewer = forwardRef(({
       group.add(peakMesh);
     }
 
-    // 3. SPHERE
+    // 3. SPHERE / ESFERA
     else if (modelType === 'sphere') {
       const sphereGeo = new THREE.SphereGeometry(1.8, 48, 48);
       const sphereMat = new THREE.MeshPhysicalMaterial({
@@ -324,7 +363,7 @@ const ThreeViewer = forwardRef(({
         metalness: 0.35,
         clearcoat: 0.8
       });
-      mainMesh = new THREE.Mesh(sphereGeo, sphereMat);
+      const mainMesh = new THREE.Mesh(sphereGeo, sphereMat);
       mainMesh.castShadow = true;
       group.add(mainMesh);
 
@@ -379,7 +418,7 @@ const ThreeViewer = forwardRef(({
       });
     }
 
-    // 5. CUP
+    // 5. CUP / CYLINDER
     else if (modelType === 'cup') {
       const cupGeo = new THREE.CylinderGeometry(1.6, 1.4, 3.2, 36, 1, true);
       const cupMesh = new THREE.Mesh(cupGeo, mainMaterial);
@@ -416,9 +455,22 @@ const ThreeViewer = forwardRef(({
       group.add(trayMesh);
     }
 
-  }, [modelType, custom3DFileUrl, custom3DFileType, activeBaseColor, activeAccentColor, activeTextColor, customText, logoImage, noEngraving]);
+    // Restore rotation
+    group.rotation.set(currentRotX, currentRotY, currentRotZ);
+  }, [modelType, custom3DFileUrl, custom3DFileType, activeBaseColor, activeAccentColor, updateCanvasTexture]);
 
-  // Three.js Setup Loop
+  // Instant update of material colors and texture without destroying geometry (100% fluid)
+  useEffect(() => {
+    if (materialsRef.current.mainMat) {
+      materialsRef.current.mainMat.color.set(activeBaseColor);
+    }
+    if (materialsRef.current.accentMat) {
+      materialsRef.current.accentMat.color.set(activeAccentColor);
+    }
+    updateCanvasTexture();
+  }, [activeBaseColor, activeAccentColor, activeTextColor, customText, fontFamily, logoImage, updateCanvasTexture]);
+
+  // Three.js Scene Setup Loop
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
@@ -429,9 +481,10 @@ const ThreeViewer = forwardRef(({
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
+    // Isometric / elevated 3D camera
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(0, 3.2, 6.8);
-    camera.lookAt(0, 0.2, 0);
+    camera.position.set(0, 3.5, 5.0);
+    camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
@@ -443,19 +496,22 @@ const ThreeViewer = forwardRef(({
 
     mount.appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+    // Warm Studio Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.3);
     scene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.8);
-    dirLight1.position.set(5, 10, 7);
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 2.0);
+    dirLight1.position.set(6, 10, 8);
     dirLight1.castShadow = true;
     scene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(0xa5c4d4, 0.9);
-    dirLight2.position.set(-5, -3, -5);
+    const dirLight2 = new THREE.DirectionalLight(0xa5c4d4, 1.0);
+    dirLight2.position.set(-6, -2, -6);
     scene.add(dirLight2);
 
     const group = new THREE.Group();
+    // Default pleasant elevated angle
+    group.rotation.set(0.45, -0.35, 0);
     meshGroupRef.current = group;
     scene.add(group);
 
@@ -494,7 +550,7 @@ const ThreeViewer = forwardRef(({
       animFrameId.current = requestAnimationFrame(animate);
 
       if (isAutoRotatingRef.current && meshGroupRef.current && !isDraggingRef.current) {
-        meshGroupRef.current.rotation.y += 0.008;
+        meshGroupRef.current.rotation.y += 0.007;
       }
 
       renderer.render(scene, camera);
@@ -541,12 +597,12 @@ const ThreeViewer = forwardRef(({
         </div>
       )}
 
-      {/* 3D Controls Overlays */}
+      {/* 3D Auto-Spin Control */}
       <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.4rem', zIndex: 10 }}>
         <button
           onClick={() => setIsAutoRotating(!isAutoRotating)}
           style={{
-            background: isAutoRotating ? 'rgba(23, 107, 135, 0.85)' : 'rgba(255, 255, 255, 0.85)',
+            background: isAutoRotating ? 'rgba(23, 107, 135, 0.9)' : 'rgba(255, 255, 255, 0.9)',
             color: isAutoRotating ? '#ffffff' : '#1e293b',
             border: '1px solid rgba(0,0,0,0.1)',
             borderRadius: 'var(--radius-full)',
@@ -562,27 +618,27 @@ const ThreeViewer = forwardRef(({
           }}
         >
           <RotateCw size={13} />
-          <span>{isAutoRotating ? 'Giro Activo' : 'Pausar Giro'}</span>
+          <span>{isAutoRotating ? 'Giro 360°' : 'Pausar Giro'}</span>
         </button>
       </div>
 
-      {/* Multi-Zone Colors Indicator Badge */}
+      {/* Multi-Zone Color Layer Legend */}
       <div
         style={{
           position: 'absolute',
           bottom: '1rem',
           left: '1rem',
-          background: 'rgba(255, 255, 255, 0.92)',
+          background: 'rgba(255, 255, 255, 0.94)',
           padding: '0.4rem 0.85rem',
           borderRadius: 'var(--radius-full)',
           fontSize: '0.75rem',
           fontWeight: '700',
           color: '#0F172A',
-          boxShadow: 'var(--shadow-sm)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
           display: 'flex',
           alignItems: 'center',
           gap: '0.6rem',
-          backdropFilter: 'blur(4px)',
+          backdropFilter: 'blur(6px)',
           zIndex: 10
         }}
       >
