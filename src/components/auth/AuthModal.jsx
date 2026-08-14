@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import IdeaFormLogo from '../common/IdeaFormLogo';
 import {
   X,
   Lock,
   Mail,
   User,
-  ArrowRight
+  ArrowRight,
+  ShieldCheck
 } from 'lucide-react';
 
 const AuthModal = () => {
@@ -15,13 +17,16 @@ const AuthModal = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isAuthModalOpen) return null;
 
-  // 1. Google OAuth 1-Click Login: Instant, reliable & takes user to their profile
-  const handleGoogleAuth = () => {
-    setLoading(true);
+  // 1. Google 1-Click Authentication
+  const handleGoogleAuth = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
 
     const googleUser = {
       id: `usr-google-${Date.now()}`,
@@ -33,12 +38,14 @@ const AuthModal = () => {
       role: 'CUSTOMER'
     };
 
+    // Save to App State & LocalStorage
     setUser(googleUser);
     setUserRole('CUSTOMER');
-    setIsAuthModalOpen(false);
-    setLoading(false);
+    localStorage.setItem('ideaform_user', JSON.stringify(googleUser));
+    localStorage.setItem('ideaform_user_role', 'CUSTOMER');
 
-    showToast('¡Bienvenido! Sesión iniciada con Google', 'success');
+    setIsAuthModalOpen(false);
+    showToast('¡Bienvenido! Sesión iniciada con Google ✨', 'success');
     navigateTo('profile');
   };
 
@@ -50,7 +57,7 @@ const AuthModal = () => {
       return;
     }
 
-    setLoading(true);
+    setIsSubmitting(true);
 
     const firstName = fullName ? fullName.split(' ')[0] : email.split('@')[0];
     const lastName = fullName && fullName.split(' ').length > 1 ? fullName.split(' ').slice(1).join(' ') : '';
@@ -66,8 +73,11 @@ const AuthModal = () => {
 
     setUser(loggedUser);
     setUserRole('CUSTOMER');
+    localStorage.setItem('ideaform_user', JSON.stringify(loggedUser));
+    localStorage.setItem('ideaform_user_role', 'CUSTOMER');
+
     setIsAuthModalOpen(false);
-    setLoading(false);
+    setIsSubmitting(false);
 
     showToast(
       mode === 'login'
@@ -83,13 +93,13 @@ const AuthModal = () => {
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(15, 23, 42, 0.75)',
-        backdropFilter: 'blur(6px)',
-        zIndex: 999,
+        backgroundColor: 'rgba(15, 23, 42, 0.7)',
+        backdropFilter: 'blur(8px)',
+        zIndex: 9999,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '1rem'
+        padding: '1.25rem'
       }}
       onClick={() => setIsAuthModalOpen(false)}
     >
@@ -99,79 +109,91 @@ const AuthModal = () => {
           borderRadius: 'var(--radius-xl)',
           width: '100%',
           maxWidth: '440px',
-          boxShadow: 'var(--shadow-xl)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
           overflow: 'hidden',
-          position: 'relative'
+          position: 'relative',
+          border: '1px solid var(--border-light)'
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div style={{ background: '#0F5F6D', color: '#ffffff', padding: '1.75rem 2rem', position: 'relative' }}>
-          <button
-            onClick={() => setIsAuthModalOpen(false)}
-            style={{
-              position: 'absolute',
-              top: '1.25rem',
-              right: '1.25rem',
-              background: 'rgba(255, 255, 255, 0.2)',
-              border: 'none',
-              borderRadius: '50%',
-              width: '32px',
-              height: '32px',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer'
-            }}
-          >
-            <X size={18} />
-          </button>
+        {/* Close Button */}
+        <button
+          onClick={() => setIsAuthModalOpen(false)}
+          aria-label="Cerrar modal"
+          style={{
+            position: 'absolute',
+            top: '1.25rem',
+            right: '1.25rem',
+            background: '#f1f5f9',
+            border: 'none',
+            borderRadius: '50%',
+            width: '32px',
+            height: '32px',
+            color: '#64748b',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            zIndex: 10,
+            transition: 'all 0.15s ease'
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = '#e2e8f0')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = '#f1f5f9')}
+        >
+          <X size={18} />
+        </button>
 
-          <span style={{ background: 'rgba(255, 255, 255, 0.2)', padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-full)', fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0.04em' }}>
-            ACCESO SEGURO
-          </span>
+        {/* Clean Header with Official Logo & High-Contrast Titles */}
+        <div style={{ padding: '2.5rem 2rem 1.25rem 2rem', textAlign: 'center', borderBottom: '1px solid #f1f5f9' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.25rem' }}>
+            <IdeaFormLogo size="medium" />
+          </div>
 
-          <h2 style={{ fontSize: '1.45rem', fontWeight: '800', marginTop: '0.5rem', marginBottom: '0.25rem' }}>
-            {mode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'}
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>
+            {mode === 'login' ? 'Iniciar Sesión' : 'Crear tu Cuenta'}
           </h2>
-          <p style={{ fontSize: '0.85rem', opacity: 0.9, margin: 0 }}>
+          <p style={{ fontSize: '0.88rem', color: '#64748b', marginTop: '0.4rem', margin: 0, lineHeight: '1.4' }}>
             {mode === 'login'
-              ? 'Ingresa para ver el estado de tus pedidos y cotizaciones.'
-              : 'Únete para guardar tus diseños 3D y agilizar tus compras.'}
+              ? 'Accede a tus pedidos 3D, envíos y cotizaciones'
+              : 'Regístrate para guardar tus piezas y personalizar en 3D'}
           </p>
         </div>
 
         {/* Modal Body */}
-        <div style={{ padding: '2rem' }}>
+        <div style={{ padding: '1.75rem 2rem 2.25rem 2rem' }}>
           
-          {/* 1. Fast Google OAuth Button */}
+          {/* 1. Google 1-Click Fast Button */}
           <button
             type="button"
             onClick={handleGoogleAuth}
-            disabled={loading}
             style={{
               width: '100%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '0.75rem',
-              padding: '0.85rem',
+              padding: '0.85rem 1rem',
               borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-light)',
+              border: '1px solid #cbd5e1',
               background: '#ffffff',
-              color: '#1f2937',
+              color: '#0f172a',
               fontWeight: '700',
-              fontSize: '0.9rem',
+              fontSize: '0.92rem',
               cursor: 'pointer',
-              boxShadow: 'var(--shadow-sm)',
-              marginBottom: '1.5rem',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              marginBottom: '1.25rem',
               transition: 'all 0.15s ease'
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = '#ffffff')}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#f8fafc';
+              e.currentTarget.style.borderColor = '#94a3b8';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#ffffff';
+              e.currentTarget.style.borderColor = '#cbd5e1';
+            }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24">
+            <svg width="20" height="20" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
               <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
@@ -181,59 +203,79 @@ const AuthModal = () => {
           </button>
 
           {/* Divider */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-            <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: '700' }}>O CON TU CORREO</span>
-            <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+            <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', letterSpacing: '0.04em' }}>
+              O CON CORREO
+            </span>
+            <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
           </div>
 
-          {/* Form */}
+          {/* Email / Password Form */}
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {mode === 'register' && (
               <div>
-                <label style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                <label style={{ fontSize: '0.78rem', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '0.35rem' }}>
                   Nombre Completo *
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <User size={16} color="var(--text-tertiary)" style={{ position: 'absolute', top: '50%', left: '0.85rem', transform: 'translateY(-50%)' }} />
+                  <User size={16} color="#94a3b8" style={{ position: 'absolute', top: '50%', left: '0.85rem', transform: 'translateY(-50%)' }} />
                   <input
                     type="text"
                     required
                     placeholder="Carlos Morales"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    style={{ width: '100%', padding: '0.75rem 0.85rem 0.75rem 2.4rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', fontSize: '0.9rem', outline: 'none' }}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem 0.85rem 0.75rem 2.4rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.9rem',
+                      color: '#0f172a',
+                      outline: 'none',
+                      background: '#ffffff'
+                    }}
                   />
                 </div>
               </div>
             )}
 
             <div>
-              <label style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+              <label style={{ fontSize: '0.78rem', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '0.35rem' }}>
                 Correo Electrónico *
               </label>
               <div style={{ position: 'relative' }}>
-                <Mail size={16} color="var(--text-tertiary)" style={{ position: 'absolute', top: '50%', left: '0.85rem', transform: 'translateY(-50%)' }} />
+                <Mail size={16} color="#94a3b8" style={{ position: 'absolute', top: '50%', left: '0.85rem', transform: 'translateY(-50%)' }} />
                 <input
                   type="email"
                   required
                   placeholder="usuario@ejemplo.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  style={{ width: '100%', padding: '0.75rem 0.85rem 0.75rem 2.4rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', fontSize: '0.9rem', outline: 'none' }}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 0.85rem 0.75rem 2.4rem',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.9rem',
+                    color: '#0f172a',
+                    outline: 'none',
+                    background: '#ffffff'
+                  }}
                 />
               </div>
             </div>
 
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
-                <label style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-secondary)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                <label style={{ fontSize: '0.78rem', fontWeight: '700', color: '#334155' }}>
                   Contraseña *
                 </label>
                 {mode === 'login' && (
                   <button
                     type="button"
-                    onClick={() => showToast('Se ha enviado un enlace de recuperación a tu correo', 'info')}
+                    onClick={() => showToast('Enlace de recuperación enviado a tu correo', 'info')}
                     style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer', padding: 0 }}
                   >
                     ¿Olvidaste tu contraseña?
@@ -241,31 +283,49 @@ const AuthModal = () => {
                 )}
               </div>
               <div style={{ position: 'relative' }}>
-                <Lock size={16} color="var(--text-tertiary)" style={{ position: 'absolute', top: '50%', left: '0.85rem', transform: 'translateY(-50%)' }} />
+                <Lock size={16} color="#94a3b8" style={{ position: 'absolute', top: '50%', left: '0.85rem', transform: 'translateY(-50%)' }} />
                 <input
                   type="password"
                   required
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  style={{ width: '100%', padding: '0.75rem 0.85rem 0.75rem 2.4rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', fontSize: '0.9rem', outline: 'none' }}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 0.85rem 0.75rem 2.4rem',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.9rem',
+                    color: '#0f172a',
+                    outline: 'none',
+                    background: '#ffffff'
+                  }}
                 />
               </div>
             </div>
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={isSubmitting}
               className="btn btn-primary btn-lg"
-              style={{ width: '100%', fontWeight: '800', marginTop: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+              style={{
+                width: '100%',
+                fontWeight: '800',
+                marginTop: '0.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                padding: '0.85rem'
+              }}
             >
-              <span>{loading ? 'Procesando...' : mode === 'login' ? 'Iniciar Sesión' : 'Registrarme'}</span>
+              <span>{isSubmitting ? 'Verificando...' : mode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'}</span>
               <ArrowRight size={16} />
             </button>
           </form>
 
           {/* Switch Mode Footer */}
-          <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+          <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.85rem', color: '#64748b' }}>
             {mode === 'login' ? (
               <span>
                 ¿No tienes cuenta aún?{' '}
