@@ -229,12 +229,12 @@ const CustomizerView = () => {
       </div>
 
       {/* 2. Main Studio Split */}
-      <div className="container" style={{ paddingTop: '2rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 1.25fr) minmax(320px, 0.75fr)', gap: '2rem' }} className="customizer-split">
+      <div className="container" style={{ paddingTop: '1.5rem' }}>
+        <div className="customizer-split-responsive">
           
           {/* Left: Dual 2D / 3D Stage */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div className="card card-elevated" style={{ padding: '0', background: '#ffffff', position: 'relative', overflow: 'hidden', height: '520px' }}>
+            <div className="card card-elevated stage-3d-box" style={{ padding: '0', background: '#ffffff', position: 'relative', overflow: 'hidden' }}>
               
               {/* 2D / 3D Mode Toggle Tabs */}
               <div style={{ position: 'absolute', top: '1rem', right: '1rem', zIndex: 30, display: 'flex', background: 'rgba(255,255,255,0.95)', padding: '0.25rem', borderRadius: 'var(--radius-full)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--border-light)' }}>

@@ -409,9 +409,9 @@ const EventosRoute = () => {
 
         {/* PASO 4: PERSONALIZA EN 3D */}
         {activeStep === 4 && selectedProduct && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 1.2fr) minmax(300px, 0.8fr)', gap: '2rem' }}>
+          <div className="customizer-split-responsive">
             
-            <div className="card card-elevated" style={{ padding: '0', background: '#ffffff', position: 'relative', overflow: 'hidden', height: '480px' }}>
+            <div className="card card-elevated stage-3d-box" style={{ padding: '0', background: '#ffffff', position: 'relative', overflow: 'hidden' }}>
               <ThreeViewer
                 ref={viewerRef}
                 modelType={selectedProduct.modelType || 'lamp'}

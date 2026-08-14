@@ -3553,7 +3553,7 @@ const AdminDashboard = () => {
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '1.5rem' }}>
+            <div className="customizer-split-responsive" style={{ gap: '1.5rem' }}>
               <form
                 onSubmit={(e) => {
                   e.preventDefault();

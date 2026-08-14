@@ -35,32 +35,8 @@ const Header = () => {
 
   return (
     <header style={{ position: 'sticky', top: 0, zIndex: 100, background: '#ffffff', boxShadow: 'var(--shadow-sm)' }}>
-      {/* 1. Top Alert Banner */}
-      <div
-        style={{
-          background: '#090e17',
-          color: '#ffffff',
-          fontSize: '0.78rem',
-          fontWeight: '600',
-          padding: '0.45rem 1rem',
-          textAlign: 'center',
-          letterSpacing: '0.02em',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '1rem',
-          flexWrap: 'wrap'
-        }}
-      >
-        <span>🚚 Envíos a todo México</span>
-        <span style={{ opacity: 0.4 }}>|</span>
-        <span>🛡️ Materiales de alta calidad PLA 100% Eco-Friendly</span>
-        <span style={{ opacity: 0.4 }}>|</span>
-        <span>✨ Personalización sin límites en 3D</span>
-      </div>
-
-      {/* 2. Main Navigation Bar */}
-      <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1.5rem', gap: '1rem' }}>
+      {/* Main Navigation Bar */}
+      <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.65rem 1rem', gap: '0.75rem' }}>
         
         {/* Exact IdeaForm Brand Logo */}
         <IdeaFormLogo onClick={() => navigateTo('home')} />
@@ -164,22 +140,22 @@ const Header = () => {
         </nav>
 
         {/* Right Actions: Search + Auth/Profile + Cart */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
           
-          {/* Search Box */}
-          <div style={{ position: 'relative' }}>
+          {/* Search Box (Desktop & Tablet) */}
+          <div className="header-search-box" style={{ position: 'relative' }}>
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 background: '#f1f5f9',
                 borderRadius: 'var(--radius-full)',
-                padding: '0.45rem 0.85rem',
-                gap: '0.4rem',
-                width: '165px'
+                padding: '0.4rem 0.75rem',
+                gap: '0.35rem',
+                width: '150px'
               }}
             >
-              <Search size={15} color="var(--text-tertiary)" />
+              <Search size={14} color="var(--text-tertiary)" />
               <input
                 type="text"
                 placeholder="Buscar 3D..."
@@ -193,7 +169,7 @@ const Header = () => {
                   border: 'none',
                   background: 'transparent',
                   outline: 'none',
-                  fontSize: '0.82rem',
+                  fontSize: '0.8rem',
                   width: '100%',
                   color: 'var(--text-primary)'
                 }}
@@ -207,7 +183,7 @@ const Header = () => {
                   position: 'absolute',
                   top: '120%',
                   right: 0,
-                  width: '320px',
+                  width: '290px',
                   background: '#ffffff',
                   borderRadius: 'var(--radius-lg)',
                   boxShadow: 'var(--shadow-xl)',
@@ -257,21 +233,21 @@ const Header = () => {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.4rem',
+                gap: '0.35rem',
                 background: '#f1f5f9',
                 border: '1px solid var(--border-light)',
                 borderRadius: 'var(--radius-full)',
-                padding: '0.45rem 0.85rem',
+                padding: '0.4rem 0.75rem',
                 cursor: 'pointer',
-                fontSize: '0.82rem',
+                fontSize: '0.8rem',
                 fontWeight: '700',
                 color: '#0f172a'
               }}
             >
-              <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'var(--color-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem' }}>
+              <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--color-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>
                 {user.firstName ? user.firstName[0] : 'U'}
               </div>
-              <span>{user.firstName}</span>
+              <span className="user-name-text">{user.firstName}</span>
             </button>
           ) : (
             <button
@@ -279,18 +255,18 @@ const Header = () => {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.4rem',
+                gap: '0.35rem',
                 background: '#f8fafc',
                 border: '1px solid var(--border-light)',
                 borderRadius: 'var(--radius-full)',
-                padding: '0.45rem 0.85rem',
+                padding: '0.4rem 0.75rem',
                 cursor: 'pointer',
-                fontSize: '0.82rem',
+                fontSize: '0.8rem',
                 fontWeight: '700',
                 color: 'var(--text-secondary)'
               }}
             >
-              <LogIn size={15} color="var(--color-primary)" />
+              <LogIn size={14} color="var(--color-primary)" />
               <span className="login-text">Ingresar</span>
             </button>
           )}
@@ -304,17 +280,17 @@ const Header = () => {
               color: '#ffffff',
               border: 'none',
               borderRadius: 'var(--radius-full)',
-              padding: '0.55rem 1.1rem',
+              padding: '0.5rem 0.9rem',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '0.4rem',
               cursor: 'pointer',
               fontWeight: '700',
-              fontSize: '0.88rem',
+              fontSize: '0.85rem',
               boxShadow: '0 4px 12px var(--color-primary-glow)'
             }}
           >
-            <ShoppingBag size={18} />
+            <ShoppingBag size={17} />
             <span style={{ display: 'none' }} className="cart-text">Carrito</span>
             {totalItemsCount > 0 && (
               <span
@@ -322,12 +298,12 @@ const Header = () => {
                   background: '#00e5ff',
                   color: '#0f172a',
                   borderRadius: '50%',
-                  width: '1.25rem',
-                  height: '1.25rem',
+                  width: '1.2rem',
+                  height: '1.2rem',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '0.75rem',
+                  fontSize: '0.72rem',
                   fontWeight: '800'
                 }}
               >
@@ -339,8 +315,9 @@ const Header = () => {
           {/* Mobile Menu Toggle */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            style={{ display: 'none', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }}
+            style={{ display: 'none', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', padding: '0.3rem' }}
             className="mobile-menu-btn"
+            aria-label="Abrir Menú"
           >
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -349,22 +326,110 @@ const Header = () => {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div style={{ background: '#ffffff', borderTop: '1px solid var(--border-light)', padding: '1rem' }}>
+        <div style={{ background: '#ffffff', borderTop: '1px solid var(--border-light)', padding: '1rem', boxShadow: 'var(--shadow-lg)' }}>
+          {/* Mobile Search Bar inside Drawer */}
+          <div style={{ marginBottom: '1rem', position: 'relative' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                background: '#f1f5f9',
+                borderRadius: 'var(--radius-md)',
+                padding: '0.6rem 0.85rem',
+                gap: '0.5rem'
+              }}
+            >
+              <Search size={16} color="var(--text-tertiary)" />
+              <input
+                type="text"
+                placeholder="Buscar llaveros, trofeos, piezas..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '0.9rem', width: '100%' }}
+              />
+            </div>
+            {searchQuery.trim() && searchResults.length > 0 && (
+              <div style={{ background: '#ffffff', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', marginTop: '0.5rem', padding: '0.5rem' }}>
+                {searchResults.map((prod) => (
+                  <div
+                    key={prod.id}
+                    onClick={() => {
+                      handleSelectSearchResult(prod);
+                      setMobileMenuOpen(false);
+                    }}
+                    style={{ padding: '0.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                  >
+                    <span style={{ fontWeight: '700', fontSize: '0.85rem' }}>{prod.name}</span>
+                    <span style={{ color: 'var(--color-primary)', fontWeight: '800', fontSize: '0.85rem' }}>{formatCurrency(prod.basePrice)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <button className="btn btn-secondary" onClick={() => { navigateTo('home'); setMobileMenuOpen(false); }}>Inicio</button>
-            <button className="btn btn-secondary" onClick={() => { navigateTo('colecciones'); setMobileMenuOpen(false); }}>Colecciones</button>
-            <button className="btn btn-secondary" onClick={() => { navigateTo('empresas'); setMobileMenuOpen(false); }}>Empresas (B2B)</button>
-            <button className="btn btn-secondary" onClick={() => { navigateTo('eventos'); setMobileMenuOpen(false); }}>Eventos</button>
-            <button className="btn btn-secondary" onClick={() => { navigateTo('tracking'); setMobileMenuOpen(false); }}>Rastrear Pedido</button>
+            <button
+              className="btn btn-secondary"
+              style={{ justifyContent: 'flex-start', padding: '0.75rem 1rem', fontWeight: '700' }}
+              onClick={() => { navigateTo('home'); setMobileMenuOpen(false); }}
+            >
+              🏠 Inicio
+            </button>
+            <button
+              className="btn"
+              style={{ justifyContent: 'flex-start', padding: '0.75rem 1rem', background: '#FAEEEB', color: '#A94D43', fontWeight: '800', border: '1px solid #F0D7D2' }}
+              onClick={() => { navigateTo('colecciones'); setMobileMenuOpen(false); }}
+            >
+              🎒 Colecciones Escolares & Hogar
+            </button>
+            <button
+              className="btn"
+              style={{ justifyContent: 'flex-start', padding: '0.75rem 1rem', background: '#EDF4F8', color: '#104F75', fontWeight: '800', border: '1px solid #D5E4ED' }}
+              onClick={() => { navigateTo('empresas'); setMobileMenuOpen(false); }}
+            >
+              🏢 Empresas & Merchandising (B2B)
+            </button>
+            <button
+              className="btn"
+              style={{ justifyContent: 'flex-start', padding: '0.75rem 1rem', background: '#FBF4E8', color: '#956016', fontWeight: '800', border: '1px solid #EFE4D2' }}
+              onClick={() => { navigateTo('eventos'); setMobileMenuOpen(false); }}
+            >
+              🎉 Recuerdos & Eventos
+            </button>
+            <button
+              className="btn btn-secondary"
+              style={{ justifyContent: 'flex-start', padding: '0.75rem 1rem', fontWeight: '600' }}
+              onClick={() => { navigateTo('tracking'); setMobileMenuOpen(false); }}
+            >
+              🚚 Rastrear mi Pedido 3D
+            </button>
             
             {user ? (
-              <button className="btn btn-secondary" onClick={() => { navigateTo('profile'); setMobileMenuOpen(false); }}>Mi Cuenta ({user.firstName})</button>
+              <button
+                className="btn btn-secondary"
+                style={{ justifyContent: 'flex-start', padding: '0.75rem 1rem', fontWeight: '700' }}
+                onClick={() => { navigateTo('profile'); setMobileMenuOpen(false); }}
+              >
+                👤 Mi Perfil ({user.firstName})
+              </button>
             ) : (
-              <button className="btn btn-secondary" onClick={() => { setIsAuthModalOpen(true); setMobileMenuOpen(false); }}>Iniciar Sesión</button>
+              <button
+                className="btn btn-secondary"
+                style={{ justifyContent: 'flex-start', padding: '0.75rem 1rem', fontWeight: '700' }}
+                onClick={() => { setIsAuthModalOpen(true); setMobileMenuOpen(false); }}
+              >
+                🔐 Iniciar Sesión / Registrarse
+              </button>
             )}
 
             {isOperatorOrAdmin && (
-              <button className="btn btn-dark" onClick={() => { navigateTo('admin'); setMobileMenuOpen(false); }}>Taller / Admin</button>
+              <button
+                className="btn btn-dark"
+                style={{ justifyContent: 'flex-start', padding: '0.75rem 1rem', marginTop: '0.25rem' }}
+                onClick={() => { navigateTo('admin'); setMobileMenuOpen(false); }}
+              >
+                👑 Panel Taller & Producción
+              </button>
             )}
           </div>
         </div>
@@ -377,7 +442,13 @@ const Header = () => {
           .mobile-menu-btn { display: none !important; }
         }
         @media (max-width: 899px) {
-          .mobile-menu-btn { display: block !important; }
+          .mobile-menu-btn { display: flex !important; }
+          .desktop-nav { display: none !important; }
+          .header-search-box { display: none !important; }
+        }
+        @media (max-width: 480px) {
+          .login-text { display: none !important; }
+          .user-name-text { display: none !important; }
         }
       `}</style>
     </header>

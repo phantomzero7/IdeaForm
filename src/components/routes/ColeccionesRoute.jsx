@@ -202,21 +202,17 @@ const ColeccionesRoute = () => {
 
       <div className="container" style={{ paddingTop: '2rem' }}>
         
-        {/* 2. Enhanced Horizontal Stepper (Paso 1 al 6) */}
+        {/* 6-Step Stepper Bar */}
         <div
+          className="stepper-scroll-container card"
           style={{
-            background: '#FFFFFF',
+            background: '#ffffff',
             borderRadius: 'var(--radius-xl)',
-            padding: '1.25rem 2rem',
+            padding: '1rem 1.25rem',
             border: '1px solid #F0D7D2',
             boxShadow: 'var(--shadow-sm)',
-            marginBottom: '2.5rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            position: 'relative',
-            overflowX: 'auto',
-            gap: '1rem'
+            marginBottom: '2rem',
+            gap: '0.75rem'
           }}
         >
           {STEPS.map((s, idx) => {
@@ -239,36 +235,37 @@ const ColeccionesRoute = () => {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '0.4rem',
-                    minWidth: '70px',
-                    zIndex: 2
+                    gap: '0.35rem',
+                    minWidth: '58px',
+                    zIndex: 2,
+                    flexShrink: 0
                   }}
                 >
                   <div
                     className="stepper-circle"
                     style={{
-                      width: '38px',
-                      height: '38px',
+                      width: '34px',
+                      height: '34px',
                       borderRadius: '50%',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontWeight: '800',
-                      fontSize: '0.9rem',
+                      fontSize: '0.85rem',
                       background: isActive ? '#A94D43' : isCompleted ? '#C9685B' : '#F0D7D2',
                       color: isActive || isCompleted ? '#ffffff' : '#A94D43',
-                      boxShadow: isActive ? '0 0 0 4px rgba(169, 77, 67, 0.15)' : 'none',
+                      boxShadow: isActive ? '0 0 0 3px rgba(169, 77, 67, 0.15)' : 'none',
                       transition: 'all 0.2s ease'
                     }}
                   >
-                    {isCompleted ? <CheckCircle2 size={20} /> : s.num}
+                    {isCompleted ? <CheckCircle2 size={18} /> : s.num}
                   </div>
                   <div
-                    className="stepper-label"
+                    className="stepper-label stepper-label-text"
                     style={{
                       color: isActive ? '#A94D43' : isCompleted ? '#C9685B' : '#94a3b8',
                       fontWeight: isActive ? '800' : '600',
-                      fontSize: '0.78rem',
+                      fontSize: '0.72rem',
                       whiteSpace: 'nowrap'
                     }}
                   >
@@ -475,11 +472,11 @@ const ColeccionesRoute = () => {
 
         {/* PASO 3: PERSONALIZA TU PIEZA SELECCIONADA CON ZONAS MULTI-COLOR */}
         {activeStep === 3 && selectedProduct && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 1.2fr) minmax(300px, 0.8fr)', gap: '2rem' }}>
+          <div className="customizer-split-responsive">
             
             {/* Left: 2D/3D Live Canvas */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div className="card card-elevated" style={{ padding: '0', background: '#ffffff', position: 'relative', overflow: 'hidden', height: '490px', borderRadius: 'var(--radius-xl)', border: '1px solid #F0D7D2' }}>
+              <div className="card card-elevated stage-3d-box" style={{ padding: '0', background: '#ffffff', position: 'relative', overflow: 'hidden', borderRadius: 'var(--radius-xl)', border: '1px solid #F0D7D2' }}>
                 
                 {/* 2D / 3D Toggle */}
                 {selectedProduct.has3d !== false && (
@@ -924,8 +921,8 @@ const ColeccionesRoute = () => {
 
         {/* PASO 4: VISTA PREVIA TÉCNICA & MEDIDAS */}
         {activeStep === 4 && selectedProduct && (
-          <div style={{ maxWidth: '850px', margin: '0 auto', background: '#FFFFFF', borderRadius: 'var(--radius-xl)', padding: '2.5rem', border: '1px solid #F0D7D2' }}>
-            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div className="card card-elevated" style={{ maxWidth: '850px', margin: '0 auto', background: '#FFFFFF', borderRadius: 'var(--radius-xl)', padding: '2rem 1.5rem', border: '1px solid #F0D7D2' }}>
+            <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
               <span className="badge" style={{ background: '#FAEEEB', color: '#A94D43', marginBottom: '0.5rem' }}>
                 HOJA DE ESPECIFICACIONES 3D
               </span>
@@ -937,7 +934,7 @@ const ColeccionesRoute = () => {
               </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem', alignItems: 'center', marginBottom: '2rem' }}>
+            <div className="step4-preview-responsive" style={{ alignItems: 'center', marginBottom: '2rem' }}>
               <div style={{ height: '320px', background: '#FAEEEB', borderRadius: 'var(--radius-lg)', overflow: 'hidden', position: 'relative' }}>
                 <ThreeViewer
                   modelType={selectedProduct.modelType || 'keychain'}

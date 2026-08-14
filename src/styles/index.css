@@ -430,3 +430,123 @@ button, input, select, textarea {
   transform: scale(1.15);
   box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 }
+
+/* ==========================================================================
+   RESPONSIVE DESIGN & MOBILE OPTIMIZATIONS
+   ========================================================================== */
+
+/* 1. Responsive Customizer Grids */
+.customizer-split-responsive {
+  display: grid;
+  grid-template-columns: minmax(340px, 1.2fr) minmax(300px, 0.8fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+.step4-preview-responsive {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+/* 2. Responsive 3D Stage Container */
+.stage-3d-box {
+  width: 100%;
+  height: 480px;
+  position: relative;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: #ffffff;
+}
+
+/* 3. Responsive Stepper */
+.stepper-scroll-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 0.5rem 0.25rem 1rem 0.25rem;
+  margin-bottom: 1.5rem;
+}
+.stepper-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* 4. Responsive Tables */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1rem;
+}
+
+/* 5. Mobile Breakpoint Adjustments (< 900px) */
+@media (max-width: 899px) {
+  .customizer-split-responsive {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem !important;
+  }
+
+  .step4-preview-responsive {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem !important;
+  }
+
+  .stage-3d-box {
+    height: 380px !important;
+  }
+}
+
+/* 6. Phone Breakpoint Adjustments (< 640px) */
+@media (max-width: 640px) {
+  .container {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  .stage-3d-box {
+    height: 320px !important;
+  }
+
+  .stepper-label-text {
+    font-size: 0.68rem !important;
+  }
+
+  .card {
+    padding: 1.15rem !important;
+  }
+
+  /* Floating Widgets & Chatbot Sheet */
+  .floating-socials-aside {
+    bottom: 1rem !important;
+    right: 0.85rem !important;
+    gap: 0.5rem !important;
+  }
+
+  .floating-bot-btn {
+    width: 52px !important;
+    height: 52px !important;
+  }
+
+  .floating-social-icon {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .floating-chat-card {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 84vh !important;
+    max-height: 88vh !important;
+    border-radius: 20px 20px 0 0 !important;
+    margin: 0 !important;
+  }
+}

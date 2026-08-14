@@ -228,6 +228,7 @@ const FloatingSocials = () => {
       {/* 1. RIGHT-SIDE STICKY FLOATING SOCIAL DOCK */}
       <aside
         aria-label="Canales de contacto y redes sociales"
+        className="floating-socials-aside"
         style={{
           position: 'fixed',
           right: '1.25rem',
@@ -246,6 +247,7 @@ const FloatingSocials = () => {
           target="_blank"
           rel="noopener noreferrer"
           title="Síguenos en Instagram @ideaform.mx"
+          className="floating-social-icon"
           style={{
             width: '46px',
             height: '46px',
@@ -275,6 +277,7 @@ const FloatingSocials = () => {
           target="_blank"
           rel="noopener noreferrer"
           title="Facebook Oficial IdeaForm"
+          className="floating-social-icon"
           style={{
             width: '46px',
             height: '46px',
@@ -342,6 +345,7 @@ const FloatingSocials = () => {
           <button
             onClick={() => setIsChatOpen(!isChatOpen)}
             title="Asistente Virtual Robot IdeaForm"
+            className="floating-bot-btn"
             style={{
               width: '64px',
               height: '64px',
@@ -399,7 +403,7 @@ const FloatingSocials = () => {
         <div
           role="dialog"
           aria-label="Asistente Virtual IdeaForm 3D"
-          className="card card-elevated"
+          className="card card-elevated floating-chat-card"
           style={{
             position: 'fixed',
             right: '1.25rem',

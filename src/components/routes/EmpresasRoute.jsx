@@ -444,10 +444,10 @@ const EmpresasRoute = () => {
 
         {/* PASO 3: FUSIÓN DE PERSONALIZACIÓN Y CARGA DE LOGOTIPO EN VIVO */}
         {activeStep === 3 && selectedProduct && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 1.15fr) minmax(320px, 0.85fr)', gap: '2rem', alignItems: 'start' }}>
+          <div className="customizer-split-responsive">
             
             {/* Left: 3D Stage with Live Logo Overlay */}
-            <div className="card card-elevated" style={{ padding: '0', background: '#ffffff', position: 'relative', overflow: 'hidden', height: '520px', borderRadius: 'var(--radius-xl)' }}>
+            <div className="card card-elevated stage-3d-box" style={{ padding: '0', background: '#ffffff', position: 'relative', overflow: 'hidden', borderRadius: 'var(--radius-xl)' }}>
               <ThreeViewer
                 ref={viewerRef}
                 modelType={selectedProduct.modelType || 'trophy'}
