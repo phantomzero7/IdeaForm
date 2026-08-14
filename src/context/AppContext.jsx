@@ -7,7 +7,9 @@ import {
   MOCK_B2B_QUOTES,
   B2B_PRICE_TIERS,
   MOCK_3D_PRINTERS,
-  MOCK_OPERATING_EXPENSES
+  MOCK_OPERATING_EXPENSES,
+  DEFAULT_BOT_SETTINGS,
+  DEFAULT_BOT_INTENTS
 } from '../data/mockData';
 import { generateFolio } from '../utils/formatters';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
@@ -295,6 +297,67 @@ export const AppProvider = ({ children }) => {
       localStorage.setItem('ideaform_products', JSON.stringify(updated));
       return updated;
     });
+  };
+
+  // IdeaForm Bot Knowledge Base & Settings (Persisted in localStorage)
+  const [botSettings, setBotSettings] = useState(() => {
+    const saved = localStorage.getItem('ideaform_bot_settings');
+    return saved ? JSON.parse(saved) : DEFAULT_BOT_SETTINGS;
+  });
+
+  const [botIntents, setBotIntents] = useState(() => {
+    const saved = localStorage.getItem('ideaform_bot_intents');
+    return saved ? JSON.parse(saved) : DEFAULT_BOT_INTENTS;
+  });
+
+  const saveBotIntent = (newOrUpdatedIntent) => {
+    setBotIntents((prev) => {
+      const exists = prev.some((i) => i.id === newOrUpdatedIntent.id);
+      let updated;
+      if (exists) {
+        updated = prev.map((i) => (i.id === newOrUpdatedIntent.id ? { ...i, ...newOrUpdatedIntent } : i));
+      } else {
+        const id = newOrUpdatedIntent.id || `intent-${Date.now()}`;
+        updated = [...prev, { ...newOrUpdatedIntent, id }];
+      }
+      localStorage.setItem('ideaform_bot_intents', JSON.stringify(updated));
+      return updated;
+    });
+    showToast(`Respuesta del Bot "${newOrUpdatedIntent.title}" guardada`, 'success');
+  };
+
+  const deleteBotIntent = (intentId) => {
+    setBotIntents((prev) => {
+      const updated = prev.filter((i) => i.id !== intentId);
+      localStorage.setItem('ideaform_bot_intents', JSON.stringify(updated));
+      return updated;
+    });
+    showToast('Intención del Bot eliminada', 'warning');
+  };
+
+  const toggleBotIntent = (intentId) => {
+    setBotIntents((prev) => {
+      const updated = prev.map((i) => (i.id === intentId ? { ...i, isActive: !i.isActive } : i));
+      localStorage.setItem('ideaform_bot_intents', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const updateBotSettings = (newSettings) => {
+    setBotSettings((prev) => {
+      const updated = { ...prev, ...newSettings };
+      localStorage.setItem('ideaform_bot_settings', JSON.stringify(updated));
+      return updated;
+    });
+    showToast('Configuración general del Bot actualizada', 'success');
+  };
+
+  const resetBotKnowledge = () => {
+    setBotSettings(DEFAULT_BOT_SETTINGS);
+    setBotIntents(DEFAULT_BOT_INTENTS);
+    localStorage.setItem('ideaform_bot_settings', JSON.stringify(DEFAULT_BOT_SETTINGS));
+    localStorage.setItem('ideaform_bot_intents', JSON.stringify(DEFAULT_BOT_INTENTS));
+    showToast('Base de conocimientos del Bot restaurada a valores de fábrica', 'info');
   };
 
   // Toasts
@@ -784,6 +847,13 @@ export const AppProvider = ({ children }) => {
         setProducts,
         saveProduct,
         deleteProduct,
+        botIntents,
+        botSettings,
+        saveBotIntent,
+        deleteBotIntent,
+        toggleBotIntent,
+        updateBotSettings,
+        resetBotKnowledge,
         toasts,
         showToast,
         removeToast

@@ -61,7 +61,13 @@ import {
   Info,
   Wrench,
   ChevronRight,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Bot,
+  ToggleLeft,
+  ToggleRight,
+  Smartphone,
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react';
 
 const KANBAN_STAGES = [
@@ -71,6 +77,8 @@ const KANBAN_STAGES = [
   { id: 'QUALITY_CONTROL', label: '4. Control Calidad', color: '#8b5cf6', bg: '#f3e8ff' },
   { id: 'READY_TO_SHIP', label: '5. Listo para Envío', color: '#10b981', bg: '#ecfdf5' }
 ];
+
+const BOT_AVATAR_SRC = '/ideaform-bot.png';
 
 const AdminDashboard = () => {
   const {
@@ -106,12 +114,19 @@ const AdminDashboard = () => {
     products,
     saveProduct,
     deleteProduct,
+    botIntents,
+    botSettings,
+    saveBotIntent,
+    deleteBotIntent,
+    toggleBotIntent,
+    updateBotSettings,
+    resetBotKnowledge,
     navigateTo,
     showToast
   } = useApp();
 
   // Active Main Navigation Tab
-  // 'production' | 'printers' | 'inventory' | 'finance' | 'costs' | 'products' | 'quotes'
+  // 'production' | 'printers' | 'inventory' | 'finance' | 'costs' | 'products' | 'quotes' | 'chatbot'
   const [activeTab, setActiveTab] = useState('production');
   const [staffPin, setStaffPin] = useState('');
 
@@ -124,11 +139,7 @@ const AdminDashboard = () => {
   const [newCommentText, setNewCommentText] = useState('');
   const [orderNotesMap, setOrderNotesMap] = useState({});
 
-  // 2. Image Retouch / Vectorization Inspector Modal State
-  const [selectedOrderForImage, setSelectedOrderForImage] = useState(null);
-  const [retouchStatus, setRetouchStatus] = useState('READY');
-
-  // 3. Multi-Channel Manual Order Creator Modal State
+  // 2. Multi-Channel Manual Order Creator Modal State
   const [isManualOrderModalOpen, setIsManualOrderModalOpen] = useState(false);
   const [manualOrderData, setManualOrderData] = useState({
     customerName: '',
@@ -146,7 +157,7 @@ const AdminDashboard = () => {
     total: 150
   });
 
-  // 4. 3D Printer Fleet State & Modals
+  // 3. 3D Printer Fleet State & Modals
   const [isPrinterModalOpen, setIsPrinterModalOpen] = useState(false);
   const [editingPrinter, setEditingPrinter] = useState(null);
   const [printerFormData, setPrinterFormData] = useState({
@@ -162,7 +173,7 @@ const AdminDashboard = () => {
   const [selectedPrinterForMaint, setSelectedPrinterForMaint] = useState(null);
   const [maintenanceNotes, setMaintenanceNotes] = useState('');
 
-  // 5. Filament Inventory Modals (Technical Sheet, Tara Scale Calibration & Stock In)
+  // 4. Filament Inventory Modals (Technical Sheet, Tara Scale Calibration & Stock In)
   const [isFilamentDetailsModalOpen, setIsFilamentDetailsModalOpen] = useState(false);
   const [selectedFilamentDetails, setSelectedFilamentDetails] = useState(null);
   const [isTaraCalibrationModalOpen, setIsTaraCalibrationModalOpen] = useState(false);
@@ -189,12 +200,11 @@ const AdminDashboard = () => {
     isBlocked: false,
     isArchived: false
   });
-  const [movementModal, setMovementModal] = useState({ isOpen: false, material: null, type: 'ENTRADA', grams: 1000, reason: '' });
 
-  // 6. Operating Expenses State & Modal
+  // 5. Operating Expenses State & Modal
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [expenseFormData, setExpenseFormData] = useState({
-    category: 'PACKAGING', // 'PACKAGING' | 'SHIPPING' | 'ELECTRICITY' | 'SUPPLIES' | 'FIXED'
+    category: 'PACKAGING',
     description: '',
     amount: '',
     date: new Date().toISOString().split('T')[0],
@@ -202,10 +212,8 @@ const AdminDashboard = () => {
     recurring: 'Mensual'
   });
 
-  // 7. Quotes & Products
+  // 6. Quotes & Products
   const [quotesList, setQuotesList] = useState(b2bQuotes);
-  const [selectedQuoteForDetail, setSelectedQuoteForDetail] = useState(null);
-  const [quoteSearchTerm, setQuoteSearchTerm] = useState('');
   const productsCatalog = products || PRODUCTS;
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -231,6 +239,23 @@ const AdminDashboard = () => {
     image2D: null
   });
 
+  // 7. IdeaForm Bot AI State & Modals
+  const [isIntentModalOpen, setIsIntentModalOpen] = useState(false);
+  const [editingIntent, setEditingIntent] = useState(null);
+  const [intentFormData, setIntentFormData] = useState({
+    title: '',
+    chipLabel: '',
+    keywords: '',
+    response: '',
+    actionLabel: '',
+    actionRoute: '',
+    actionType: 'WHATSAPP',
+    intent: 'CUSTOM',
+    isActive: true
+  });
+  const [botTestInput, setBotTestInput] = useState('');
+  const [botTestResult, setBotTestResult] = useState(null);
+
   // RBAC GUARD
   const isAuthorized = user && (userRole === 'ADMIN' || userRole === 'OPERATOR_3D');
 
@@ -252,14 +277,11 @@ const AdminDashboard = () => {
     }
   };
 
-  // --- FILTERED PRODUCTION ORDERS ---
+  // Filtered Production Orders
   const filteredProductionOrders = useMemo(() => {
     return productionOrders.filter((ord) => {
-      // Priority filter
       if (priorityFilter !== 'ALL' && ord.priority !== priorityFilter) return false;
-      // Channel filter
       if (channelFilter !== 'ALL' && ord.channel !== channelFilter) return false;
-      // Search query
       if (orderSearchQuery.trim()) {
         const query = orderSearchQuery.toLowerCase();
         const matchesFolio = ord.orderNumber?.toLowerCase().includes(query);
@@ -272,7 +294,7 @@ const AdminDashboard = () => {
     });
   }, [productionOrders, priorityFilter, channelFilter, orderSearchQuery]);
 
-  // --- KANBAN STAGE TRANSITIONS ---
+  // Stage Transitions
   const handleMoveStage = (orderId, currentStage, direction) => {
     const currentIndex = KANBAN_STAGES.findIndex((s) => s.id === currentStage);
     if (currentIndex === -1) return;
@@ -283,7 +305,7 @@ const AdminDashboard = () => {
     }
   };
 
-  // --- WHATSAPP NOTIFIER ---
+  // WhatsApp Notifier
   const handleSendWhatsApp = (order, templateType) => {
     const cleanPhone = (order.customerPhone || '526121403409').replace(/\D/g, '');
     let msg = '';
@@ -296,27 +318,14 @@ const AdminDashboard = () => {
     window.open(waUrl, '_blank');
   };
 
-  // --- CALCULATIONS FOR FINANCIALS & REAL NET PROFIT ---
+  // Financial Metrics
   const financialMetrics = useMemo(() => {
     const totalOrders = productionOrders.length;
     const totalRevenue = productionOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
     const avgTicket = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-    // Channel breakdown
-    const channelCounts = {
-      WEB_AUTO: 0,
-      WHATSAPP: 0,
-      INSTAGRAM: 0,
-      B2B: 0,
-      LOCAL: 0
-    };
-    const channelRevenue = {
-      WEB_AUTO: 0,
-      WHATSAPP: 0,
-      INSTAGRAM: 0,
-      B2B: 0,
-      LOCAL: 0
-    };
+    const channelCounts = { WEB_AUTO: 0, WHATSAPP: 0, INSTAGRAM: 0, B2B: 0, LOCAL: 0 };
+    const channelRevenue = { WEB_AUTO: 0, WHATSAPP: 0, INSTAGRAM: 0, B2B: 0, LOCAL: 0 };
 
     productionOrders.forEach((o) => {
       const ch = o.channel || 'WEB_AUTO';
@@ -326,9 +335,8 @@ const AdminDashboard = () => {
       }
     });
 
-    // Expenses breakdown
     const totalExpenses = (operatingExpenses || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-    const totalFilamentCost = productionOrders.reduce((sum, o) => sum + ((Number(o.filamentGrams) || 40) * 0.45), 0); // ~$0.45 MXN per gram
+    const totalFilamentCost = productionOrders.reduce((sum, o) => sum + ((Number(o.filamentGrams) || 40) * 0.45), 0);
     const totalPackagingCost = productionOrders.reduce((sum, o) => sum + (Number(o.packagingCost) || 20), 0);
     const totalShippingCost = productionOrders.reduce((sum, o) => sum + (Number(o.shippingCostReal) || 135), 0);
 
@@ -352,6 +360,60 @@ const AdminDashboard = () => {
     };
   }, [productionOrders, operatingExpenses]);
 
+  // Real-time Bot Simulator tester function
+  const handleTestBotQuery = (e) => {
+    e.preventDefault();
+    if (!botTestInput.trim()) return;
+
+    const raw = botTestInput.trim().toLowerCase();
+    const clean = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w\s]/gi, ' ').trim();
+
+    let matchedIntent = null;
+    let highestScore = 0;
+    let matchedKeywords = [];
+
+    const activeList = (botIntents || []).filter((i) => i.isActive !== false);
+
+    for (const intent of activeList) {
+      let score = 0;
+      const curMatched = [];
+      const keywords = Array.isArray(intent.keywords)
+        ? intent.keywords
+        : String(intent.keywords || '').split(',').map((k) => k.trim());
+
+      for (const kw of keywords) {
+        const cleanKw = kw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        if (cleanKw && clean.includes(cleanKw)) {
+          score += cleanKw.length > 4 ? 3 : 1;
+          curMatched.push(kw);
+        }
+      }
+
+      if (score > highestScore) {
+        highestScore = score;
+        matchedIntent = intent;
+        matchedKeywords = curMatched;
+      }
+    }
+
+    if (matchedIntent && highestScore > 0) {
+      setBotTestResult({
+        matched: true,
+        intent: matchedIntent,
+        score: highestScore,
+        matchedKeywords,
+        response: matchedIntent.response
+      });
+    } else {
+      setBotTestResult({
+        matched: false,
+        score: 0,
+        matchedKeywords: [],
+        response: botSettings?.fallbackMessage || 'Mensaje de tolerancia a errores y fallback activado.'
+      });
+    }
+  };
+
   // Auth unlock screen
   if (!isAuthorized) {
     return (
@@ -365,7 +427,7 @@ const AdminDashboard = () => {
             Panel de Control del Taller
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: '1.5', marginBottom: '1.75rem' }}>
-            Acceso restringido a operadores y administradores para gestión de línea de producción, parque 3D, catálogo e inventario.
+            Acceso restringido a operadores y administradores para gestión de línea de producción, parque 3D, catálogo, bot e inventario.
           </p>
 
           <form onSubmit={handleStaffPinUnlock} style={{ marginBottom: '1.25rem' }}>
@@ -456,18 +518,18 @@ const AdminDashboard = () => {
               display: 'flex',
               alignItems: 'center',
               gap: '0.45rem',
-              padding: '0.55rem 1rem',
+              padding: '0.55rem 0.9rem',
               borderRadius: 'var(--radius-md)',
               border: 'none',
               background: activeTab === 'production' ? 'rgba(23, 107, 135, 0.12)' : 'transparent',
               color: activeTab === 'production' ? '#176B87' : '#64748b',
               fontWeight: '800',
-              fontSize: '0.84rem',
+              fontSize: '0.82rem',
               cursor: 'pointer'
             }}
           >
-            <Layers size={16} />
-            <span>1. Línea de Producción ({productionOrders.length})</span>
+            <Layers size={15} />
+            <span>1. Línea Producción ({productionOrders.length})</span>
           </button>
 
           {/* 2. Parque de Impresoras 3D */}
@@ -477,18 +539,18 @@ const AdminDashboard = () => {
               display: 'flex',
               alignItems: 'center',
               gap: '0.45rem',
-              padding: '0.55rem 1rem',
+              padding: '0.55rem 0.9rem',
               borderRadius: 'var(--radius-md)',
               border: 'none',
               background: activeTab === 'printers' ? 'rgba(23, 107, 135, 0.12)' : 'transparent',
               color: activeTab === 'printers' ? '#176B87' : '#64748b',
               fontWeight: '800',
-              fontSize: '0.84rem',
+              fontSize: '0.82rem',
               cursor: 'pointer'
             }}
           >
-            <Printer size={16} />
-            <span>2. Parque de Impresoras ({printers.length})</span>
+            <Printer size={15} />
+            <span>2. Parque Impresoras ({printers.length})</span>
           </button>
 
           {/* 3. Inventario de Filamentos */}
@@ -498,18 +560,18 @@ const AdminDashboard = () => {
               display: 'flex',
               alignItems: 'center',
               gap: '0.45rem',
-              padding: '0.55rem 1rem',
+              padding: '0.55rem 0.9rem',
               borderRadius: 'var(--radius-md)',
               border: 'none',
               background: activeTab === 'inventory' ? 'rgba(23, 107, 135, 0.12)' : 'transparent',
               color: activeTab === 'inventory' ? '#176B87' : '#64748b',
               fontWeight: '800',
-              fontSize: '0.84rem',
+              fontSize: '0.82rem',
               cursor: 'pointer'
             }}
           >
-            <Activity size={16} />
-            <span>3. Inventario de Filamentos ({filamentInventory.length})</span>
+            <Activity size={15} />
+            <span>3. Inventario Filamentos ({filamentInventory.length})</span>
           </button>
 
           {/* 4. Analítica Financiera */}
@@ -519,18 +581,18 @@ const AdminDashboard = () => {
               display: 'flex',
               alignItems: 'center',
               gap: '0.45rem',
-              padding: '0.55rem 1rem',
+              padding: '0.55rem 0.9rem',
               borderRadius: 'var(--radius-md)',
               border: 'none',
               background: activeTab === 'finance' ? 'rgba(23, 107, 135, 0.12)' : 'transparent',
               color: activeTab === 'finance' ? '#176B87' : '#64748b',
               fontWeight: '800',
-              fontSize: '0.84rem',
+              fontSize: '0.82rem',
               cursor: 'pointer'
             }}
           >
-            <BarChart3 size={16} />
-            <span>4. Analítica Financiera & Canales</span>
+            <BarChart3 size={15} />
+            <span>4. Finanzas & Canales</span>
           </button>
 
           {/* 5. Costos & Gastos de Operación */}
@@ -540,17 +602,17 @@ const AdminDashboard = () => {
               display: 'flex',
               alignItems: 'center',
               gap: '0.45rem',
-              padding: '0.55rem 1rem',
+              padding: '0.55rem 0.9rem',
               borderRadius: 'var(--radius-md)',
               border: 'none',
               background: activeTab === 'costs' ? 'rgba(23, 107, 135, 0.12)' : 'transparent',
               color: activeTab === 'costs' ? '#176B87' : '#64748b',
               fontWeight: '800',
-              fontSize: '0.84rem',
+              fontSize: '0.82rem',
               cursor: 'pointer'
             }}
           >
-            <Receipt size={16} />
+            <Receipt size={15} />
             <span>5. Costos & Utilidad Neta</span>
           </button>
 
@@ -561,18 +623,18 @@ const AdminDashboard = () => {
               display: 'flex',
               alignItems: 'center',
               gap: '0.45rem',
-              padding: '0.55rem 1rem',
+              padding: '0.55rem 0.9rem',
               borderRadius: 'var(--radius-md)',
               border: 'none',
               background: activeTab === 'products' ? 'rgba(23, 107, 135, 0.12)' : 'transparent',
               color: activeTab === 'products' ? '#176B87' : '#64748b',
               fontWeight: '800',
-              fontSize: '0.84rem',
+              fontSize: '0.82rem',
               cursor: 'pointer'
             }}
           >
-            <Tag size={16} />
-            <span>6. Catálogo de Productos ({productsCatalog.length})</span>
+            <Tag size={15} />
+            <span>6. Catálogo ({productsCatalog.length})</span>
           </button>
 
           {/* 7. Cotizaciones B2B */}
@@ -582,18 +644,39 @@ const AdminDashboard = () => {
               display: 'flex',
               alignItems: 'center',
               gap: '0.45rem',
-              padding: '0.55rem 1rem',
+              padding: '0.55rem 0.9rem',
               borderRadius: 'var(--radius-md)',
               border: 'none',
               background: activeTab === 'quotes' ? 'rgba(23, 107, 135, 0.12)' : 'transparent',
               color: activeTab === 'quotes' ? '#176B87' : '#64748b',
               fontWeight: '800',
-              fontSize: '0.84rem',
+              fontSize: '0.82rem',
               cursor: 'pointer'
             }}
           >
-            <FileSpreadsheet size={16} />
+            <FileSpreadsheet size={15} />
             <span>7. Cotizaciones B2B ({quotesList.length})</span>
+          </button>
+
+          {/* 8. IdeaForm Bot AI Configurator */}
+          <button
+            onClick={() => setActiveTab('chatbot')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              padding: '0.55rem 0.9rem',
+              borderRadius: 'var(--radius-md)',
+              border: 'none',
+              background: activeTab === 'chatbot' ? '#0F172A' : '#e0f2fe',
+              color: activeTab === 'chatbot' ? '#00e5ff' : '#0369a1',
+              fontWeight: '800',
+              fontSize: '0.82rem',
+              cursor: 'pointer'
+            }}
+          >
+            <Bot size={15} />
+            <span>8. IdeaForm Bot AI ({(botIntents || []).length})</span>
           </button>
         </div>
       </div>
@@ -814,11 +897,10 @@ const AdminDashboard = () => {
                       <div style={{ padding: '0.65rem', display: 'flex', flexDirection: 'column', gap: '0.65rem', flex: 1, overflowY: 'auto' }}>
                         {stageOrders.map((ord) => {
                           const priorityBadge = ord.priority === 'URGENT'
-                            ? { label: 'URGENTE', bg: '#fee2e2', color: '#dc2626', icon: Flame }
+                            ? { label: 'URGENTE', bg: '#fee2e2', color: '#dc2626' }
                             : ord.priority === 'LOW'
-                            ? { label: 'BAJO', bg: '#f0fdf4', color: '#16a34a', icon: Clock }
-                            : { label: 'MEDIO', bg: '#fef3c7', color: '#d97706', icon: Activity };
-                          const IconComp = priorityBadge.icon;
+                            ? { label: 'BAJO', bg: '#f0fdf4', color: '#16a34a' }
+                            : { label: 'MEDIO', bg: '#fef3c7', color: '#d97706' };
 
                           return (
                             <div
@@ -834,7 +916,6 @@ const AdminDashboard = () => {
                                 gap: '0.5rem'
                               }}
                             >
-                              {/* Card Header: Order #, Priority & Channel */}
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                 <div>
                                   <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.85rem' }}>
@@ -844,7 +925,6 @@ const AdminDashboard = () => {
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
-                                  {/* Priority tag selector */}
                                   <select
                                     value={ord.priority || 'MEDIUM'}
                                     onChange={(e) => updateOrderPriority(ord.id, e.target.value)}
@@ -870,7 +950,6 @@ const AdminDashboard = () => {
                                 </div>
                               </div>
 
-                              {/* Product & Custom Engraving Info */}
                               <div style={{ background: '#f8fafc', padding: '0.45rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem' }}>
                                 <div style={{ fontWeight: '700', color: '#0F172A' }}>{ord.productName}</div>
                                 {ord.customText && (
@@ -885,7 +964,6 @@ const AdminDashboard = () => {
                                 </div>
                               </div>
 
-                              {/* Assigned Printer Selection */}
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                                 <Printer size={13} color="#64748b" />
                                 <select
@@ -909,7 +987,6 @@ const AdminDashboard = () => {
                                 </select>
                               </div>
 
-                              {/* Action Buttons: WhatsApp & Move Stage */}
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.35rem', borderTop: '1px solid #f1f5f9' }}>
                                 <button
                                   onClick={() => handleSendWhatsApp(ord, stage.id === 'READY_TO_SHIP' ? 'READY' : 'PRODUCTION')}
@@ -956,12 +1033,6 @@ const AdminDashboard = () => {
                             </div>
                           );
                         })}
-
-                        {stageOrders.length === 0 && (
-                          <div style={{ textAlign: 'center', padding: '2rem 1rem', color: '#94a3b8', fontSize: '0.78rem' }}>
-                            Sin órdenes en esta etapa
-                          </div>
-                        )}
                       </div>
                     </div>
                   );
@@ -990,10 +1061,8 @@ const AdminDashboard = () => {
                     </thead>
                     <tbody>
                       {filteredProductionOrders.map((ord) => (
-                        <tr key={ord.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s ease' }}>
-                          <td style={{ padding: '0.75rem 1rem', fontWeight: '800', color: '#0F172A' }}>
-                            #{ord.orderNumber}
-                          </td>
+                        <tr key={ord.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '0.75rem 1rem', fontWeight: '800', color: '#0F172A' }}>#{ord.orderNumber}</td>
                           <td style={{ padding: '0.75rem 1rem' }}>
                             <div style={{ fontWeight: '700', color: '#0F172A' }}>{ord.customerName}</div>
                             <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{ord.date}</div>
@@ -1131,7 +1200,6 @@ const AdminDashboard = () => {
               </button>
             </div>
 
-            {/* Fleet Cards Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
               {printers.map((printer) => {
                 const statusBadge = printer.status === 'PRINTING'
@@ -1156,7 +1224,6 @@ const AdminDashboard = () => {
                       gap: '0.85rem'
                     }}
                   >
-                    {/* Card Top: Machine Name & Status Selector */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <div style={{ background: '#f1f5f9', padding: '0.5rem', borderRadius: 'var(--radius-md)' }}>
@@ -1189,7 +1256,6 @@ const AdminDashboard = () => {
                       </select>
                     </div>
 
-                    {/* Hardware Specs Grid */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', background: '#f8fafc', padding: '0.75rem', borderRadius: 'var(--radius-md)', fontSize: '0.75rem' }}>
                       <div>
                         <span style={{ color: '#64748b' }}>Boquilla: </span>
@@ -1209,7 +1275,6 @@ const AdminDashboard = () => {
                       </div>
                     </div>
 
-                    {/* AMS / Multi-Color Loaded Filament Slots */}
                     {printer.amsSlots && printer.amsSlots.length > 0 && (
                       <div>
                         <div style={{ fontSize: '0.72rem', fontWeight: '800', color: '#475569', marginBottom: '0.35rem' }}>
@@ -1239,20 +1304,6 @@ const AdminDashboard = () => {
                       </div>
                     )}
 
-                    {/* Live Job Progress (if printing) */}
-                    {printer.status === 'PRINTING' && (
-                      <div style={{ background: '#e0f2fe', padding: '0.65rem', borderRadius: 'var(--radius-md)', border: '1px solid #bae6fd' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: '800', color: '#0369a1', marginBottom: '0.35rem' }}>
-                          <span>Trabajo en progreso: #{printer.currentJobId || 'ORD-Activa'}</span>
-                          <span>{printer.currentJobProgress || 65}%</span>
-                        </div>
-                        <div style={{ height: '6px', background: '#bae6fd', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${printer.currentJobProgress || 65}%`, background: '#0284c7', borderRadius: 'var(--radius-full)' }} />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Maintenance Notes & Actions */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.5rem', borderTop: '1px solid #f1f5f9' }}>
                       <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
                         Último mant.: {printer.lastMaintenance ? printer.lastMaintenance.split(' ')[0] : 'Al día'}
@@ -1312,7 +1363,6 @@ const AdminDashboard = () => {
               </button>
             </div>
 
-            {/* Filament Spools Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
               {filamentInventory.map((fil) => {
                 const stockPercent = Math.min(100, Math.round(((fil.stockGrams || 0) / 1000) * 100));
@@ -1334,7 +1384,6 @@ const AdminDashboard = () => {
                       gap: '0.75rem'
                     }}
                   >
-                    {/* Spool Header */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                         <div
@@ -1372,7 +1421,6 @@ const AdminDashboard = () => {
                       )}
                     </div>
 
-                    {/* Live Grams Progress Bar */}
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '0.35rem' }}>
                         <span style={{ color: '#64748b' }}>Gramos restantes:</span>
@@ -1392,7 +1440,6 @@ const AdminDashboard = () => {
                       </div>
                     </div>
 
-                    {/* Quick Modal Triggers */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', paddingTop: '0.5rem', borderTop: '1px solid #f1f5f9' }}>
                       <button
                         onClick={() => {
@@ -1424,7 +1471,6 @@ const AdminDashboard = () => {
                       </button>
                     </div>
 
-                    {/* Bottom Status Toggles */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem' }}>
                       <button
                         onClick={() => toggleBlockFilament(fil.id)}
@@ -1461,7 +1507,6 @@ const AdminDashboard = () => {
               </p>
             </div>
 
-            {/* Financial KPI Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
               <div className="card card-elevated" style={{ padding: '1.25rem', background: '#ffffff', borderRadius: 'var(--radius-lg)' }}>
                 <div style={{ color: '#64748b', fontSize: '0.78rem', fontWeight: '700' }}>INGRESOS TOTALES</div>
@@ -1496,10 +1541,7 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* Sales Channels Breakdown Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-              
-              {/* Channel Breakdown Card */}
               <div className="card card-elevated" style={{ padding: '1.5rem', background: '#ffffff', borderRadius: 'var(--radius-lg)' }}>
                 <h3 style={{ fontSize: '1rem', fontWeight: '800', color: '#0F172A', marginBottom: '1rem' }}>
                   Distribución de Ingresos por Canal de Origen
@@ -1532,7 +1574,6 @@ const AdminDashboard = () => {
                 </div>
               </div>
 
-              {/* Payment Methods Breakdown */}
               <div className="card card-elevated" style={{ padding: '1.5rem', background: '#ffffff', borderRadius: 'var(--radius-lg)' }}>
                 <h3 style={{ fontSize: '1rem', fontWeight: '800', color: '#0F172A', marginBottom: '1rem' }}>
                   Métodos de Pago & Pasarelas
@@ -1599,7 +1640,6 @@ const AdminDashboard = () => {
               </button>
             </div>
 
-            {/* Net Profit Summary Hero Card */}
             <div
               className="card card-elevated"
               style={{
@@ -1643,7 +1683,6 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* Operating Expenses Table */}
             <div className="card card-elevated" style={{ background: '#ffffff', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
               <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #e2e8f0', fontWeight: '800', color: '#0F172A', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>Bitácora de Gastos de Operación Registrados</span>
@@ -1707,7 +1746,7 @@ const AdminDashboard = () => {
         )}
 
         {/* =========================================================================
-            TAB 6: CATÁLOGO Y EDITOR DE PRODUCTOS (Vinculado a Filamentos Reales)
+            TAB 6: CATÁLOGO DE PRODUCTOS (Vinculado a Filamentos Reales)
            ========================================================================= */}
         {activeTab === 'products' && (
           <div>
@@ -1755,7 +1794,6 @@ const AdminDashboard = () => {
               </button>
             </div>
 
-            {/* Products Cards Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
               {productsCatalog.map((prod) => (
                 <div
@@ -1885,7 +1923,455 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
+
+        {/* =========================================================================
+            TAB 8: CONFIGURADOR DEL IDEAFORM BOT AI (Respuestas, Opciones & Errores)
+           ========================================================================= */}
+        {activeTab === 'chatbot' && (
+          <div>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#0F172A', border: '2px solid #00e5ff', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <img src={BOT_AVATAR_SRC} alt="Robot Mascot" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0F172A', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span>Configurador del IdeaForm Bot AI</span>
+                    <span style={{ fontSize: '0.72rem', background: '#dcfce7', color: '#15803d', padding: '0.2rem 0.55rem', borderRadius: 'var(--radius-full)' }}>
+                      AUTOMATIZACIÓN ACTIVA
+                    </span>
+                  </h2>
+                  <p style={{ color: '#64748b', fontSize: '0.82rem', margin: 0, marginTop: '0.15rem' }}>
+                    Gestiona las respuestas según las preguntas de los clientes, configura la tolerancia a errores/faltas y personaliza las transferencias a WhatsApp.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  onClick={resetBotKnowledge}
+                  className="btn btn-secondary btn-sm"
+                  style={{ fontSize: '0.78rem' }}
+                >
+                  Restaurar Fábrica
+                </button>
+
+                <button
+                  onClick={() => {
+                    setEditingIntent(null);
+                    setIntentFormData({
+                      title: '',
+                      chipLabel: '',
+                      keywords: '',
+                      response: '',
+                      actionLabel: 'Continuar por WhatsApp con Asesor',
+                      actionRoute: '',
+                      actionType: 'WHATSAPP',
+                      intent: 'CUSTOM_INTENT',
+                      isActive: true
+                    });
+                    setIsIntentModalOpen(true);
+                  }}
+                  className="btn btn-primary btn-sm"
+                  style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                >
+                  <Plus size={15} />
+                  <span>+ Nueva Respuesta de Bot</span>
+                </button>
+              </div>
+            </div>
+
+            {/* General Bot Settings & Error Fallback Configuration */}
+            <div className="card card-elevated" style={{ background: '#ffffff', padding: '1.5rem', borderRadius: 'var(--radius-xl)', marginBottom: '1.5rem', border: '1px solid #e2e8f0' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: '800', color: '#0F172A', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <SlidersHorizontal size={18} color="#176B87" />
+                <span>Parámetros Globales & Tolerancia a Errores de Clientes</span>
+              </h3>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                    NOMBRE DEL ASISTENTE EN EL CHAT
+                  </label>
+                  <input
+                    type="text"
+                    value={botSettings?.botName || 'IdeaForm Bot AI'}
+                    onChange={(e) => updateBotSettings({ botName: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: '700' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                    NÚMERO DE WHATSAPP PARA RECIBIR TRANSFERENCIAS
+                  </label>
+                  <input
+                    type="text"
+                    value={botSettings?.whatsappNumber || '526121403409'}
+                    onChange={(e) => updateBotSettings({ whatsappNumber: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: '700' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginTop: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                  SALUDO INICIAL DE BIENVENIDA
+                </label>
+                <textarea
+                  rows={2}
+                  value={botSettings?.welcomeGreeting || ''}
+                  onChange={(e) => updateBotSettings({ welcomeGreeting: e.target.value })}
+                  style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+                />
+              </div>
+
+              {/* Error Handling & Fallback for Client Typos */}
+              <div style={{ marginTop: '1rem', background: '#f8fafc', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
+                  <AlertCircle size={16} color="#d97706" />
+                  <label style={{ fontSize: '0.78rem', fontWeight: '800', color: '#0F172A', margin: 0 }}>
+                    RESPUESTA INTELIGENTE EN CASO DE ERRORES O PREGUNTAS NO RECONOCIDAS (FALLBACK)
+                  </label>
+                </div>
+                <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0' }}>
+                  Este mensaje se enviará si el cliente escribe palabras con faltas de ortografía, abreviaciones raras o consultas fuera del catálogo, ofreciéndole opciones y contacto por WhatsApp.
+                </p>
+                <textarea
+                  rows={2}
+                  value={botSettings?.fallbackMessage || ''}
+                  onChange={(e) => updateBotSettings({ fallbackMessage: e.target.value })}
+                  style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+                />
+              </div>
+            </div>
+
+            {/* Grid Layout: Configured Intents + Real-time Interactive Simulator */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.9fr', gap: '1.5rem', alignItems: 'start' }}>
+              
+              {/* Left Column: List of Configured Intents */}
+              <div>
+                <h3 style={{ fontSize: '1rem', fontWeight: '800', color: '#0F172A', marginBottom: '0.85rem' }}>
+                  Intenciones & Respuestas Programadas ({(botIntents || []).length})
+                </h3>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                  {(botIntents || []).map((intent) => {
+                    const kwList = Array.isArray(intent.keywords)
+                      ? intent.keywords
+                      : String(intent.keywords || '').split(',').map((k) => k.trim());
+
+                    return (
+                      <div
+                        key={intent.id}
+                        className="card card-elevated"
+                        style={{
+                          background: '#ffffff',
+                          padding: '1.25rem',
+                          borderRadius: 'var(--radius-lg)',
+                          border: intent.isActive !== false ? '1px solid #e2e8f0' : '1px dashed #cbd5e1',
+                          opacity: intent.isActive !== false ? 1 : 0.65,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.65rem'
+                        }}
+                      >
+                        {/* Intent Top */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div>
+                            <div style={{ fontWeight: '800', fontSize: '0.95rem', color: '#0F172A' }}>
+                              {intent.title}
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: '#176B87', fontWeight: '700', marginTop: '0.15rem' }}>
+                              Botón Rápido: <span style={{ background: '#f1f5f9', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>{intent.chipLabel || intent.title}</span>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <button
+                              onClick={() => toggleBotIntent(intent.id)}
+                              style={{
+                                background: intent.isActive !== false ? '#dcfce7' : '#f1f5f9',
+                                color: intent.isActive !== false ? '#15803d' : '#64748b',
+                                border: 'none',
+                                padding: '0.25rem 0.55rem',
+                                borderRadius: '4px',
+                                fontSize: '0.7rem',
+                                fontWeight: '800',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {intent.isActive !== false ? '✓ ACTIVO' : 'PAUSADO'}
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                setEditingIntent(intent);
+                                setIntentFormData({
+                                  ...intent,
+                                  keywords: Array.isArray(intent.keywords) ? intent.keywords.join(', ') : intent.keywords
+                                });
+                                setIsIntentModalOpen(true);
+                              }}
+                              style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', padding: '0.2rem' }}
+                              title="Editar respuesta"
+                            >
+                              <Edit3 size={15} />
+                            </button>
+
+                            <button
+                              onClick={() => deleteBotIntent(intent.id)}
+                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.2rem' }}
+                              title="Eliminar respuesta"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Keywords Pill tags */}
+                        <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.68rem', fontWeight: '800', color: '#64748b' }}>Palabras Clave:</span>
+                          {kwList.map((kw, i) => (
+                            <span key={i} style={{ background: '#f1f5f9', color: '#475569', fontSize: '0.68rem', fontWeight: '700', padding: '0.1rem 0.4rem', borderRadius: '3px' }}>
+                              {kw}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Bot Response Content */}
+                        <div style={{ background: '#f8fafc', padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-md)', fontSize: '0.78rem', color: '#1e293b', whiteSpace: 'pre-line', lineHeight: '1.45' }}>
+                          {intent.response}
+                        </div>
+
+                        {/* Action details */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#64748b' }}>
+                          <span>Acción: <strong>{intent.actionType === 'NAVIGATE' ? `Navegar a (${intent.actionRoute})` : 'Transferir a WhatsApp'}</strong></span>
+                          <span>Botón: <strong>"{intent.actionLabel}"</strong></span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Right Column: Real-time Live Simulator */}
+              <div className="card card-elevated" style={{ background: '#ffffff', padding: '1.5rem', borderRadius: 'var(--radius-xl)', border: '1px solid #e2e8f0', position: 'sticky', top: '5.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                  <Smartphone size={18} color="#176B87" />
+                  <h3 style={{ fontSize: '1rem', fontWeight: '800', color: '#0F172A', margin: 0 }}>
+                    Simulador en Tiempo Real
+                  </h3>
+                </div>
+
+                <p style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: '1.45', marginBottom: '1rem' }}>
+                  Escribe cualquier consulta (con faltas de ortografía, abreviaciones o preguntas reales) para comprobar qué respuesta activará el bot.
+                </p>
+
+                <form onSubmit={handleTestBotQuery} style={{ display: 'flex', gap: '0.4rem', marginBottom: '1rem' }}>
+                  <input
+                    type="text"
+                    placeholder="Ej. 'presio de un stl', 'kuanto tardan', 'garantia'..."
+                    value={botTestInput}
+                    onChange={(e) => setBotTestInput(e.target.value)}
+                    style={{ flex: 1, padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+                  />
+                  <button type="submit" className="btn btn-primary btn-sm" style={{ fontWeight: '800' }}>
+                    Probar
+                  </button>
+                </form>
+
+                {/* Simulation Result */}
+                {botTestResult && (
+                  <div style={{ background: botTestResult.matched ? '#f0fdf4' : '#fffbeb', border: botTestResult.matched ? '1px solid #bbf7d0' : '1px solid #fde68a', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: '800', color: botTestResult.matched ? '#166534' : '#92400e' }}>
+                        {botTestResult.matched ? '✓ COINCIDENCIA DETECTADA' : '⚠️ FALLBACK / ERROR TOLERADO'}
+                      </span>
+                      {botTestResult.matched && (
+                        <span style={{ fontSize: '0.7rem', background: '#bbf7d0', color: '#166534', padding: '0.1rem 0.4rem', borderRadius: '3px', fontWeight: '800' }}>
+                          Score: {botTestResult.score}
+                        </span>
+                      )}
+                    </div>
+
+                    {botTestResult.matched && (
+                      <div style={{ fontSize: '0.75rem', marginBottom: '0.5rem', color: '#166534' }}>
+                        Intención: <strong>{botTestResult.intent?.title}</strong>
+                        {botTestResult.matchedKeywords.length > 0 && (
+                          <div>Keywords: {botTestResult.matchedKeywords.join(', ')}</div>
+                        )}
+                      </div>
+                    )}
+
+                    <div style={{ fontSize: '0.78rem', color: '#1e293b', whiteSpace: 'pre-line', lineHeight: '1.45', background: '#ffffff', padding: '0.65rem', borderRadius: '4px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                      {botTestResult.response}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* =========================================================================
+          MODAL: CREAR / EDITAR RESPUESTA DEL BOT
+         ========================================================================= */}
+      {isIntentModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div className="card card-elevated" style={{ background: '#ffffff', borderRadius: 'var(--radius-xl)', maxWidth: '580px', width: '100%', padding: '1.75rem', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Bot size={20} color="#176B87" />
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: '#0F172A' }}>
+                  {editingIntent ? 'Editar Respuesta del Bot' : 'Nueva Respuesta Programada'}
+                </h3>
+              </div>
+              <button onClick={() => setIsIntentModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!intentFormData.title || !intentFormData.response) {
+                  showToast('Por favor completa el título y la respuesta', 'warning');
+                  return;
+                }
+
+                const keywordsArray = typeof intentFormData.keywords === 'string'
+                  ? intentFormData.keywords.split(',').map((k) => k.trim()).filter(Boolean)
+                  : intentFormData.keywords;
+
+                saveBotIntent({
+                  ...intentFormData,
+                  keywords: keywordsArray,
+                  id: editingIntent ? editingIntent.id : `intent-${Date.now()}`
+                });
+                setIsIntentModalOpen(false);
+              }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}
+            >
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                  TÍTULO / TEMA DE LA CONSULTA
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej. 🎨 Cotizar Llaveros o Docks 3D"
+                  value={intentFormData.title}
+                  onChange={(e) => setIntentFormData({ ...intentFormData, title: e.target.value })}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: '700' }}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                    ETIQUETA EN BOTÓN RÁPIDO (CHIP)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej. 🎨 Cotizar 3D"
+                    value={intentFormData.chipLabel}
+                    onChange={(e) => setIntentFormData({ ...intentFormData, chipLabel: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                    TIPO DE ACCIÓN
+                  </label>
+                  <select
+                    value={intentFormData.actionType}
+                    onChange={(e) => setIntentFormData({ ...intentFormData, actionType: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.82rem', fontWeight: '700' }}
+                  >
+                    <option value="WHATSAPP">💬 Transferir a WhatsApp con Asesor</option>
+                    <option value="NAVIGATE">🔗 Abrir Página / Sección de la Tienda</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                  PALABRAS CLAVE / PREGUNTAS ACTIVADORAS (Separadas por comas, incluye faltas de ortografía)
+                </label>
+                <input
+                  type="text"
+                  placeholder="precio, costo, presio, cuanto, cuanto cuesta, cotizar, stl, presupuesto"
+                  value={intentFormData.keywords}
+                  onChange={(e) => setIntentFormData({ ...intentFormData, keywords: e.target.value })}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+                  required
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                  RESPUESTA AUTOMÁTICA DEL BOT
+                </label>
+                <textarea
+                  rows={5}
+                  placeholder="Escribe la respuesta del bot. Puedes usar viñetas (•) y saltos de línea..."
+                  value={intentFormData.response}
+                  onChange={(e) => setIntentFormData({ ...intentFormData, response: e.target.value })}
+                  style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.82rem', lineHeight: '1.45' }}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                    TEXTO DEL BOTÓN DE ACCIÓN
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej. Continuar por WhatsApp con Asesor"
+                    value={intentFormData.actionLabel}
+                    onChange={(e) => setIntentFormData({ ...intentFormData, actionLabel: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+                  />
+                </div>
+
+                {intentFormData.actionType === 'NAVIGATE' && (
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                      RUTA INTERNA
+                    </label>
+                    <select
+                      value={intentFormData.actionRoute}
+                      onChange={(e) => setIntentFormData({ ...intentFormData, actionRoute: e.target.value })}
+                      style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+                    >
+                      <option value="colecciones">Colecciones</option>
+                      <option value="empresas">Empresas (B2B)</option>
+                      <option value="eventos">Eventos</option>
+                      <option value="tracking">Rastrear Pedido</option>
+                      <option value="customizer">Personalizador 3D</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button type="button" onClick={() => setIsIntentModalOpen(false)} className="btn btn-secondary" style={{ flex: 1 }}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1, fontWeight: '800' }}>
+                  Guardar Respuesta
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* =========================================================================
           MODAL 1: FICHA TÉCNICA DE FILAMENTO
@@ -1932,11 +2418,6 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.75rem', borderRadius: 'var(--radius-md)', fontSize: '0.78rem', color: '#166534', marginBottom: '1.25rem' }}>
-              <strong>Notas de Impresión: </strong>
-              {selectedFilamentDetails.notes || 'Excelente adherencia entre capas y acabado silk suave con alta definición en relieves tridimensionales.'}
-            </div>
-
             <button onClick={() => setIsFilamentDetailsModalOpen(false)} className="btn btn-primary" style={{ width: '100%', fontWeight: '800' }}>
               Cerrar Ficha
             </button>
@@ -1961,10 +2442,6 @@ const AdminDashboard = () => {
                 <X size={20} />
               </button>
             </div>
-
-            <p style={{ fontSize: '0.8rem', color: '#64748b', lineHeight: '1.45', marginBottom: '1.25rem' }}>
-              Coloca el carrete en la báscula de taller. Ingresa el peso bruto y el sistema restará el peso del plástico vacío (tara) para calcular los gramos netos exactos.
-            </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '1.25rem' }}>
               <div>
@@ -2003,9 +2480,6 @@ const AdminDashboard = () => {
                 <div style={{ fontSize: '0.75rem', color: '#0369a1', fontWeight: '700' }}>STOCK NETO CALCULADO</div>
                 <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0284c7', margin: '0.2rem 0' }}>
                   {taraData.calculatedNet} g
-                </div>
-                <div style={{ fontSize: '0.72rem', color: '#0369a1' }}>
-                  Valor residual: {formatCurrency((taraData.calculatedNet / 1000) * (taraData.filament.costPerKg || 450))}
                 </div>
               </div>
             </div>
@@ -2338,8 +2812,6 @@ const AdminDashboard = () => {
                     <option value="Bambu Lab A1">Bambu Lab A1</option>
                     <option value="Creality K1 Max">Creality K1 Max</option>
                     <option value="Original Prusa MK4">Original Prusa MK4</option>
-                    <option value="Ender 3 V3">Ender 3 V3</option>
-                    <option value="Otro Modelo">Otro Modelo Custom</option>
                   </select>
                 </div>
 
@@ -2459,7 +2931,7 @@ const AdminDashboard = () => {
       )}
 
       {/* =========================================================================
-          MODAL 7: EDITAR PRODUCTO & ZONAS 3D DINÁMICAS (LIGADAS AL STOCK)
+          MODAL 7: EDITAR PRODUCTO & ZONAS 3D DINÁMICAS
          ========================================================================= */}
       {isProductModalOpen && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
@@ -2477,7 +2949,6 @@ const AdminDashboard = () => {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '1.5rem' }}>
-              {/* Left Form */}
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -2554,7 +3025,6 @@ const AdminDashboard = () => {
                   </select>
                 </div>
 
-                {/* Live Filament-Linked Color Palette */}
                 <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #e2e8f0' }}>
                   <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#0F172A', marginBottom: '0.4rem' }}>
                     COLORES LIGADOS AL STOCK DISPONIBLE
@@ -2595,7 +3065,6 @@ const AdminDashboard = () => {
                 </div>
               </form>
 
-              {/* Right Live 3D Tester */}
               <div style={{ background: '#f1f5f9', borderRadius: 'var(--radius-lg)', padding: '1.25rem', border: '1px solid #cbd5e1' }}>
                 <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                   <IdeaFormLogo size="small" showTagline={false} />

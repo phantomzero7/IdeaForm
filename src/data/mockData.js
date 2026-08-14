@@ -811,3 +811,93 @@ export const FAQS = [
     a: 'Sí, realizamos envíos a toda la República Mexicana por DHL Express, FedEx y Estafeta. En el checkout puedes ingresar tus datos fiscales para recibir tu factura CFDI 4.0 timbrada por el SAT.'
   }
 ];
+
+export const DEFAULT_BOT_SETTINGS = {
+  botName: 'IdeaForm Bot AI',
+  welcomeGreeting: '¡Hola! 👋 Soy tu **Asistente IdeaForm 3D**. Estoy conectado con el taller en vivo. ¿En qué proyecto o duda te puedo apoyar hoy?',
+  whatsappNumber: '526121403409',
+  fallbackMessage: 'No logré entender por completo tu mensaje, pero con gusto puedo ayudarte. ¿Te refieres a alguna de estas opciones o prefieres comunicarte directamente con nuestro taller por WhatsApp?',
+  enableFuzzyMatching: true,
+  autoTransferOnUnknown: true
+};
+
+export const DEFAULT_BOT_INTENTS = [
+  {
+    id: 'intent-cotizacion',
+    key: 'cotizacion',
+    title: '🎨 Cotizar Diseño o Producto 3D',
+    chipLabel: '🎨 Cotizar 3D',
+    keywords: ['cotizar', 'cotizacion', 'precio', 'costo', 'presio', 'cuanto', 'cuanto cuesta', 'stl', 'diseño', 'imprimir', 'presupuesto', 'tarifa', 'hacer'],
+    response: '¡Con gusto te ayudamos a materializar tu idea! 🚀\n\nNuestros precios se calculan según los gramos de filamento y tiempo de impresión:\n• **Llaveros y Tags 3D:** desde $45 a $90 MXN\n• **Estaciones de Escritorio / Docks:** desde $180 a $290 MXN\n• **Lámparas Litofanía y Deco:** desde $280 a $450 MXN\n• **Proyectos Especiales / STL:** Cotización a la medida.\n\n¿Deseas enviar tus requerimientos o archivo a nuestro taller por WhatsApp?',
+    actionLabel: 'Continuar por WhatsApp con Asesor',
+    actionRoute: '',
+    actionType: 'WHATSAPP',
+    intent: 'COTIZACION',
+    isActive: true
+  },
+  {
+    id: 'intent-rastreo',
+    key: 'rastreo',
+    title: '🚚 Rastrear Pedido de Taller',
+    chipLabel: '🚚 Rastrear Folio',
+    keywords: ['rastrear', 'rastreo', 'donde esta', 'mi pedido', 'folio', 'estatus', 'status', 'guia', 'envio', 'seguimiento', 'cuando llega', 'idf-'],
+    response: 'Para consultar el avance de tu pieza en el taller (En Cola, En Impresora 3D o Listo para Envío), puedes ingresar tu número de folio en nuestra sección de **Rastrear** o proporcionarnos tu folio aquí (ej. IDF-84920).',
+    actionLabel: 'Ver Sección de Rastreo',
+    actionRoute: 'tracking',
+    actionType: 'NAVIGATE',
+    intent: 'RASTREO',
+    isActive: true
+  },
+  {
+    id: 'intent-empresas',
+    key: 'empresas',
+    title: '🏢 Cotizaciones B2B & Mayoreo',
+    chipLabel: '🏢 Mayoreo B2B',
+    keywords: ['empresa', 'empresas', 'mayoreo', 'b2b', 'factura', 'facturacion', 'cfdi', 'descuento', 'volumen', 'eventos', 'recuerdos', 'corporativo', 'lote'],
+    response: '¡Manejamos paquetes mayoristas con descuentos escalonados y facturación CFDI 4.0!\n\n• **25 a 49 unidades:** 10% de descuento\n• **50 a 99 unidades:** 18% de descuento + 1 muestra física\n• **100 a 299 unidades:** 25% de descuento + Envío nacional GRATIS\n• **300+ unidades:** 33% de descuento con empaque corporativo.',
+    actionLabel: 'Ir a Cotizador B2B',
+    actionRoute: 'empresas',
+    actionType: 'NAVIGATE',
+    intent: 'B2B',
+    isActive: true
+  },
+  {
+    id: 'intent-materiales',
+    key: 'materiales',
+    title: '🧵 Materiales & Filamentos',
+    chipLabel: '🧵 Materiales',
+    keywords: ['material', 'materiales', 'filamento', 'filamentos', 'pla', 'petg', 'abs', 'tpu', 'resina', 'silk', 'seda', 'colores', 'biodegradable', 'toxico', 'calor'],
+    response: 'Utilizamos polímeros termoplásticos de grado premium:\n• **PLA Silk (Seda):** Brillo metálico espectacular, ideal para llaveros y trofeos.\n• **PLA Mate:** Textura suave y colores sobrios para decoración.\n• **PETG Técnico:** Resistente al agua y rayos UV para uso rudo.\n\nTodos nuestros materiales son 100% biodegradables derivados del maíz y libres de toxinas.',
+    actionLabel: 'Hablar con Ingeniero de Materiales',
+    actionRoute: '',
+    actionType: 'WHATSAPP',
+    intent: 'MATERIALES',
+    isActive: true
+  },
+  {
+    id: 'intent-envios',
+    key: 'envios',
+    title: '📦 Tiempos de Entrega & Paqueterías',
+    chipLabel: '📦 Envíos',
+    keywords: ['envio', 'envios', 'paqueteria', 'dhl', 'estafeta', 'fedex', 'cuanto tarda', 'tiempo', 'dias', 'costo envio', 'envio gratis', 'republica', 'mexico'],
+    response: '🚚 **Envíos a todo México:**\n• **Tiempo de fabricación:** 24 a 48 horas hábiles.\n• **Paquetería Express:** DHL / FedEx / Estafeta (1 a 3 días hábiles).\n• **Costo estándar:** $135 MXN a cualquier código postal.\n• **Envío GRATIS:** En compras mayores a $899 MXN o pedidos B2B de +100 piezas.',
+    actionLabel: 'Consultar Cobertura por WhatsApp',
+    actionRoute: '',
+    actionType: 'WHATSAPP',
+    intent: 'ENVIOS',
+    isActive: true
+  },
+  {
+    id: 'intent-garantia',
+    key: 'garantia',
+    title: '🛡️ Garantía de Calidad & Reemplazos',
+    chipLabel: '🛡️ Garantía',
+    keywords: ['garantia', 'garantias', 'roto', 'defecto', 'devolucion', 'cambio', 'reembolso', 'queja', 'seguro'],
+    response: '🛡️ **Compromiso de Calidad IdeaForm:**\nCada pieza es inspeccionada en nuestro Control de Calidad de taller. Si tu producto llega con algún defecto de fabricación o daño de paquetería, lo **reimprimimos y enviamos sin ningún costo adicional** para ti.',
+    actionLabel: 'Reportar Incidencia con Asesor',
+    actionRoute: '',
+    actionType: 'WHATSAPP',
+    intent: 'GARANTIA',
+    isActive: true
+  }
+];

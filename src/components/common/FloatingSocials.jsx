@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   MessageCircle,
@@ -14,58 +14,52 @@ import {
   ChevronRight,
   User,
   RotateCcw,
-  ExternalLink
+  ExternalLink,
+  Bot,
+  AlertCircle
 } from 'lucide-react';
 import IdeaFormLogo from './IdeaFormLogo';
 
-const WHATSAPP_TEST_NUMBER = '526121403409';
 const INSTAGRAM_URL = 'https://www.instagram.com/ideaform.mx/';
 const FACEBOOK_URL = 'https://www.facebook.com/ideaform3d';
 const BOT_AVATAR_SRC = '/ideaform-bot.png';
 
-const CHATBOT_KNOWLEDGE = {
-  cotizacion: {
-    title: '🎨 Cotizar Diseño o Producto 3D',
-    response: '¡Con gusto te ayudamos a materializar tu idea! 🚀\n\nNuestros precios se calculan según los gramos de filamento y tiempo de impresión:\n• **Llaveros y Tags 3D:** desde $45 a $90 MXN\n• **Estaciones de Escritorio / Docks:** desde $180 a $290 MXN\n• **Lámparas Litofanía y Deco:** desde $280 a $450 MXN\n• **Proyectos Especiales / STL:** Cotización a la medida.\n\n¿Deseas enviar tus requerimientos o archivo a nuestro taller por WhatsApp?',
-    actionLabel: 'Continuar por WhatsApp con Asesor',
-    intent: 'COTIZACION'
-  },
-  rastreo: {
-    title: '🚚 Rastrear Pedido de Taller',
-    response: 'Para consultar el avance de tu pieza en el taller (En Cola, En Impresora 3D o Listo para Envío), puedes ingresar tu número de folio en nuestra sección de **Rastrear** o proporcionarnos tu folio aquí.',
-    actionLabel: 'Ver Sección de Rastreo',
-    actionRoute: 'tracking',
-    intent: 'RASTREO'
-  },
-  empresas: {
-    title: '🏢 Cotizaciones B2B & Mayoreo',
-    response: '¡Manejamos paquetes mayoristas con descuentos escalonados y facturación CFDI 4.0!\n\n• **25 a 49 unidades:** 10% de descuento\n• **50 a 99 unidades:** 18% de descuento + 1 muestra física\n• **100 a 299 unidades:** 25% de descuento + Envío nacional GRATIS\n• **300+ unidades:** 33% de descuento con empaque corporativo.',
-    actionLabel: 'Ir a Cotizador B2B',
-    actionRoute: 'empresas',
-    intent: 'B2B'
-  },
-  materiales: {
-    title: '🧵 Materiales & Filamentos',
-    response: 'Utilizamos polímeros termoplásticos de grado premium:\n• **PLA Silk (Seda):** Brillo metálico espectacular, ideal para llaveros y trofeos.\n• **PLA Mate:** Textura suave y colores sobrios para decoración.\n• **PETG Técnico:** Resistente al agua y rayos UV para uso rudo.\n\nTodos nuestros materiales son 100% biodegradables derivados del maíz y libres de toxinas.',
-    actionLabel: 'Hablar con Ingeniero de Materiales',
-    intent: 'MATERIALES'
-  }
+// Helper for cleaning and normalizing strings (removes accents, lowercase, removes noise)
+const normalizeText = (text = '') => {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // remove diacritics
+    .replace(/[^\w\s]/gi, ' ') // replace punctuation with spaces
+    .replace(/\s+/g, ' ')
+    .trim();
 };
 
 const FloatingSocials = () => {
-  const { navigateTo, productionOrders } = useApp();
+  const {
+    navigateTo,
+    productionOrders,
+    botIntents,
+    botSettings
+  } = useApp();
+
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [showGreetingTooltip, setShowGreetingTooltip] = useState(true);
   const [chatHistory, setChatHistory] = useState([
     {
       sender: 'bot',
-      text: '¡Hola! 👋 Soy tu **Asistente IdeaForm 3D**. Estoy conectado con el taller en vivo. ¿En qué proyecto o duda te puedo apoyar hoy?',
+      text: botSettings?.welcomeGreeting || '¡Hola! 👋 Soy tu **Asistente IdeaForm 3D**. Estoy conectado con el taller en vivo. ¿En qué proyecto o duda te puedo apoyar hoy?',
       time: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
     }
   ]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const chatBottomRef = useRef(null);
+
+  // Active intents for quick chips
+  const activeIntents = useMemo(() => {
+    return (botIntents || []).filter((i) => i.isActive !== false);
+  }, [botIntents]);
 
   useEffect(() => {
     if (isChatOpen) {
@@ -74,13 +68,12 @@ const FloatingSocials = () => {
     }
   }, [chatHistory, isChatOpen]);
 
-  const handleSelectOption = (key) => {
-    const item = CHATBOT_KNOWLEDGE[key];
-    if (!item) return;
+  const handleSelectIntent = (intentObj) => {
+    if (!intentObj) return;
 
     const userMsg = {
       sender: 'user',
-      text: item.title,
+      text: intentObj.chipLabel || intentObj.title,
       time: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
     };
 
@@ -91,24 +84,27 @@ const FloatingSocials = () => {
       setIsTyping(false);
       const botMsg = {
         sender: 'bot',
-        text: item.response,
-        actionLabel: item.actionLabel,
-        actionRoute: item.actionRoute,
-        intent: item.intent,
+        text: intentObj.response,
+        actionLabel: intentObj.actionLabel,
+        actionRoute: intentObj.actionRoute,
+        actionType: intentObj.actionType,
+        intent: intentObj.intent,
         time: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
       };
       setChatHistory((prev) => [...prev, botMsg]);
-    }, 450);
+    }, 400);
   };
 
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!inputText.trim()) return;
 
-    const userText = inputText.trim();
+    const rawInput = inputText.trim();
+    const cleanInput = normalizeText(rawInput);
+
     const userMsg = {
       sender: 'user',
-      text: userText,
+      text: rawInput,
       time: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
     };
 
@@ -118,53 +114,96 @@ const FloatingSocials = () => {
 
     setTimeout(() => {
       setIsTyping(false);
-      const lower = userText.toLowerCase();
 
-      // Check for tracking number like IDF-XXXXX or ord-XXXX
-      if (lower.includes('idf-') || lower.includes('ord-') || lower.includes('849')) {
-        const foundOrder = productionOrders.find((o) =>
-          o.orderNumber?.toLowerCase().includes(lower) || o.id?.toLowerCase().includes(lower)
-        );
+      // 1. Order Tracking by Folio Detection
+      if (cleanInput.includes('idf') || cleanInput.includes('ord') || cleanInput.includes('folio') || /\d{4,}/.test(cleanInput)) {
+        const foundOrder = (productionOrders || []).find((o) => {
+          const num = normalizeText(o.orderNumber || '');
+          const id = normalizeText(o.id || '');
+          return (num && cleanInput.includes(num)) || (id && cleanInput.includes(id));
+        });
 
-        let botReply = '';
         if (foundOrder) {
-          botReply = `🔎 ¡Encontré tu pedido **#${foundOrder.orderNumber}** (${foundOrder.productName})!\n\n• **Estado actual:** ${foundOrder.status === 'PRINTING' ? '🔵 En Impresora 3D' : foundOrder.status === 'READY_TO_SHIP' ? '🟢 Listo para Envío' : '🟡 En Cola de Producción'}\n• **Cliente:** ${foundOrder.customerName}\n• **Texto Grabado:** "${foundOrder.customText || 'N/A'}"\n• **Total:** $${foundOrder.total} MXN\n\n¿Deseas recibir actualización fotográfica por WhatsApp?`;
-        } else {
-          botReply = `🔎 He buscado el folio "${userText}" pero aún no está registrado o fue generado fuera de línea. Puedes transferir esta consulta directamente a un operador por WhatsApp para localizarlo.`;
+          const statusMap = {
+            QUEUED: '🟡 1. En Cola de Producción',
+            SLICING: '🔵 2. Slicing / Preparando G-Code',
+            PRINTING: '🔵 3. En Impresora 3D',
+            QUALITY_CONTROL: '🟣 4. Control de Calidad',
+            READY_TO_SHIP: '🟢 5. Listo para Envío'
+          };
+
+          setChatHistory((prev) => [
+            ...prev,
+            {
+              sender: 'bot',
+              text: `🔎 ¡Encontré tu pedido **#${foundOrder.orderNumber}**!\n\n• **Producto:** ${foundOrder.productName}\n• **Estado:** ${statusMap[foundOrder.status] || foundOrder.status}\n• **Grabado Personalizado:** "${foundOrder.customText || 'N/A'}"\n• **Cliente:** ${foundOrder.customerName}\n• **Total:** $${foundOrder.total} MXN\n\n¿Deseas confirmar la fecha de entrega por WhatsApp?`,
+              actionLabel: 'Confirmar con Asesor por WhatsApp',
+              actionType: 'WHATSAPP',
+              intent: `RASTREO_${foundOrder.orderNumber}`,
+              time: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+            }
+          ]);
+          return;
+        }
+      }
+
+      // 2. Keyword matching across active intents (Fuzzy matching & typo tolerance)
+      let bestMatch = null;
+      let highestScore = 0;
+
+      for (const intent of activeIntents) {
+        let score = 0;
+        const keywords = intent.keywords || [];
+
+        for (const kw of keywords) {
+          const cleanKw = normalizeText(kw);
+          if (cleanInput.includes(cleanKw)) {
+            score += cleanKw.length > 4 ? 3 : 1;
+          }
         }
 
-        setChatHistory((prev) => [
-          ...prev,
-          {
-            sender: 'bot',
-            text: botReply,
-            actionLabel: 'Confirmar con Asesor por WhatsApp',
-            intent: 'RASTREO_DIRECTO',
-            time: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
-          }
-        ]);
-      } else if (lower.includes('precio') || lower.includes('cuanto') || lower.includes('costo') || lower.includes('cotiz')) {
-        handleSelectOption('cotizacion');
-      } else if (lower.includes('mayoreo') || lower.includes('empresa') || lower.includes('factura') || lower.includes('b2b')) {
-        handleSelectOption('empresas');
-      } else if (lower.includes('material') || lower.includes('filamento') || lower.includes('pla') || lower.includes('color')) {
-        handleSelectOption('materiales');
-      } else {
-        setChatHistory((prev) => [
-          ...prev,
-          {
-            sender: 'bot',
-            text: `Entendido: "${userText}". He recopilado tu mensaje. Para darte una solución personalizada y revisar tu diseño o dudas técnicas, ¿te gustaría continuar con nuestro taller por WhatsApp?`,
-            actionLabel: 'Transferir Conversación a WhatsApp',
-            intent: 'CUSTOM_INQUIRY',
-            time: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
-          }
-        ]);
+        if (score > highestScore) {
+          highestScore = score;
+          bestMatch = intent;
+        }
       }
-    }, 550);
+
+      if (bestMatch && highestScore > 0) {
+        setChatHistory((prev) => [
+          ...prev,
+          {
+            sender: 'bot',
+            text: bestMatch.response,
+            actionLabel: bestMatch.actionLabel,
+            actionRoute: bestMatch.actionRoute,
+            actionType: bestMatch.actionType,
+            intent: bestMatch.intent,
+            time: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+          }
+        ]);
+        return;
+      }
+
+      // 3. Fallback / Error Recovery Message (Tolerance for client mistakes)
+      const fallbackMsg = botSettings?.fallbackMessage ||
+        'No logré entender por completo tu mensaje, pero con gusto puedo ayudarte. ¿Te refieres a alguna de estas opciones o prefieres comunicarte directamente con nuestro taller por WhatsApp?';
+
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          sender: 'bot',
+          text: `🤖 ${fallbackMsg}\n\nPuedes seleccionar uno de los temas frecuentes aquí abajo o transferir tu consulta a nuestro taller.`,
+          actionLabel: 'Transferir a WhatsApp con Asesor',
+          actionType: 'WHATSAPP',
+          intent: 'CONSULTA_GENERAL',
+          time: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+    }, 500);
   };
 
   const handleTransferToWhatsApp = (intent = 'GENERAL') => {
+    const targetPhone = (botSettings?.whatsappNumber || '526121403409').replace(/\D/g, '');
     const userQueries = chatHistory
       .filter((m) => m.sender === 'user')
       .map((m) => m.text)
@@ -172,7 +211,7 @@ const FloatingSocials = () => {
 
     const summaryText = `¡Hola IdeaForm Taller! 👋\n\nEstuve platicando con el Asistente Virtual en la web y requiero apoyo para:\n📌 Motivo: ${intent}\n💬 Mensajes: "${userQueries || 'Consulta general de impresión 3D'}"\n\n¿Me podrían asesorar por favor?`;
 
-    const waUrl = `https://wa.me/${WHATSAPP_TEST_NUMBER}?text=${encodeURIComponent(summaryText)}`;
+    const waUrl = `https://wa.me/${targetPhone}?text=${encodeURIComponent(summaryText)}`;
     window.open(waUrl, '_blank');
   };
 
@@ -408,7 +447,7 @@ const FloatingSocials = () => {
 
               <div>
                 <div style={{ fontWeight: '800', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <span>IdeaForm Bot</span>
+                  <span>{botSettings?.botName || 'IdeaForm Bot'}</span>
                   <span style={{ fontSize: '0.62rem', background: '#10b981', color: '#fff', padding: '0.1rem 0.45rem', borderRadius: 'var(--radius-full)', fontWeight: '800' }}>
                     EN VIVO
                   </span>
@@ -496,10 +535,10 @@ const FloatingSocials = () => {
                   >
                     {msg.text}
 
-                    {/* Optional Action Button embedded in Bot Message */}
+                    {/* Action Button */}
                     {msg.actionLabel && (
                       <div style={{ marginTop: '0.65rem', paddingTop: '0.5rem', borderTop: '1px solid #f1f5f9' }}>
-                        {msg.actionRoute ? (
+                        {msg.actionType === 'NAVIGATE' && msg.actionRoute ? (
                           <button
                             onClick={() => {
                               navigateTo(msg.actionRoute);
@@ -570,58 +609,27 @@ const FloatingSocials = () => {
             <div ref={chatBottomRef} />
           </div>
 
-          {/* Quick Guided Options Pills */}
+          {/* Quick Guided Options Pills (Loaded dynamically from botIntents) */}
           <div style={{ background: '#ffffff', padding: '0.5rem 0.75rem', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '0.4rem', overflowX: 'auto' }}>
-            <button
-              onClick={() => handleSelectOption('cotizacion')}
-              style={{
-                background: '#f1f5f9',
-                border: '1px solid #e2e8f0',
-                borderRadius: 'var(--radius-full)',
-                padding: '0.25rem 0.6rem',
-                fontSize: '0.7rem',
-                fontWeight: '700',
-                color: '#475569',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              🎨 Cotizar 3D
-            </button>
-
-            <button
-              onClick={() => handleSelectOption('rastreo')}
-              style={{
-                background: '#f1f5f9',
-                border: '1px solid #e2e8f0',
-                borderRadius: 'var(--radius-full)',
-                padding: '0.25rem 0.6rem',
-                fontSize: '0.7rem',
-                fontWeight: '700',
-                color: '#475569',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              🚚 Rastrear Folio
-            </button>
-
-            <button
-              onClick={() => handleSelectOption('empresas')}
-              style={{
-                background: '#f1f5f9',
-                border: '1px solid #e2e8f0',
-                borderRadius: 'var(--radius-full)',
-                padding: '0.25rem 0.6rem',
-                fontSize: '0.7rem',
-                fontWeight: '700',
-                color: '#475569',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              🏢 Mayoreo B2B
-            </button>
+            {activeIntents.map((intent) => (
+              <button
+                key={intent.id}
+                onClick={() => handleSelectIntent(intent)}
+                style={{
+                  background: '#f1f5f9',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 'var(--radius-full)',
+                  padding: '0.25rem 0.6rem',
+                  fontSize: '0.7rem',
+                  fontWeight: '700',
+                  color: '#475569',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {intent.chipLabel || intent.title}
+              </button>
+            ))}
 
             <button
               onClick={() => handleTransferToWhatsApp('HABLAR_CON_ASESOR')}
