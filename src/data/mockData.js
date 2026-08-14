@@ -812,14 +812,49 @@ export const FAQS = [
   }
 ];
 
-export const DEFAULT_BOT_SETTINGS = {
-  botName: 'IdeaForm Bot AI',
-  welcomeGreeting: '¡Hola! 👋 Soy tu **Asistente IdeaForm 3D**. Estoy conectado con el taller en vivo. ¿En qué proyecto o duda te puedo apoyar hoy?',
-  whatsappNumber: '526121403409',
-  fallbackMessage: 'No logré entender por completo tu mensaje, pero con gusto puedo ayudarte. ¿Te refieres a alguna de estas opciones o prefieres comunicarte directamente con nuestro taller por WhatsApp?',
-  enableFuzzyMatching: true,
-  autoTransferOnUnknown: true
-};
+export const DEFAULT_BOT_PROFILES = [
+  {
+    id: 'profile-default',
+    name: '⚙️ Taller Estándar (Recomendado)',
+    description: 'Configuración equilibrada para atención a clientes particulares y cotizaciones diarias.',
+    botName: 'IdeaForm Bot AI',
+    welcomeGreeting: '¡Hola! 👋 Soy tu **Asistente IdeaForm 3D**. Estoy conectado con el taller en vivo. ¿En qué proyecto o duda te puedo apoyar hoy?',
+    whatsappNumber: '526121403409',
+    fallbackMessage: 'No logré entender por completo tu mensaje, pero con gusto puedo ayudarte. ¿Te refieres a alguna de estas opciones o prefieres comunicarte directamente con nuestro taller por WhatsApp?',
+    enableFuzzyMatching: true,
+    autoTransferOnUnknown: true,
+    isSystemDefault: true,
+    createdAt: '2026-08-01T00:00:00.000Z'
+  },
+  {
+    id: 'profile-b2b',
+    name: '🏢 Modo Corporativo & Empresas B2B',
+    description: 'Enfocado en pedidos de mayoreo, souvenirs de marca, eventos masivos y facturación SAT.',
+    botName: 'IdeaForm B2B Concierge',
+    welcomeGreeting: '¡Hola! Bienvenido a la división corporativa de **IdeaForm México**. ¿Deseas cotizar producción por volumen, merchandising o solicitar una muestra?',
+    whatsappNumber: '526121403409',
+    fallbackMessage: 'Para brindarte atención personalizada con un ejecutivo de cuentas corporativas, por favor indícanos el volumen estimado o escríbenos a WhatsApp.',
+    enableFuzzyMatching: true,
+    autoTransferOnUnknown: true,
+    isSystemDefault: false,
+    createdAt: '2026-08-05T00:00:00.000Z'
+  },
+  {
+    id: 'profile-promo',
+    name: '🎉 Modo Campaña & Promociones Especiales',
+    description: 'Saludo con promociones activas, descuentos de temporada y envíos gratis.',
+    botName: 'IdeaForm Bot Especial',
+    welcomeGreeting: '¡Hola! 🎁 ¡Aprovecha hoy nuestras promociones especiales con **Envío Gratis** en compras mayores a $899 MXN! ¿En qué diseño 3D te podemos ayudar?',
+    whatsappNumber: '526121403409',
+    fallbackMessage: '¿Buscas alguna pieza o personalizar un producto? Puedes explorar nuestro catálogo o mandarnos mensaje directo por WhatsApp.',
+    enableFuzzyMatching: true,
+    autoTransferOnUnknown: true,
+    isSystemDefault: false,
+    createdAt: '2026-08-10T00:00:00.000Z'
+  }
+];
+
+export const DEFAULT_BOT_SETTINGS = DEFAULT_BOT_PROFILES[0];
 
 export const DEFAULT_BOT_INTENTS = [
   {

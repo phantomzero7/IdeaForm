@@ -71,7 +71,9 @@ import {
   Download,
   RotateCcw,
   Shield,
-  FolderArchive
+  FolderArchive,
+  Copy,
+  Settings
 } from 'lucide-react';
 
 const KANBAN_STAGES = [
@@ -118,6 +120,12 @@ const AdminDashboard = () => {
     products,
     saveProduct,
     deleteProduct,
+    botProfiles,
+    activeProfileId,
+    saveBotProfile,
+    activateBotProfile,
+    duplicateBotProfile,
+    deleteBotProfile,
     botIntents,
     botSettings,
     saveBotIntent,
@@ -250,6 +258,8 @@ const AdminDashboard = () => {
   // 7. Protected CRUD IdeaForm Bot AI State & Modals
   const [botSubTab, setBotSubTab] = useState('active'); // 'active' | 'archived'
   const [botSearchTerm, setBotSearchTerm] = useState('');
+  
+  // Bot Intent CRUD Modals State
   const [isIntentModalOpen, setIsIntentModalOpen] = useState(false);
   const [editingIntent, setEditingIntent] = useState(null);
   const [intentFormData, setIntentFormData] = useState({
@@ -266,6 +276,23 @@ const AdminDashboard = () => {
   });
   const [intentToDelete, setIntentToDelete] = useState(null);
   const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
+
+  // Global Bot Parameter Profiles CRUD Modals State
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(null);
+  const [profileFormData, setProfileFormData] = useState({
+    name: '',
+    description: '',
+    botName: 'IdeaForm Bot AI',
+    welcomeGreeting: '',
+    whatsappNumber: '526121403409',
+    fallbackMessage: '',
+    enableFuzzyMatching: true,
+    autoTransferOnUnknown: true
+  });
+  const [profileToDelete, setProfileToDelete] = useState(null);
+  const [isDeleteProfileModalOpen, setIsDeleteProfileModalOpen] = useState(false);
+
   const [isResetBotConfirmModalOpen, setIsResetBotConfirmModalOpen] = useState(false);
   const botFileInputRef = useRef(null);
 
@@ -1990,7 +2017,7 @@ const AdminDashboard = () => {
         )}
 
         {/* =========================================================================
-            TAB 8: PROTECTED CRUD IDEAFORM BOT AI (Respuestas, Respaldo JSON & Papelera)
+            TAB 8: PROTECTED CRUD IDEAFORM BOT AI (Respuestas, Parámetros & Respaldo)
            ========================================================================= */}
         {activeTab === 'chatbot' && (
           <div>
@@ -2002,13 +2029,13 @@ const AdminDashboard = () => {
                 </div>
                 <div>
                   <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0F172A', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span>IdeaForm Bot AI • Base de Conocimiento CRUD</span>
+                    <span>IdeaForm Bot AI • Base de Conocimiento & Parámetros CRUD</span>
                     <span style={{ fontSize: '0.72rem', background: '#dcfce7', color: '#15803d', padding: '0.2rem 0.55rem', borderRadius: 'var(--radius-full)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                       <Shield size={12} /> SISTEMA PROTEGIDO
                     </span>
                   </h2>
                   <p style={{ color: '#64748b', fontSize: '0.82rem', margin: 0, marginTop: '0.15rem' }}>
-                    Administración segura (Crear, Editar, Archivar, Restaurar y Respaldar en JSON) con protección contra borrado accidental.
+                    Administración segura de respuestas y perfiles de parámetros globales con respaldo en JSON y papelera de reciclaje.
                   </p>
                 </div>
               </div>
@@ -2071,68 +2098,186 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* General Bot Settings & Error Fallback Configuration */}
+            {/* CRUD SECTION: GLOBAL PARAMETERS & CONFIGURATION PROFILES */}
             <div className="card card-elevated" style={{ background: '#ffffff', padding: '1.5rem', borderRadius: 'var(--radius-xl)', marginBottom: '1.5rem', border: '1px solid #e2e8f0' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: '800', color: '#0F172A', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                <SlidersHorizontal size={18} color="#176B87" />
-                <span>Parámetros Globales & Tolerancia a Errores de Clientes</span>
-              </h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <SlidersHorizontal size={18} color="#176B87" />
+                  <h3 style={{ fontSize: '1rem', fontWeight: '800', color: '#0F172A', margin: 0 }}>
+                    Parámetros Globales (Perfiles de Configuración CRUD)
+                  </h3>
+                </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
-                <div>
+                <button
+                  onClick={() => {
+                    setEditingProfile(null);
+                    setProfileFormData({
+                      name: '',
+                      description: '',
+                      botName: 'IdeaForm Bot AI',
+                      welcomeGreeting: '¡Hola! 👋 Soy tu Asistente IdeaForm 3D.',
+                      whatsappNumber: botSettings?.whatsappNumber || '526121403409',
+                      fallbackMessage: 'No logré entender por completo tu mensaje, ¿deseas contactar al taller por WhatsApp?',
+                      enableFuzzyMatching: true,
+                      autoTransferOnUnknown: true
+                    });
+                    setIsProfileModalOpen(true);
+                  }}
+                  className="btn btn-secondary btn-sm"
+                  style={{ fontSize: '0.75rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                >
+                  <Plus size={13} />
+                  <span>+ Nuevo Perfil Global</span>
+                </button>
+              </div>
+
+              {/* Profiles Selector Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.85rem', marginBottom: '1.25rem' }}>
+                {(botProfiles || []).map((prof) => {
+                  const isActive = prof.id === activeProfileId;
+
+                  return (
+                    <div
+                      key={prof.id}
+                      style={{
+                        padding: '1rem',
+                        borderRadius: 'var(--radius-lg)',
+                        border: isActive ? '2px solid #176B87' : '1px solid #e2e8f0',
+                        background: isActive ? '#f0f9ff' : '#f8fafc',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: '0.65rem'
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.35rem' }}>
+                          <div style={{ fontWeight: '800', fontSize: '0.88rem', color: '#0F172A' }}>
+                            {prof.name}
+                          </div>
+                          {isActive ? (
+                            <span style={{ fontSize: '0.65rem', fontWeight: '800', background: '#10b981', color: '#ffffff', padding: '0.15rem 0.45rem', borderRadius: 'var(--radius-full)' }}>
+                              🟢 ACTIVO
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => activateBotProfile(prof.id)}
+                              style={{ fontSize: '0.68rem', fontWeight: '800', background: '#e2e8f0', color: '#475569', border: 'none', padding: '0.15rem 0.5rem', borderRadius: '4px', cursor: 'pointer' }}
+                            >
+                              Activar
+                            </button>
+                          )}
+                        </div>
+
+                        <p style={{ fontSize: '0.75rem', color: '#64748b', margin: 0, lineHeight: '1.4' }}>
+                          {prof.description || 'Perfil de configuración del bot'}
+                        </p>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.45rem', borderTop: '1px solid rgba(0,0,0,0.06)', fontSize: '0.72rem' }}>
+                        <span style={{ color: '#176B87', fontWeight: '700' }}>
+                          Bot: {prof.botName}
+                        </span>
+
+                        <div style={{ display: 'flex', gap: '0.3rem' }}>
+                          <button
+                            onClick={() => duplicateBotProfile(prof.id)}
+                            style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '0.2rem' }}
+                            title="Duplicar perfil"
+                          >
+                            <Copy size={13} />
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setEditingProfile(prof);
+                              setProfileFormData({ ...prof });
+                              setIsProfileModalOpen(true);
+                            }}
+                            style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', padding: '0.2rem' }}
+                            title="Editar perfil"
+                          >
+                            <Edit3 size={13} />
+                          </button>
+
+                          {!prof.isSystemDefault && (
+                            <button
+                              onClick={() => {
+                                setProfileToDelete(prof);
+                                setIsDeleteProfileModalOpen(true);
+                              }}
+                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.2rem' }}
+                              title="Eliminar perfil"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Direct Form Editor for Currently Active Global Parameters */}
+              <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: '800', color: '#0F172A', marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Settings size={15} color="#176B87" />
+                  <span>Editor del Perfil Activo: "{botSettings?.name || 'Taller Estándar'}"</span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                      NOMBRE DEL ASISTENTE EN EL CHAT
+                    </label>
+                    <input
+                      type="text"
+                      value={botSettings?.botName || 'IdeaForm Bot AI'}
+                      onChange={(e) => updateBotSettings({ botName: e.target.value })}
+                      style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: '700' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                      NÚMERO DE WHATSAPP PARA RECIBIR TRANSFERENCIAS
+                    </label>
+                    <input
+                      type="text"
+                      value={botSettings?.whatsappNumber || '526121403409'}
+                      onChange={(e) => updateBotSettings({ whatsappNumber: e.target.value })}
+                      style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: '700' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '0.85rem' }}>
                   <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
-                    NOMBRE DEL ASISTENTE EN EL CHAT
+                    SALUDO INICIAL DE BIENVENIDA
                   </label>
-                  <input
-                    type="text"
-                    value={botSettings?.botName || 'IdeaForm Bot AI'}
-                    onChange={(e) => updateBotSettings({ botName: e.target.value })}
-                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: '700' }}
+                  <textarea
+                    rows={2}
+                    value={botSettings?.welcomeGreeting || ''}
+                    onChange={(e) => updateBotSettings({ welcomeGreeting: e.target.value })}
+                    style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
                   />
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
-                    NÚMERO DE WHATSAPP PARA RECIBIR TRANSFERENCIAS
-                  </label>
-                  <input
-                    type="text"
-                    value={botSettings?.whatsappNumber || '526121403409'}
-                    onChange={(e) => updateBotSettings({ whatsappNumber: e.target.value })}
-                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: '700' }}
+                <div style={{ marginTop: '0.85rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
+                    <AlertCircle size={15} color="#d97706" />
+                    <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#0F172A', margin: 0 }}>
+                      RESPUESTA DE TOLERANCIA A ERRORES / FALLBACK
+                    </label>
+                  </div>
+                  <textarea
+                    rows={2}
+                    value={botSettings?.fallbackMessage || ''}
+                    onChange={(e) => updateBotSettings({ fallbackMessage: e.target.value })}
+                    style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
                   />
                 </div>
-              </div>
-
-              <div style={{ marginTop: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
-                  SALUDO INICIAL DE BIENVENIDA
-                </label>
-                <textarea
-                  rows={2}
-                  value={botSettings?.welcomeGreeting || ''}
-                  onChange={(e) => updateBotSettings({ welcomeGreeting: e.target.value })}
-                  style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
-                />
-              </div>
-
-              {/* Error Handling & Fallback for Client Typos */}
-              <div style={{ marginTop: '1rem', background: '#f8fafc', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid #e2e8f0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
-                  <AlertCircle size={16} color="#d97706" />
-                  <label style={{ fontSize: '0.78rem', fontWeight: '800', color: '#0F172A', margin: 0 }}>
-                    RESPUESTA INTELIGENTE EN CASO DE ERRORES O PREGUNTAS NO RECONOCIDAS (FALLBACK)
-                  </label>
-                </div>
-                <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0' }}>
-                  Este mensaje se enviará si el cliente escribe palabras con faltas de ortografía, abreviaciones raras o consultas fuera del catálogo, ofreciéndole opciones y contacto por WhatsApp.
-                </p>
-                <textarea
-                  rows={2}
-                  value={botSettings?.fallbackMessage || ''}
-                  onChange={(e) => updateBotSettings({ fallbackMessage: e.target.value })}
-                  style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
-                />
               </div>
             </div>
 
@@ -2412,6 +2557,174 @@ const AdminDashboard = () => {
           </div>
         )}
       </div>
+
+      {/* =========================================================================
+          MODAL: CREAR / EDITAR PERFIL DE PARÁMETROS GLOBALES (CRUD GLOBAL)
+         ========================================================================= */}
+      {isProfileModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div className="card card-elevated" style={{ background: '#ffffff', borderRadius: 'var(--radius-xl)', maxWidth: '580px', width: '100%', padding: '1.75rem', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <SlidersHorizontal size={20} color="#176B87" />
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: '#0F172A' }}>
+                  {editingProfile ? `Editar Perfil: ${editingProfile.name}` : 'Crear Nuevo Perfil de Parámetros Globales'}
+                </h3>
+              </div>
+              <button onClick={() => setIsProfileModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!profileFormData.name || !profileFormData.botName) {
+                  showToast('Por favor completa el nombre del perfil y del bot', 'warning');
+                  return;
+                }
+
+                saveBotProfile({
+                  ...profileFormData,
+                  id: editingProfile ? editingProfile.id : `profile-${Date.now()}`
+                });
+                setIsProfileModalOpen(false);
+              }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}
+            >
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                  NOMBRE DEL PERFIL DE CONFIGURACIÓN
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej. 🎄 Modo Campaña Navidad / Buen Fin"
+                  value={profileFormData.name}
+                  onChange={(e) => setProfileFormData({ ...profileFormData, name: e.target.value })}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: '700' }}
+                  required
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                  DESCRIPCIÓN / CASO DE USO
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej. Saludo con descuentos de temporada y envío gratis express"
+                  value={profileFormData.description}
+                  onChange={(e) => setProfileFormData({ ...profileFormData, description: e.target.value })}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                    NOMBRE DEL ASISTENTE VISIBLE
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej. IdeaForm Bot AI"
+                    value={profileFormData.botName}
+                    onChange={(e) => setProfileFormData({ ...profileFormData, botName: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: '700' }}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                    WHATSAPP DE ENLACE
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="526121403409"
+                    value={profileFormData.whatsappNumber}
+                    onChange={(e) => setProfileFormData({ ...profileFormData, whatsappNumber: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                  SALUDO INICIAL DE BIENVENIDA
+                </label>
+                <textarea
+                  rows={2}
+                  value={profileFormData.welcomeGreeting}
+                  onChange={(e) => setProfileFormData({ ...profileFormData, welcomeGreeting: e.target.value })}
+                  style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                  MENSAJE DE FALLBACK / TOLERANCIA A ERRORES
+                </label>
+                <textarea
+                  rows={2}
+                  value={profileFormData.fallbackMessage}
+                  onChange={(e) => setProfileFormData({ ...profileFormData, fallbackMessage: e.target.value })}
+                  style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button type="button" onClick={() => setIsProfileModalOpen(false)} className="btn btn-secondary" style={{ flex: 1 }}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1, fontWeight: '800' }}>
+                  Guardar Perfil
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: CONFIRMACIÓN ELIMINACIÓN DE PERFIL GLOBAL
+         ========================================================================= */}
+      {isDeleteProfileModalOpen && profileToDelete && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '1rem' }}>
+          <div className="card card-elevated" style={{ background: '#ffffff', borderRadius: 'var(--radius-xl)', maxWidth: '440px', width: '100%', padding: '1.75rem', textAlign: 'center' }}>
+            <AlertTriangle size={32} color="#dc2626" style={{ margin: '0 auto 0.75rem' }} />
+            <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: '#0F172A', marginBottom: '0.5rem' }}>
+              ¿Eliminar Perfil Global?
+            </h3>
+            <p style={{ fontSize: '0.82rem', color: '#64748b', lineHeight: '1.5', marginBottom: '1.25rem' }}>
+              ¿Estás seguro de eliminar el perfil <strong>"{profileToDelete.name}"</strong>? Si está activo, el sistema cambiará al perfil estándar por defecto.
+            </p>
+
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                onClick={() => {
+                  setIsDeleteProfileModalOpen(false);
+                  setProfileToDelete(null);
+                }}
+                className="btn btn-secondary"
+                style={{ flex: 1 }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  deleteBotProfile(profileToDelete.id);
+                  setIsDeleteProfileModalOpen(false);
+                  setProfileToDelete(null);
+                }}
+                style={{ flex: 1, background: '#dc2626', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', fontWeight: '800', padding: '0.65rem', cursor: 'pointer' }}
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* =========================================================================
           MODAL: CREAR / EDITAR RESPUESTA DEL BOT

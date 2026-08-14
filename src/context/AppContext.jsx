@@ -9,6 +9,7 @@ import {
   MOCK_3D_PRINTERS,
   MOCK_OPERATING_EXPENSES,
   DEFAULT_BOT_SETTINGS,
+  DEFAULT_BOT_PROFILES,
   DEFAULT_BOT_INTENTS
 } from '../data/mockData';
 import { generateFolio } from '../utils/formatters';
@@ -299,16 +300,116 @@ export const AppProvider = ({ children }) => {
     });
   };
 
-  // IdeaForm Bot Knowledge Base & Settings (Persisted in localStorage)
+  // IdeaForm Bot Knowledge Base & Global Parameter Profiles (Persisted in localStorage)
+  const [botProfiles, setBotProfiles] = useState(() => {
+    const saved = localStorage.getItem('ideaform_bot_profiles');
+    return saved ? JSON.parse(saved) : DEFAULT_BOT_PROFILES;
+  });
+
+  const [activeProfileId, setActiveProfileId] = useState(() => {
+    const saved = localStorage.getItem('ideaform_active_bot_profile_id');
+    return saved || 'profile-default';
+  });
+
   const [botSettings, setBotSettings] = useState(() => {
     const saved = localStorage.getItem('ideaform_bot_settings');
-    return saved ? JSON.parse(saved) : DEFAULT_BOT_SETTINGS;
+    if (saved) return JSON.parse(saved);
+    const active = DEFAULT_BOT_PROFILES.find((p) => p.id === 'profile-default') || DEFAULT_BOT_PROFILES[0];
+    return active;
   });
 
   const [botIntents, setBotIntents] = useState(() => {
     const saved = localStorage.getItem('ideaform_bot_intents');
     return saved ? JSON.parse(saved) : DEFAULT_BOT_INTENTS;
   });
+
+  // Global Parameter Profile CRUD
+  const saveBotProfile = (newOrUpdatedProfile) => {
+    setBotProfiles((prev) => {
+      const exists = prev.some((p) => p.id === newOrUpdatedProfile.id);
+      let updated;
+      if (exists) {
+        updated = prev.map((p) => (p.id === newOrUpdatedProfile.id ? { ...p, ...newOrUpdatedProfile, updatedAt: new Date().toISOString() } : p));
+      } else {
+        const id = newOrUpdatedProfile.id || `profile-${Date.now()}`;
+        updated = [...prev, { ...newOrUpdatedProfile, id, createdAt: new Date().toISOString(), isSystemDefault: false }];
+      }
+      localStorage.setItem('ideaform_bot_profiles', JSON.stringify(updated));
+      return updated;
+    });
+
+    // If updating active profile, sync botSettings
+    if (newOrUpdatedProfile.id === activeProfileId) {
+      setBotSettings((prev) => {
+        const updated = { ...prev, ...newOrUpdatedProfile };
+        localStorage.setItem('ideaform_bot_settings', JSON.stringify(updated));
+        return updated;
+      });
+    }
+    showToast(`Perfil de Parámetros "${newOrUpdatedProfile.name}" guardado`, 'success');
+  };
+
+  const activateBotProfile = (profileId) => {
+    const target = botProfiles.find((p) => p.id === profileId);
+    if (!target) return;
+    setActiveProfileId(profileId);
+    setBotSettings(target);
+    localStorage.setItem('ideaform_active_bot_profile_id', profileId);
+    localStorage.setItem('ideaform_bot_settings', JSON.stringify(target));
+    showToast(`Perfil Global Activado: "${target.name}"`, 'info');
+  };
+
+  const duplicateBotProfile = (profileId) => {
+    const target = botProfiles.find((p) => p.id === profileId);
+    if (!target) return;
+    const newProfile = {
+      ...target,
+      id: `profile-${Date.now()}`,
+      name: `${target.name} (Copia)`,
+      isSystemDefault: false,
+      createdAt: new Date().toISOString()
+    };
+    setBotProfiles((prev) => {
+      const updated = [...prev, newProfile];
+      localStorage.setItem('ideaform_bot_profiles', JSON.stringify(updated));
+      return updated;
+    });
+    showToast(`Perfil duplicado: "${newProfile.name}"`, 'success');
+  };
+
+  const deleteBotProfile = (profileId) => {
+    const target = botProfiles.find((p) => p.id === profileId);
+    if (target?.isSystemDefault) {
+      showToast('No puedes eliminar el perfil estándar por defecto del sistema', 'error');
+      return;
+    }
+    setBotProfiles((prev) => {
+      const updated = prev.filter((p) => p.id !== profileId);
+      localStorage.setItem('ideaform_bot_profiles', JSON.stringify(updated));
+      return updated;
+    });
+    if (activeProfileId === profileId) {
+      activateBotProfile('profile-default');
+    }
+    showToast(`Perfil "${target?.name || ''}" eliminado`, 'warning');
+  };
+
+  const updateBotSettings = (newSettings) => {
+    setBotSettings((prev) => {
+      const updated = { ...prev, ...newSettings };
+      localStorage.setItem('ideaform_bot_settings', JSON.stringify(updated));
+      return updated;
+    });
+
+    // Also update in current active profile
+    setBotProfiles((prev) => {
+      const updated = prev.map((p) => (p.id === activeProfileId ? { ...p, ...newSettings } : p));
+      localStorage.setItem('ideaform_bot_profiles', JSON.stringify(updated));
+      return updated;
+    });
+
+    showToast('Parámetros globales del Bot actualizados', 'success');
+  };
 
   const saveBotIntent = (newOrUpdatedIntent) => {
     setBotIntents((prev) => {
@@ -367,28 +468,25 @@ export const AppProvider = ({ children }) => {
     });
   };
 
-  const updateBotSettings = (newSettings) => {
-    setBotSettings((prev) => {
-      const updated = { ...prev, ...newSettings };
-      localStorage.setItem('ideaform_bot_settings', JSON.stringify(updated));
-      return updated;
-    });
-    showToast('Configuración general del Bot guardada', 'success');
-  };
-
   const resetBotKnowledge = () => {
-    setBotSettings(DEFAULT_BOT_SETTINGS);
+    setBotProfiles(DEFAULT_BOT_PROFILES);
+    setActiveProfileId('profile-default');
+    setBotSettings(DEFAULT_BOT_PROFILES[0]);
     setBotIntents(DEFAULT_BOT_INTENTS);
-    localStorage.setItem('ideaform_bot_settings', JSON.stringify(DEFAULT_BOT_SETTINGS));
+    localStorage.setItem('ideaform_bot_profiles', JSON.stringify(DEFAULT_BOT_PROFILES));
+    localStorage.setItem('ideaform_active_bot_profile_id', 'profile-default');
+    localStorage.setItem('ideaform_bot_settings', JSON.stringify(DEFAULT_BOT_PROFILES[0]));
     localStorage.setItem('ideaform_bot_intents', JSON.stringify(DEFAULT_BOT_INTENTS));
-    showToast('Base de conocimientos del Bot restaurada a valores de fábrica', 'info');
+    showToast('Base de conocimientos y perfiles restaurados a valores de fábrica', 'info');
   };
 
   // Export JSON Backup
   const exportBotBackup = () => {
     const backupData = {
-      version: '1.0',
+      version: '2.0',
       exportedAt: new Date().toISOString(),
+      activeProfileId,
+      botProfiles,
       botSettings,
       botIntents
     };
@@ -399,13 +497,21 @@ export const AppProvider = ({ children }) => {
     a.download = `ideaform_bot_backup_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast('Copia de seguridad del Bot descargada (JSON)', 'success');
+    showToast('Copia de seguridad completa del Bot descargada (JSON)', 'success');
   };
 
   // Import JSON Backup
   const importBotBackup = (jsonData) => {
     try {
       const parsed = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
+      if (Array.isArray(parsed.botProfiles)) {
+        setBotProfiles(parsed.botProfiles);
+        localStorage.setItem('ideaform_bot_profiles', JSON.stringify(parsed.botProfiles));
+      }
+      if (parsed.activeProfileId) {
+        setActiveProfileId(parsed.activeProfileId);
+        localStorage.setItem('ideaform_active_bot_profile_id', parsed.activeProfileId);
+      }
       if (parsed.botSettings) {
         setBotSettings(parsed.botSettings);
         localStorage.setItem('ideaform_bot_settings', JSON.stringify(parsed.botSettings));
@@ -907,6 +1013,12 @@ export const AppProvider = ({ children }) => {
         setProducts,
         saveProduct,
         deleteProduct,
+        botProfiles,
+        activeProfileId,
+        saveBotProfile,
+        activateBotProfile,
+        duplicateBotProfile,
+        deleteBotProfile,
         botIntents,
         botSettings,
         saveBotIntent,
