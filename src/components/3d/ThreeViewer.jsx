@@ -69,7 +69,7 @@ const ThreeViewer = forwardRef(({
     }
   }));
 
-  // Function to draw high-res 2048x1024 text/logo texture
+  // Function to draw high-res 2048x1024 text/logo texture with vivid 3D embossed relief
   const drawCanvas = useCallback(() => {
     let canvas = materialsRef.current.canvasElem;
     let ctx = materialsRef.current.canvasCtx;
@@ -87,26 +87,18 @@ const ThreeViewer = forwardRef(({
     ctx.fillStyle = activeBaseColor;
     ctx.fillRect(0, 0, 2048, 1024);
 
-    // 2. Multi-layer accent border
+    // 2. Multi-layer accent border (Zone 2)
     ctx.strokeStyle = activeAccentColor;
-    ctx.lineWidth = 32;
+    ctx.lineWidth = 36;
     ctx.lineJoin = 'round';
-    ctx.strokeRect(48, 48, 1952, 928);
+    ctx.strokeRect(40, 40, 1968, 944);
 
     // Subtle inner accent line
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-    ctx.lineWidth = 8;
-    ctx.strokeRect(88, 88, 1872, 848);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.lineWidth = 10;
+    ctx.strokeRect(84, 84, 1880, 856);
 
     if (!noEngraving) {
-      ctx.save();
-      
-      // Embossed 3D Drop Shadow
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-      ctx.shadowBlur = 18;
-      ctx.shadowOffsetX = 8;
-      ctx.shadowOffsetY = 10;
-
       if (logoImage) {
         const img = new Image();
         img.crossOrigin = 'anonymous';
@@ -123,34 +115,41 @@ const ThreeViewer = forwardRef(({
         if (isDefault) {
           // Bulb dome & rays
           ctx.strokeStyle = activeAccentColor;
-          ctx.lineWidth = 28;
+          ctx.lineWidth = 32;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
 
           ctx.beginPath();
-          ctx.arc(580, 512, 140, 0, Math.PI * 2);
+          ctx.arc(560, 512, 150, 0, Math.PI * 2);
           ctx.stroke();
 
           // Dot
           ctx.fillStyle = activeAccentColor;
           ctx.beginPath();
-          ctx.arc(530, 450, 24, 0, Math.PI * 2);
+          ctx.arc(510, 440, 26, 0, Math.PI * 2);
           ctx.fill();
 
           // Typography
-          ctx.font = `bold 200px 'Space Grotesk', sans-serif`;
-          ctx.fillStyle = activeTextColor;
+          ctx.font = `800 210px 'Space Grotesk', sans-serif`;
           ctx.textAlign = 'left';
           ctx.textBaseline = 'middle';
-          ctx.fillText('Idea', 840, 520);
+
+          // Shadow
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+          ctx.fillText('Idea', 824, 526);
+          ctx.fillText('Form', 1284, 526);
+
+          // Vivid Fill in activeTextColor & activeAccentColor
+          ctx.fillStyle = activeTextColor;
+          ctx.fillText('Idea', 820, 520);
 
           ctx.fillStyle = activeAccentColor;
-          ctx.fillText('Form', 1300, 520);
+          ctx.fillText('Form', 1280, 520);
         } else {
-          // Custom embossed text in activeTextColor
+          // Dynamic text in activeTextColor
           const displayStr = customText.toUpperCase();
           const charLen = Math.max(displayStr.length, 1);
-          const fontSize = Math.min(240, Math.floor(1800 / (charLen * 0.65)));
+          const fontSize = Math.min(250, Math.floor(1850 / (charLen * 0.65)));
 
           let cleanFont = fontFamily;
           if (cleanFont.includes('Poppins')) cleanFont = 'Poppins, sans-serif';
@@ -159,14 +158,26 @@ const ThreeViewer = forwardRef(({
           else if (cleanFont.includes('Cursiva')) cleanFont = `'Dancing Script', cursive`;
           else cleanFont = 'sans-serif';
 
-          ctx.font = `800 ${fontSize}px ${cleanFont}`;
-          ctx.fillStyle = activeTextColor;
+          ctx.font = `900 ${fontSize}px ${cleanFont}`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
+
+          // Layer 1: Dark 3D Bottom Extrusion Shadow
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+          ctx.fillText(displayStr, 1028, 520);
+          ctx.fillText(displayStr, 1026, 518);
+          ctx.fillText(displayStr, 1024, 516);
+
+          // Layer 2: Subtle Outer Contrast Stroke
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
+          ctx.lineWidth = 14;
+          ctx.strokeText(displayStr, 1024, 512);
+
+          // Layer 3: Solid Vivid Face Fill in activeTextColor
+          ctx.fillStyle = activeTextColor;
           ctx.fillText(displayStr, 1024, 512);
         }
       }
-      ctx.restore();
     }
 
     if (!materialsRef.current.canvasTexture) {
@@ -315,7 +326,7 @@ const ThreeViewer = forwardRef(({
       const plateMaterials = [
         mainMaterial, // +X right
         mainMaterial, // -X left
-        reliefFaceMat, // +Y TOP SURFACE
+        reliefFaceMat, // +Y TOP SURFACE (Vivid Embossed Text)
         mainMaterial, // -Y bottom
         mainMaterial, // +Z front
         mainMaterial  // -Z back
@@ -489,6 +500,9 @@ const ThreeViewer = forwardRef(({
     if (materialsRef.current.canvasTexture) {
       materialsRef.current.canvasTexture.needsUpdate = true;
     }
+    if (materialsRef.current.reliefMat) {
+      materialsRef.current.reliefMat.needsUpdate = true;
+    }
   }, [activeBaseColor, activeAccentColor, activeTextColor, customText, fontFamily, logoImage, drawCanvas]);
 
   // Three.js Scene Setup Loop (Runs ONCE on mount)
@@ -517,7 +531,7 @@ const ThreeViewer = forwardRef(({
     mount.appendChild(renderer.domElement);
 
     // Warm Studio Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.3);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
     scene.add(ambientLight);
 
     const dirLight1 = new THREE.DirectionalLight(0xffffff, 2.0);

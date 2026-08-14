@@ -577,103 +577,204 @@ const ColeccionesRoute = () => {
                   ))}
                 </div>
               </div>
+                        {/* Color Customization: Predefined Combos (Option 1, Option 2...) vs Free Layer Selection */}
+              <div style={{ marginBottom: '1.5rem', background: '#FAEEEB', padding: '1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #F0D7D2' }}>
+                
+                {selectedProduct.colorMode === 'PRESETS' || (selectedProduct.colorPresets && selectedProduct.colorPresets.length > 0) ? (
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.4rem' }}>
+                      <Palette size={16} color="#A94D43" />
+                      <strong style={{ fontSize: '0.85rem', color: '#A94D43' }}>
+                        ELIGE TU COMBINACIÓN DE COLORES:
+                      </strong>
+                    </div>
+                    <p style={{ fontSize: '0.75rem', color: '#64748b', margin: 0, marginBottom: '0.85rem' }}>
+                      Selecciona una de las combinaciones predefinidas creadas por IdeaForm para esta pieza:
+                    </p>
 
-              {/* Multi-Layer Color Customization Tabs (Nike By You style) */}
-              <div style={{ marginBottom: '1.5rem', background: '#FAEEEB', padding: '1rem', borderRadius: 'var(--radius-lg)', border: '1px solid #F0D7D2' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
-                  <Layers size={16} color="#A94D43" />
-                  <strong style={{ fontSize: '0.82rem', color: '#A94D43' }}>
-                    SELECCIONA LA CAPA A COLOREAR:
-                  </strong>
-                </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                      {(selectedProduct.colorPresets || DEFAULT_COLOR_PRESETS).map((combo, cIdx) => {
+                        const isComboSelected =
+                          selectedBaseColor.hex.toLowerCase() === combo.baseColor.hex.toLowerCase() &&
+                          selectedAccentColor.hex.toLowerCase() === combo.accentColor.hex.toLowerCase() &&
+                          selectedReliefColor.hex.toLowerCase() === combo.reliefColor.hex.toLowerCase();
 
-                {/* Layer Selector Tabs */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem', marginBottom: '1rem' }}>
-                  <button
-                    onClick={() => setActiveLayer('BASE')}
-                    style={{
-                      padding: '0.5rem 0.3rem',
-                      borderRadius: 'var(--radius-md)',
-                      border: activeLayer === 'BASE' ? '2px solid #A94D43' : '1px solid #F0D7D2',
-                      background: activeLayer === 'BASE' ? '#ffffff' : 'rgba(255,255,255,0.6)',
-                      color: activeLayer === 'BASE' ? '#A94D43' : '#64748b',
-                      fontSize: '0.75rem',
-                      fontWeight: '800',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '0.2rem'
-                    }}
-                  >
-                    <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: selectedBaseColor.hex, border: '1px solid rgba(0,0,0,0.2)' }} />
-                    <span>1. Base</span>
-                  </button>
+                        return (
+                          <div
+                            key={combo.id || cIdx}
+                            onClick={() => {
+                              setSelectedBaseColor(combo.baseColor);
+                              setSelectedAccentColor(combo.accentColor);
+                              setSelectedReliefColor(combo.reliefColor);
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              background: isComboSelected ? '#ffffff' : 'rgba(255,255,255,0.7)',
+                              border: isComboSelected ? '2px solid #A94D43' : '1px solid #F0D7D2',
+                              borderRadius: 'var(--radius-md)',
+                              padding: '0.75rem 1rem',
+                              cursor: 'pointer',
+                              boxShadow: isComboSelected ? '0 4px 12px rgba(169, 77, 67, 0.12)' : 'none',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                              {/* 3 Layer Mini Swatches */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                                  <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: combo.baseColor.hex, border: '1.5px solid rgba(0,0,0,0.2)' }} />
+                                  <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>Base</span>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                                  <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: combo.accentColor.hex, border: '1.5px solid rgba(0,0,0,0.2)' }} />
+                                  <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>Acento</span>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                                  <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: combo.reliefColor.hex, border: '1.5px solid rgba(0,0,0,0.2)' }} />
+                                  <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>Letras</span>
+                                </div>
+                              </div>
 
-                  <button
-                    onClick={() => setActiveLayer('ACCENT')}
-                    style={{
-                      padding: '0.5rem 0.3rem',
-                      borderRadius: 'var(--radius-md)',
-                      border: activeLayer === 'ACCENT' ? '2px solid #A94D43' : '1px solid #F0D7D2',
-                      background: activeLayer === 'ACCENT' ? '#ffffff' : 'rgba(255,255,255,0.6)',
-                      color: activeLayer === 'ACCENT' ? '#A94D43' : '#64748b',
-                      fontSize: '0.75rem',
-                      fontWeight: '800',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '0.2rem'
-                    }}
-                  >
-                    <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: selectedAccentColor.hex, border: '1px solid rgba(0,0,0,0.2)' }} />
-                    <span>2. Acento</span>
-                  </button>
+                              <div>
+                                <div style={{ fontSize: '0.85rem', fontWeight: '800', color: isComboSelected ? '#A94D43' : '#0F172A' }}>
+                                  {combo.name}
+                                </div>
+                                {combo.description && (
+                                  <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                                    {combo.description}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
 
-                  <button
-                    onClick={() => setActiveLayer('RELIEF')}
-                    style={{
-                      padding: '0.5rem 0.3rem',
-                      borderRadius: 'var(--radius-md)',
-                      border: activeLayer === 'RELIEF' ? '2px solid #A94D43' : '1px solid #F0D7D2',
-                      background: activeLayer === 'RELIEF' ? '#ffffff' : 'rgba(255,255,255,0.6)',
-                      color: activeLayer === 'RELIEF' ? '#A94D43' : '#64748b',
-                      fontSize: '0.75rem',
-                      fontWeight: '800',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '0.2rem'
-                    }}
-                  >
-                    <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: selectedReliefColor.hex, border: '1px solid rgba(0,0,0,0.2)' }} />
-                    <span>3. Letras 3D</span>
-                  </button>
-                </div>
+                            <div
+                              style={{
+                                width: '22px',
+                                height: '22px',
+                                borderRadius: '50%',
+                                border: isComboSelected ? '2px solid #A94D43' : '2px solid #cbd5e1',
+                                background: isComboSelected ? '#A94D43' : 'transparent',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#ffffff'
+                              }}
+                            >
+                              {isComboSelected && <Check size={14} strokeWidth={3} />}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                      <Layers size={16} color="#A94D43" />
+                      <strong style={{ fontSize: '0.82rem', color: '#A94D43' }}>
+                        SELECCIONA LA CAPA A COLOREAR:
+                      </strong>
+                    </div>
 
-                {/* Active Layer Filament Color Swatches */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                    Color para {activeLayer === 'BASE' ? 'Base' : activeLayer === 'ACCENT' ? 'Acento' : 'Letras 3D'}:
-                  </span>
-                  <strong style={{ fontSize: '0.8rem', color: '#A94D43' }}>
-                    {currentLayerColor.name}
-                  </strong>
-                </div>
+                    {/* Layer Selector Tabs */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem', marginBottom: '1rem' }}>
+                      <button
+                        onClick={() => setActiveLayer('BASE')}
+                        style={{
+                          padding: '0.5rem 0.3rem',
+                          borderRadius: 'var(--radius-md)',
+                          border: activeLayer === 'BASE' ? '2px solid #A94D43' : '1px solid #F0D7D2',
+                          background: activeLayer === 'BASE' ? '#ffffff' : 'rgba(255,255,255,0.6)',
+                          color: activeLayer === 'BASE' ? '#A94D43' : '#64748b',
+                          fontSize: '0.75rem',
+                          fontWeight: '800',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '0.2rem'
+                        }}
+                      >
+                        <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: selectedBaseColor.hex, border: '1px solid rgba(0,0,0,0.2)' }} />
+                        <span>1. Base</span>
+                      </button>
 
-                <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap' }}>
-                  {FILAMENT_COLORS.map((col) => (
-                    <button
-                      key={col.id}
-                      onClick={() => handleColorSelect(col)}
-                      className={`swatch-btn ${currentLayerColor.id === col.id ? 'selected' : ''}`}
-                      style={{ background: col.hex, width: '32px', height: '32px', borderRadius: '50%', border: currentLayerColor.id === col.id ? '3px solid #A94D43' : '2px solid #ffffff', cursor: 'pointer', boxShadow: 'var(--shadow-sm)' }}
-                      title={col.name}
-                    />
-                  ))}
-                </div>
+                      <button
+                        onClick={() => setActiveLayer('ACCENT')}
+                        style={{
+                          padding: '0.5rem 0.3rem',
+                          borderRadius: 'var(--radius-md)',
+                          border: activeLayer === 'ACCENT' ? '2px solid #A94D43' : '1px solid #F0D7D2',
+                          background: activeLayer === 'ACCENT' ? '#ffffff' : 'rgba(255,255,255,0.6)',
+                          color: activeLayer === 'ACCENT' ? '#A94D43' : '#64748b',
+                          fontSize: '0.75rem',
+                          fontWeight: '800',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '0.2rem'
+                        }}
+                      >
+                        <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: selectedAccentColor.hex, border: '1px solid rgba(0,0,0,0.2)' }} />
+                        <span>2. Acento</span>
+                      </button>
+
+                      <button
+                        onClick={() => setActiveLayer('RELIEF')}
+                        style={{
+                          padding: '0.5rem 0.3rem',
+                          borderRadius: 'var(--radius-md)',
+                          border: activeLayer === 'RELIEF' ? '2px solid #A94D43' : '1px solid #F0D7D2',
+                          background: activeLayer === 'RELIEF' ? '#ffffff' : 'rgba(255,255,255,0.6)',
+                          color: activeLayer === 'RELIEF' ? '#A94D43' : '#64748b',
+                          fontSize: '0.75rem',
+                          fontWeight: '800',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '0.2rem'
+                        }}
+                      >
+                        <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: selectedReliefColor.hex, border: '1px solid rgba(0,0,0,0.2)' }} />
+                        <span>3. Letras 3D</span>
+                      </button>
+                    </div>
+
+                    {/* Active Layer Filament Color Swatches */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                        Color para {activeLayer === 'BASE' ? 'Base' : activeLayer === 'ACCENT' ? 'Acento' : 'Letras 3D'}:
+                      </span>
+                      <strong style={{ fontSize: '0.8rem', color: '#A94D43' }}>
+                        {currentLayerColor.name}
+                      </strong>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap' }}>
+                      {FILAMENT_COLORS.map((col) => (
+                        <button
+                          key={col.id}
+                          onClick={() => handleColorSelect(col)}
+                          style={{
+                            width: '34px',
+                            height: '34px',
+                            borderRadius: '50%',
+                            background: col.hex,
+                            border: currentLayerColor.id === col.id ? '3px solid #A94D43' : '2px solid rgba(0,0,0,0.15)',
+                            boxShadow: currentLayerColor.id === col.id ? '0 0 0 2px #ffffff' : 'none',
+                            cursor: 'pointer',
+                            transition: 'transform 0.15s ease'
+                          }}
+                          title={col.name}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Next Step */}

@@ -31,6 +31,41 @@ export const FILAMENT_COLORS = [
   { id: 'col-orange', name: 'Naranja Fuego', hex: '#EA580C', priceMultiplier: 1.0 }
 ];
 
+export const DEFAULT_COLOR_PRESETS = [
+  {
+    id: 'preset-1',
+    name: 'Opción 1: Naranja Neón, Negro & Blanco',
+    description: 'Edición deportiva y de alto impacto visual',
+    baseColor: { id: 'col-black', name: 'Carbón Mate', hex: '#1A1A1A' },
+    accentColor: { id: 'col-orange', name: 'Naranja Fuego', hex: '#EA580C' },
+    reliefColor: { id: 'col-white', name: 'Blanco Puro', hex: '#FAEEEB' }
+  },
+  {
+    id: 'preset-2',
+    name: 'Opción 2: Verde Esmeralda, Blanco & Rojo',
+    description: 'Combinación tricolor vibrante y contrastada',
+    baseColor: { id: 'col-green', name: 'Verde Bosque', hex: '#059669' },
+    accentColor: { id: 'col-white', name: 'Blanco Puro', hex: '#FAEEEB' },
+    reliefColor: { id: 'col-red', name: 'Rojo Carmín', hex: '#DC2626' }
+  },
+  {
+    id: 'preset-3',
+    name: 'Opción 3: Azul Océano, Oro Imperial & Blanco',
+    description: 'Edición ejecutiva de lujo y presencia',
+    baseColor: { id: 'col-navy', name: 'Azul Océano', hex: '#21658A' },
+    accentColor: { id: 'col-gold', name: 'Mostaza Cálido / Oro', hex: '#B77B21' },
+    reliefColor: { id: 'col-white', name: 'Blanco Puro', hex: '#FAEEEB' }
+  },
+  {
+    id: 'preset-4',
+    name: 'Opción 4: Coral Terracota, Teal & Blanco',
+    description: 'Identidad oficial exclusiva IdeaForm',
+    baseColor: { id: 'col-coral', name: 'Coral Terracota', hex: '#C9685B' },
+    accentColor: { id: 'col-teal', name: 'Teal IdeaForm', hex: '#00828A' },
+    reliefColor: { id: 'col-white', name: 'Blanco Puro', hex: '#FAEEEB' }
+  }
+];
+
 export const FILAMENT_MATERIALS = [
   {
     id: 'PLA_SILK',

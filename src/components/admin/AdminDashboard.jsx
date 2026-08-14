@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
-import { FILAMENT_MATERIALS, PRODUCTS, B2B_PRICE_TIERS, SUBCOLLECTIONS } from '../../data/mockData';
+import { FILAMENT_MATERIALS, PRODUCTS, B2B_PRICE_TIERS, SUBCOLLECTIONS, DEFAULT_COLOR_PRESETS } from '../../data/mockData';
 import { shippingService } from '../../services/shippingService';
 import { generateB2BQuotePDF } from '../../utils/pdfGenerator';
 import { formatCurrency, formatGrams, formatMinutesToHours, generateFolio } from '../../utils/formatters';
@@ -383,6 +383,8 @@ const AdminDashboard = () => {
       custom3DFileType: null,
       filamentGrams: 55,
       printTimeMins: 110,
+      colorMode: 'FREE', // 'FREE' (libre por capas) | 'PRESETS' (combos fijos opc 1, opc 2...)
+      colorPresets: DEFAULT_COLOR_PRESETS,
       allowBaseColor: true,
       allowAccentColor: true,
       allowReliefColor: true,
@@ -409,14 +411,16 @@ const AdminDashboard = () => {
       custom3DFileType: prod.custom3DFileType || null,
       filamentGrams: prod.filamentGrams || 50,
       printTimeMins: prod.printTimeMins || 100,
+      colorMode: prod.colorMode || (prod.colorPresets?.length > 0 ? 'PRESETS' : 'FREE'),
+      colorPresets: prod.colorPresets || DEFAULT_COLOR_PRESETS,
       allowBaseColor: prod.allowBaseColor !== false,
       allowAccentColor: prod.allowAccentColor !== false,
       allowReliefColor: prod.allowReliefColor !== false,
       allowCustomText: prod.isCustomizable !== false,
       allowLogoUpload: prod.allowLogoUpload !== false,
-      previewBaseColor: '#176B87',
-      previewAccentColor: '#D4AF37',
-      previewReliefColor: '#FFFFFF',
+      previewBaseColor: prod.previewBaseColor || '#176B87',
+      previewAccentColor: prod.previewAccentColor || '#D4AF37',
+      previewReliefColor: prod.previewReliefColor || '#FFFFFF',
       isActive: prod.isActive !== false,
       image2D: prod.image || null
     });
@@ -1530,43 +1534,131 @@ const AdminDashboard = () => {
                   )}
                 </div>
 
-                {/* Multi-Color Zones Configuration */}
+                {/* Color Customization Mode (Free vs Predefined Options/Combos) */}
                 <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', marginBottom: '1.25rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem' }}>
                     <Palette size={16} color="#176B87" />
                     <strong style={{ fontSize: '0.85rem', color: '#0F172A' }}>
-                      Zonas Personalizables por el Comprador
+                      Modo de Selección de Colores para el Cliente
                     </strong>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8rem', cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        checked={productFormData.allowBaseColor}
-                        onChange={(e) => setProductFormData({ ...productFormData, allowBaseColor: e.target.checked })}
-                      />
-                      <span><strong>Zona 1: Color Base / Cuerpo Principal</strong> (Permitido para el cliente)</span>
-                    </label>
+                  {/* Mode Selector Radio */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => setProductFormData({ ...productFormData, colorMode: 'FREE' })}
+                      style={{
+                        padding: '0.65rem 0.5rem',
+                        borderRadius: 'var(--radius-md)',
+                        border: productFormData.colorMode !== 'PRESETS' ? '2px solid #176B87' : '1px solid #cbd5e1',
+                        background: productFormData.colorMode !== 'PRESETS' ? '#e0f2fe' : '#ffffff',
+                        color: productFormData.colorMode !== 'PRESETS' ? '#0369a1' : '#64748b',
+                        fontWeight: '700',
+                        fontSize: '0.78rem',
+                        cursor: 'pointer',
+                        textAlign: 'center'
+                      }}
+                    >
+                      🎨 Selección Libre por Capas
+                    </button>
 
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8rem', cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        checked={productFormData.allowAccentColor}
-                        onChange={(e) => setProductFormData({ ...productFormData, allowAccentColor: e.target.checked })}
-                      />
-                      <span><strong>Zona 2: Color de Acentos / Bisel / Detalles</strong> (Permitido para el cliente)</span>
-                    </label>
-
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8rem', cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        checked={productFormData.allowReliefColor}
-                        onChange={(e) => setProductFormData({ ...productFormData, allowReliefColor: e.target.checked })}
-                      />
-                      <span><strong>Zona 3: Color de Relieve / Texto 3D</strong> (Permitido para el cliente)</span>
-                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setProductFormData({ ...productFormData, colorMode: 'PRESETS' })}
+                      style={{
+                        padding: '0.65rem 0.5rem',
+                        borderRadius: 'var(--radius-md)',
+                        border: productFormData.colorMode === 'PRESETS' ? '2px solid #176B87' : '1px solid #cbd5e1',
+                        background: productFormData.colorMode === 'PRESETS' ? '#e0f2fe' : '#ffffff',
+                        color: productFormData.colorMode === 'PRESETS' ? '#0369a1' : '#64748b',
+                        fontWeight: '700',
+                        fontSize: '0.78rem',
+                        cursor: 'pointer',
+                        textAlign: 'center'
+                      }}
+                    >
+                      🎯 Combos / Opciones Fijas
+                    </button>
                   </div>
+
+                  {productFormData.colorMode === 'PRESETS' ? (
+                    <div>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.6rem' }}>
+                        El comprador solo podrá elegir entre las siguientes combinaciones configuradas:
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '180px', overflowY: 'auto' }}>
+                        {(productFormData.colorPresets || []).map((preset, pIdx) => (
+                          <div
+                            key={preset.id || pIdx}
+                            onClick={() => {
+                              setProductFormData((prev) => ({
+                                ...prev,
+                                previewBaseColor: preset.baseColor.hex,
+                                previewAccentColor: preset.accentColor.hex,
+                                previewReliefColor: preset.reliefColor.hex
+                              }));
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              background: '#ffffff',
+                              padding: '0.5rem 0.75rem',
+                              borderRadius: 'var(--radius-sm)',
+                              border: '1px solid #e2e8f0',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                              <div style={{ display: 'flex', gap: '3px' }}>
+                                <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: preset.baseColor.hex, border: '1px solid rgba(0,0,0,0.2)' }} title="Base" />
+                                <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: preset.accentColor.hex, border: '1px solid rgba(0,0,0,0.2)' }} title="Acento" />
+                                <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: preset.reliefColor.hex, border: '1px solid rgba(0,0,0,0.2)' }} title="Relieve" />
+                              </div>
+                              <span style={{ fontSize: '0.78rem', fontWeight: '700', color: '#0F172A' }}>
+                                {preset.name}
+                              </span>
+                            </div>
+
+                            <span style={{ fontSize: '0.7rem', color: '#176B87', fontWeight: '700' }}>
+                              👁️ Probar 3D
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8rem', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={productFormData.allowBaseColor}
+                          onChange={(e) => setProductFormData({ ...productFormData, allowBaseColor: e.target.checked })}
+                        />
+                        <span><strong>Zona 1: Color Base / Cuerpo Principal</strong></span>
+                      </label>
+
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8rem', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={productFormData.allowAccentColor}
+                          onChange={(e) => setProductFormData({ ...productFormData, allowAccentColor: e.target.checked })}
+                        />
+                        <span><strong>Zona 2: Color de Acentos / Bisel</strong></span>
+                      </label>
+
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8rem', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={productFormData.allowReliefColor}
+                          onChange={(e) => setProductFormData({ ...productFormData, allowReliefColor: e.target.checked })}
+                        />
+                        <span><strong>Zona 3: Color de Relieve / Texto 3D</strong></span>
+                      </label>
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
