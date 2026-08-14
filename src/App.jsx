@@ -14,10 +14,31 @@ import CheckoutView from './components/checkout/CheckoutView';
 import OrderTrackingView from './components/tracking/OrderTrackingView';
 import AdminDashboard from './components/admin/AdminDashboard';
 import CustomerProfileView from './components/profile/CustomerProfileView';
+import FloatingSocials from './components/common/FloatingSocials';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 
 function App() {
-  const { currentView, toasts, removeToast, isAuthModalOpen, setIsAuthModalOpen } = useApp();
+  const { currentView, navigateTo, toasts, removeToast, isAuthModalOpen, setIsAuthModalOpen } = useApp();
+
+  // URL Hash Synchronizer for dedicated /admin subpage support (#admin)
+  React.useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash.replace('#', '').toLowerCase();
+      if (hash === 'admin' || hash === 'taller') {
+        navigateTo('admin');
+      } else if (hash === 'colecciones') {
+        navigateTo('colecciones');
+      } else if (hash === 'empresas') {
+        navigateTo('empresas');
+      } else if (hash === 'eventos') {
+        navigateTo('eventos');
+      }
+    };
+
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, [navigateTo]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -44,6 +65,9 @@ function App() {
 
       {/* Slide-over Cart Drawer */}
       <CartSlideOver />
+
+      {/* Floating WhatsApp and Social Channels */}
+      {currentView !== 'admin' && <FloatingSocials />}
 
       {/* Authentication Modal with RBAC Role Switchers */}
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />

@@ -49,23 +49,27 @@ import {
   Box,
   Palette,
   FileUp,
-  Maximize2
+  Maximize2,
+  List,
+  Flame,
+  Scale,
+  Receipt,
+  Cpu,
+  PackageCheck,
+  Sliders,
+  HelpCircle,
+  Info,
+  Wrench,
+  ChevronRight,
+  SlidersHorizontal
 } from 'lucide-react';
 
 const KANBAN_STAGES = [
   { id: 'QUEUED', label: '1. En Cola', color: '#f59e0b', bg: '#fef3c7' },
   { id: 'SLICING', label: '2. Slicing G-Code', color: '#3b82f6', bg: '#eff6ff' },
   { id: 'PRINTING', label: '3. En Impresora 3D', color: '#176B87', bg: '#e0f2fe' },
-  { id: 'QUALITY_CONTROL', label: '4. Control de Calidad', color: '#8b5cf6', bg: '#f3e8ff' },
+  { id: 'QUALITY_CONTROL', label: '4. Control Calidad', color: '#8b5cf6', bg: '#f3e8ff' },
   { id: 'READY_TO_SHIP', label: '5. Listo para Envío', color: '#10b981', bg: '#ecfdf5' }
-];
-
-const PRINTERS_LIST = [
-  'Bambu Lab X1C #01',
-  'Bambu Lab X1C #02',
-  'Creality K1 Max #01',
-  'Creality K1 Max #02',
-  'Prusa MK4 #03'
 ];
 
 const AdminDashboard = () => {
@@ -76,7 +80,10 @@ const AdminDashboard = () => {
     setUserRole,
     productionOrders,
     updateOrderStatus,
+    updateOrderPriority,
+    updateOrderChannel,
     assignPrinter,
+    createManualOrder,
     filamentInventory,
     saveFilament,
     toggleBlockFilament,
@@ -87,6 +94,13 @@ const AdminDashboard = () => {
     isComboAvailable,
     getFilamentStockAlerts,
     updateFilamentStock,
+    printers,
+    savePrinter,
+    deletePrinter,
+    updatePrinterStatus,
+    operatingExpenses,
+    saveOperatingExpense,
+    deleteOperatingExpense,
     b2bQuotes,
     saveB2BQuote,
     products,
@@ -96,17 +110,23 @@ const AdminDashboard = () => {
     showToast
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState('kanban'); // kanban | inventory | quotes | metrics | products
+  // Active Main Navigation Tab
+  // 'production' | 'printers' | 'inventory' | 'finance' | 'costs' | 'products' | 'quotes'
+  const [activeTab, setActiveTab] = useState('production');
   const [staffPin, setStaffPin] = useState('');
 
-  // 1. Kanban Internal Comments & Order Inspection State
+  // 1. Production Line State (Kanban vs List View, Priorities & Filters)
+  const [productionViewMode, setProductionViewMode] = useState('kanban'); // 'kanban' | 'list'
+  const [priorityFilter, setPriorityFilter] = useState('ALL'); // 'ALL' | 'URGENT' | 'MEDIUM' | 'LOW'
+  const [channelFilter, setChannelFilter] = useState('ALL'); // 'ALL' | 'WEB_AUTO' | 'WHATSAPP' | 'INSTAGRAM' | 'B2B' | 'LOCAL'
+  const [orderSearchQuery, setOrderSearchQuery] = useState('');
   const [selectedOrderForNotes, setSelectedOrderForNotes] = useState(null);
   const [newCommentText, setNewCommentText] = useState('');
   const [orderNotesMap, setOrderNotesMap] = useState({});
 
   // 2. Image Retouch / Vectorization Inspector Modal State
   const [selectedOrderForImage, setSelectedOrderForImage] = useState(null);
-  const [retouchStatus, setRetouchStatus] = useState('READY'); // 'PENDING' | 'READY' | 'UNSUPPORTED'
+  const [retouchStatus, setRetouchStatus] = useState('READY');
 
   // 3. Multi-Channel Manual Order Creator Modal State
   const [isManualOrderModalOpen, setIsManualOrderModalOpen] = useState(false);
@@ -114,15 +134,44 @@ const AdminDashboard = () => {
     customerName: '',
     customerEmail: '',
     customerPhone: '',
-    channel: 'WHATSAPP', // 'WHATSAPP' | 'INSTAGRAM' | 'STORE' | 'PHONE'
-    productName: 'Llavero Corporativo Relieve 3D',
+    channel: 'WHATSAPP',
+    priority: 'MEDIUM',
+    productName: 'Llavero Tag 3D con Relieve',
     customText: '',
-    filament: 'Azul Océano Seda',
-    quantity: 50,
-    totalPrice: 2400
+    filament: 'Blanco Puro (#FAEEEB)',
+    filamentGrams: 40,
+    printTimeMins: 60,
+    packagingCost: 20,
+    shippingCostReal: 135,
+    total: 150
   });
 
-  // 4. Filament Inventory Full Management State
+  // 4. 3D Printer Fleet State & Modals
+  const [isPrinterModalOpen, setIsPrinterModalOpen] = useState(false);
+  const [editingPrinter, setEditingPrinter] = useState(null);
+  const [printerFormData, setPrinterFormData] = useState({
+    name: '',
+    model: 'Bambu Lab X1-Carbon',
+    nozzleSize: '0.4 mm Hardened Steel',
+    bedType: 'PEI Texturizado',
+    bedDimensions: '256 x 256 x 256 mm',
+    printHours: 0,
+    status: 'AVAILABLE'
+  });
+  const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
+  const [selectedPrinterForMaint, setSelectedPrinterForMaint] = useState(null);
+  const [maintenanceNotes, setMaintenanceNotes] = useState('');
+
+  // 5. Filament Inventory Modals (Technical Sheet, Tara Scale Calibration & Stock In)
+  const [isFilamentDetailsModalOpen, setIsFilamentDetailsModalOpen] = useState(false);
+  const [selectedFilamentDetails, setSelectedFilamentDetails] = useState(null);
+  const [isTaraCalibrationModalOpen, setIsTaraCalibrationModalOpen] = useState(false);
+  const [taraData, setTaraData] = useState({
+    filament: null,
+    grossWeight: 1000,
+    spoolTare: 220,
+    calculatedNet: 780
+  });
   const [isNewMaterialModalOpen, setIsNewMaterialModalOpen] = useState(false);
   const [newMaterialData, setNewMaterialData] = useState({
     name: '',
@@ -132,25 +181,31 @@ const AdminDashboard = () => {
     minAlertGrams: 400,
     costPerKg: 450,
     supplier: 'Polymaker México',
+    extrusionTemp: '205 - 225 °C',
+    bedTemp: '55 - 65 °C',
+    density: '1.24 g/cm³',
+    batchNumber: 'LOT-2026-08',
+    notes: 'Acabado brillante de seda ideal para relieve nítido',
     isBlocked: false,
     isArchived: false
   });
-  const [kardexHistory, setKardexHistory] = useState([
-    { id: 'k-1', date: '13/08/2026', materialName: 'Carbón Mate', type: 'ENTRADA', grams: 2000, reason: 'Compra Proveedor Lote #941' },
-    { id: 'k-2', date: '13/08/2026', materialName: 'Rojo Carmín', type: 'SALIDA', grams: 180, reason: 'Producción Orden #IDF-84920' },
-    { id: 'k-3', date: '12/08/2026', materialName: 'Plata Titanio', type: 'MERMA', grams: 45, reason: 'Ajuste de calibración de boquilla' }
-  ]);
   const [movementModal, setMovementModal] = useState({ isOpen: false, material: null, type: 'ENTRADA', grams: 1000, reason: '' });
 
-  // 5. Quotes Editor & Communication Modal State
+  // 6. Operating Expenses State & Modal
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [expenseFormData, setExpenseFormData] = useState({
+    category: 'PACKAGING', // 'PACKAGING' | 'SHIPPING' | 'ELECTRICITY' | 'SUPPLIES' | 'FIXED'
+    description: '',
+    amount: '',
+    date: new Date().toISOString().split('T')[0],
+    supplier: '',
+    recurring: 'Mensual'
+  });
+
+  // 7. Quotes & Products
   const [quotesList, setQuotesList] = useState(b2bQuotes);
   const [selectedQuoteForDetail, setSelectedQuoteForDetail] = useState(null);
   const [quoteSearchTerm, setQuoteSearchTerm] = useState('');
-
-  // 6. Metrics Date & Channel Filters State
-  const [metricsPeriod, setMetricsPeriod] = useState('MONTH'); // 'TODAY' | 'WEEK' | 'MONTH' | 'ALL'
-
-  // 7. Product Catalog & 3D Multi-Color Zone Configurator State
   const productsCatalog = products || PRODUCTS;
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -159,7 +214,7 @@ const AdminDashboard = () => {
     subcollection: 'hogar',
     basePrice: 180,
     description: '',
-    modelType: 'sphere', // keychain | trophy | sphere | car | cup | planter | custom_file
+    modelType: 'sphere',
     custom3DFileUrl: null,
     custom3DFileType: null,
     filamentGrams: 60,
@@ -169,9 +224,9 @@ const AdminDashboard = () => {
     allowReliefColor: true,
     allowCustomText: true,
     allowLogoUpload: true,
-    previewBaseColor: '#176B87',
-    previewAccentColor: '#D4AF37',
-    previewReliefColor: '#FFFFFF',
+    previewBaseColor: '#FFFFFF',
+    previewAccentColor: '#176B87',
+    previewReliefColor: '#0F172A',
     isActive: true,
     image2D: null
   });
@@ -191,12 +246,113 @@ const AdminDashboard = () => {
       };
       setUser(adminUser);
       setUserRole('ADMIN');
-      showToast('¡Acceso concedido al Taller 3D!', 'success');
+      showToast('¡Sesión de Taller y Administrador iniciada!', 'success');
     } else {
-      showToast('PIN de taller no válido', 'error');
+      showToast('PIN incorrecto. Intenta con "1234"', 'error');
     }
   };
 
+  // --- FILTERED PRODUCTION ORDERS ---
+  const filteredProductionOrders = useMemo(() => {
+    return productionOrders.filter((ord) => {
+      // Priority filter
+      if (priorityFilter !== 'ALL' && ord.priority !== priorityFilter) return false;
+      // Channel filter
+      if (channelFilter !== 'ALL' && ord.channel !== channelFilter) return false;
+      // Search query
+      if (orderSearchQuery.trim()) {
+        const query = orderSearchQuery.toLowerCase();
+        const matchesFolio = ord.orderNumber?.toLowerCase().includes(query);
+        const matchesClient = ord.customerName?.toLowerCase().includes(query);
+        const matchesProd = ord.productName?.toLowerCase().includes(query);
+        const matchesText = ord.customText?.toLowerCase().includes(query);
+        if (!matchesFolio && !matchesClient && !matchesProd && !matchesText) return false;
+      }
+      return true;
+    });
+  }, [productionOrders, priorityFilter, channelFilter, orderSearchQuery]);
+
+  // --- KANBAN STAGE TRANSITIONS ---
+  const handleMoveStage = (orderId, currentStage, direction) => {
+    const currentIndex = KANBAN_STAGES.findIndex((s) => s.id === currentStage);
+    if (currentIndex === -1) return;
+    const newIndex = direction === 'forward' ? currentIndex + 1 : currentIndex - 1;
+    if (newIndex >= 0 && newIndex < KANBAN_STAGES.length) {
+      const nextStage = KANBAN_STAGES[newIndex].id;
+      updateOrderStatus(orderId, nextStage);
+    }
+  };
+
+  // --- WHATSAPP NOTIFIER ---
+  const handleSendWhatsApp = (order, templateType) => {
+    const cleanPhone = (order.customerPhone || '526121234567').replace(/\D/g, '');
+    let msg = '';
+    if (templateType === 'PRODUCTION') {
+      msg = `¡Hola ${order.customerName}! 🛠️ Te informamos que tu pedido de impresión 3D #${order.orderNumber} (${order.productName}) ha comenzado su fabricación en nuestro taller IdeaForm. ¡Pronto te compartiremos fotos del resultado!`;
+    } else if (templateType === 'READY') {
+      msg = `¡Hola ${order.customerName}! ✨ Tu pedido #${order.orderNumber} ha superado el Control de Calidad con éxito y se encuentra empacado y listo para envío. ¡Muchas gracias por tu confianza en IdeaForm!`;
+    }
+    const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank');
+  };
+
+  // --- CALCULATIONS FOR FINANCIALS & REAL NET PROFIT ---
+  const financialMetrics = useMemo(() => {
+    const totalOrders = productionOrders.length;
+    const totalRevenue = productionOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const avgTicket = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+    // Channel breakdown
+    const channelCounts = {
+      WEB_AUTO: 0,
+      WHATSAPP: 0,
+      INSTAGRAM: 0,
+      B2B: 0,
+      LOCAL: 0
+    };
+    const channelRevenue = {
+      WEB_AUTO: 0,
+      WHATSAPP: 0,
+      INSTAGRAM: 0,
+      B2B: 0,
+      LOCAL: 0
+    };
+
+    productionOrders.forEach((o) => {
+      const ch = o.channel || 'WEB_AUTO';
+      if (channelCounts[ch] !== undefined) {
+        channelCounts[ch]++;
+        channelRevenue[ch] += Number(o.total) || 0;
+      }
+    });
+
+    // Expenses breakdown
+    const totalExpenses = (operatingExpenses || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const totalFilamentCost = productionOrders.reduce((sum, o) => sum + ((Number(o.filamentGrams) || 40) * 0.45), 0); // ~$0.45 MXN per gram
+    const totalPackagingCost = productionOrders.reduce((sum, o) => sum + (Number(o.packagingCost) || 20), 0);
+    const totalShippingCost = productionOrders.reduce((sum, o) => sum + (Number(o.shippingCostReal) || 135), 0);
+
+    const totalDirectAndOperatingCosts = totalExpenses + totalFilamentCost + totalPackagingCost;
+    const netProfit = totalRevenue - totalDirectAndOperatingCosts;
+    const netProfitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+
+    return {
+      totalOrders,
+      totalRevenue,
+      avgTicket,
+      channelCounts,
+      channelRevenue,
+      totalExpenses,
+      totalFilamentCost,
+      totalPackagingCost,
+      totalShippingCost,
+      totalDirectAndOperatingCosts,
+      netProfit,
+      netProfitMargin
+    };
+  }, [productionOrders, operatingExpenses]);
+
+  // Auth unlock screen
   if (!isAuthorized) {
     return (
       <div className="container" style={{ paddingTop: '5rem', paddingBottom: '5rem', maxWidth: '500px', textAlign: 'center' }}>
@@ -209,7 +365,7 @@ const AdminDashboard = () => {
             Panel de Control del Taller
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: '1.5', marginBottom: '1.75rem' }}>
-            Acceso restringido a operadores y administradores para gestión de granja 3D, catálogo e inventario.
+            Acceso restringido a operadores y administradores para gestión de línea de producción, parque 3D, catálogo e inventario.
           </p>
 
           <form onSubmit={handleStaffPinUnlock} style={{ marginBottom: '1.25rem' }}>
@@ -243,300 +399,44 @@ const AdminDashboard = () => {
     );
   }
 
-  // --- KANBAN FUNCTIONS (MOVE FORWARD / BACKWARD) ---
-  const handleMoveStage = (orderId, currentStage, direction) => {
-    const currentIndex = KANBAN_STAGES.findIndex((s) => s.id === currentStage);
-    if (currentIndex === -1) return;
-
-    const newIndex = direction === 'forward' ? currentIndex + 1 : currentIndex - 1;
-    if (newIndex >= 0 && newIndex < KANBAN_STAGES.length) {
-      const nextStage = KANBAN_STAGES[newIndex].id;
-      updateOrderStatus(orderId, nextStage);
-      showToast(`Orden movida a ${KANBAN_STAGES[newIndex].label}`, 'info');
-    }
-  };
-
-  const handleAddComment = (orderNumber) => {
-    if (!newCommentText.trim()) return;
-    const currentNotes = orderNotesMap[orderNumber] || [];
-    const newNote = {
-      id: Date.now(),
-      author: user?.firstName || 'Operador',
-      text: newCommentText.trim(),
-      timestamp: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
-    };
-    setOrderNotesMap({ ...orderNotesMap, [orderNumber]: [...currentNotes, newNote] });
-    setNewCommentText('');
-    showToast('Nota de taller registrada', 'success');
-  };
-
-  const handleSendWhatsApp = (order, templateType) => {
-    const cleanPhone = (order.customerPhone || '526121234567').replace(/\D/g, '');
-    let msg = '';
-
-    if (templateType === 'PRODUCTION') {
-      msg = `¡Hola ${order.customerName}! 🛠️ Te informamos que tu pedido de impresión 3D #${order.orderNumber} (${order.productName}) ha comenzado su fabricación en nuestro taller IdeaForm. ¡Pronto te enviaremos fotos del resultado!`;
-    } else if (templateType === 'IMAGE_ISSUE') {
-      msg = `Hola ${order.customerName}, te escribimos de IdeaForm respecto a tu pedido #${order.orderNumber}. Notamos un detalle en el archivo de logotipo que nos compartiste (requiere trazo mínimo de 0.8mm para el relieve 3D). ¿Podrías confirmarnos si deseas que nuestro equipo de diseño lo ajuste sin costo?`;
-    } else if (templateType === 'READY') {
-      msg = `¡Hola ${order.customerName}! ✨ Tu pedido #${order.orderNumber} ha superado el Control de Calidad con éxito y se encuentra empacado y listo para envío por DHL Express. ¡Muchas gracias por tu confianza en IdeaForm!`;
-    }
-
-    const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
-    window.open(waUrl, '_blank');
-  };
-
-  // --- MULTI-CHANNEL ORDER CREATOR ---
-  const handleCreateManualOrder = (e) => {
-    e.preventDefault();
-    const newOrd = {
-      id: `ord-man-${Date.now()}`,
-      orderNumber: generateFolio('IDF-MAN'),
-      customerName: manualOrderData.customerName || 'Cliente Mostrador',
-      customerEmail: manualOrderData.customerEmail || 'cliente@whatsapp.com',
-      customerPhone: manualOrderData.customerPhone || '55 1234 5678',
-      channel: manualOrderData.channel,
-      productName: manualOrderData.productName,
-      customText: manualOrderData.customText || 'IdeaForm',
-      filament: manualOrderData.filament,
-      filamentGrams: 50 * manualOrderData.quantity,
-      printTimeMins: 45 * manualOrderData.quantity,
-      status: 'QUEUED',
-      printerAssigned: null,
-      date: new Date().toLocaleDateString('es-MX'),
-      total: manualOrderData.totalPrice
-    };
-
-    productionOrders.unshift(newOrd);
-    setIsManualOrderModalOpen(false);
-    showToast(`¡Pedido #${newOrd.orderNumber} registrado desde ${manualOrderData.channel}!`, 'success');
-  };
-
-  // --- FILAMENT INVENTORY MANAGEMENT ---
-  const handleAddNewMaterial = (e) => {
-    e.preventDefault();
-    const newMat = {
-      id: `mat-${Date.now()}`,
-      ...newMaterialData
-    };
-    saveFilament(newMat);
-    setIsNewMaterialModalOpen(false);
-    setKardexHistory([
-      {
-        id: `k-${Date.now()}`,
-        date: new Date().toLocaleDateString('es-MX'),
-        materialName: newMat.name,
-        type: 'ENTRADA',
-        grams: newMat.stockGrams,
-        reason: `Alta inicial de nuevo filamento (${newMat.supplier})`
-      },
-      ...kardexHistory
-    ]);
-  };
-
-  const handleApplyMovement = (e) => {
-    e.preventDefault();
-    const { material, type, grams, reason } = movementModal;
-    recordStockMovement(
-      material.id,
-      type,
-      Number(grams),
-      reason || (type === 'ENTRADA' ? 'Reabastecimiento de carrete' : 'Salida de taller / Merma')
-    );
-    setKardexHistory([
-      {
-        id: `k-${Date.now()}`,
-        date: new Date().toLocaleDateString('es-MX'),
-        materialName: material.name,
-        type: type,
-        grams: Number(grams),
-        reason: reason || (type === 'ENTRADA' ? 'Reabastecimiento de carrete' : 'Salida de taller')
-      },
-      ...kardexHistory
-    ]);
-    setMovementModal({ isOpen: false, material: null, type: 'ENTRADA', grams: 1000, reason: '' });
-  };
-
-  // --- QUOTES MANAGEMENT & COMMUNICATION ---
-  const handleUpdateQuote = (updatedQuote) => {
-    const updated = quotesList.map((q) => (q.quoteNumber === updatedQuote.quoteNumber ? updatedQuote : q));
-    setQuotesList(updated);
-    setSelectedQuoteForDetail(updatedQuote);
-    showToast('Cotización actualizada y guardada', 'success');
-  };
-
-  const handleSendQuoteWhatsApp = (quote) => {
-    const msg = `Hola ${quote.contactName || quote.companyName}, te compartimos la cotización formal de IdeaForm #${quote.quoteNumber} por un total de ${formatCurrency(quote.finalTotal || quote.totalAmount)} con descuento por volumen aplicado. ¡Quedamos atentos a tus comentarios!`;
-    window.open(`https://wa.me/526121234567?text=${encodeURIComponent(msg)}`, '_blank');
-  };
-
-  // --- PRODUCT CATALOG & DIRECT 2D/3D FILE UPLOADER ---
-  const handleOpenNewProductModal = () => {
-    setEditingProduct(null);
-    setProductFormData({
-      name: '',
-      subcollection: 'hogar',
-      basePrice: 180,
-      description: 'Pieza de manufactura aditiva con zonas de color personalizables.',
-      modelType: 'sphere',
-      custom3DFileUrl: null,
-      custom3DFileType: null,
-      filamentGrams: 55,
-      printTimeMins: 110,
-      colorMode: 'FREE', // 'FREE' (libre por capas) | 'PRESETS' (combos fijos opc 1, opc 2...)
-      colorPresets: DEFAULT_COLOR_PRESETS,
-      allowBaseColor: true,
-      allowAccentColor: true,
-      allowReliefColor: true,
-      allowCustomText: true,
-      allowLogoUpload: true,
-      previewBaseColor: '#176B87',
-      previewAccentColor: '#D4AF37',
-      previewReliefColor: '#FFFFFF',
-      isActive: true,
-      image2D: null
-    });
-    setIsProductModalOpen(true);
-  };
-
-  const handleEditProduct = (prod) => {
-    setEditingProduct(prod);
-    setProductFormData({
-      name: prod.name,
-      subcollection: prod.subcollection || 'hogar',
-      basePrice: prod.basePrice,
-      description: prod.description || '',
-      modelType: prod.modelType || 'keychain',
-      custom3DFileUrl: prod.custom3DFileUrl || null,
-      custom3DFileType: prod.custom3DFileType || null,
-      filamentGrams: prod.filamentGrams || 50,
-      printTimeMins: prod.printTimeMins || 100,
-      colorMode: prod.colorMode || (prod.colorPresets?.length > 0 ? 'PRESETS' : 'FREE'),
-      colorPresets: prod.colorPresets || DEFAULT_COLOR_PRESETS,
-      allowBaseColor: prod.allowBaseColor !== false,
-      allowAccentColor: prod.allowAccentColor !== false,
-      allowReliefColor: prod.allowReliefColor !== false,
-      allowCustomText: prod.isCustomizable !== false,
-      allowLogoUpload: prod.allowLogoUpload !== false,
-      previewBaseColor: prod.previewBaseColor || '#176B87',
-      previewAccentColor: prod.previewAccentColor || '#D4AF37',
-      previewReliefColor: prod.previewReliefColor || '#FFFFFF',
-      isActive: prod.isActive !== false,
-      image2D: prod.image || null
-    });
-    setIsProductModalOpen(true);
-  };
-
-  // 2D Image Reader (Converts to Data URL for instant rendering & offline persistence)
-  const handle2DImageChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setProductFormData((prev) => ({
-          ...prev,
-          image2D: event.target.result
-        }));
-        showToast(`Imagen 2D cargada: ${file.name}`, 'success');
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // 3D Model File Reader (.GLB, .GLTF, .STL)
-  const handle3DModelFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const ext = file.name.split('.').pop().toLowerCase();
-      if (!['glb', 'gltf', 'stl'].includes(ext)) {
-        showToast('Formato 3D no compatible. Usa .GLB, .GLTF o .STL', 'error');
-        return;
-      }
-
-      const fileUrl = URL.createObjectURL(file);
-      setProductFormData((prev) => ({
-        ...prev,
-        modelType: 'custom_file',
-        custom3DFileUrl: fileUrl,
-        custom3DFileType: ext
-      }));
-      showToast(`¡Modelo 3D (${ext.toUpperCase()}) cargado en visor!`, 'success');
-    }
-  };
-
-  const handleSaveProduct = (e) => {
-    e.preventDefault();
-    const productToSave = {
-      id: editingProduct ? editingProduct.id : `prod-${Date.now()}`,
-      name: productFormData.name,
-      categoryName: SUBCOLLECTIONS.find((s) => s.id === productFormData.subcollection)?.name || 'Colección General',
-      subcollection: productFormData.subcollection,
-      basePrice: Number(productFormData.basePrice),
-      description: productFormData.description,
-      modelType: productFormData.modelType,
-      custom3DFileUrl: productFormData.custom3DFileUrl,
-      custom3DFileType: productFormData.custom3DFileType,
-      filamentGrams: Number(productFormData.filamentGrams),
-      printTimeMins: Number(productFormData.printTimeMins),
-      allowBaseColor: productFormData.allowBaseColor,
-      allowAccentColor: productFormData.allowAccentColor,
-      allowReliefColor: productFormData.allowReliefColor,
-      isCustomizable: productFormData.allowCustomText,
-      allowLogoUpload: productFormData.allowLogoUpload,
-      isActive: productFormData.isActive,
-      image: productFormData.image2D || (editingProduct ? editingProduct.image : null)
-    };
-
-    saveProduct(productToSave);
-    showToast(`¡Producto "${productToSave.name}" guardado y publicado en la tienda!`, 'success');
-    setIsProductModalOpen(false);
-  };
-
-  const handleDeleteProduct = (id, name) => {
-    if (window.confirm(`¿Estás seguro de eliminar "${name}" del catálogo?`)) {
-      deleteProduct(id);
-      showToast(`Producto "${name}" eliminado`, 'info');
-    }
-  };
-
-  // --- METRICS CALCULATION ---
-  const totalRevenue = productionOrders.reduce((sum, o) => sum + (o.total || 0), 0);
-  const totalGramsConsumed = productionOrders.reduce((sum, o) => sum + (o.filamentGrams || 45), 0);
-  const totalMachineHours = productionOrders.reduce((sum, o) => sum + (o.printTimeMins || 60), 0) / 60;
-  const activePrintersCount = productionOrders.filter((o) => o.status === 'PRINTING').length;
-
   return (
-    <div style={{ background: '#f8fafc', minHeight: '90vh', paddingBottom: '5rem' }}>
+    <div style={{ background: '#f8fafc', minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       
-      {/* Top Admin Header */}
-      <div style={{ background: '#0F172A', color: '#ffffff', padding: '1.25rem 0', borderBottom: '1px solid #334155' }}>
+      {/* Top Banner: Workshop Workspace Status */}
+      <div style={{ background: '#0F172A', color: '#ffffff', padding: '1rem 0', borderBottom: '1px solid #1e293b' }}>
         <div className="container" style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <IdeaFormLogo size="small" lightMode={true} showTagline={false} />
-            <span style={{ height: '24px', width: '1px', background: '#334155' }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ background: '#176B87', color: '#ffffff', fontSize: '0.75rem', fontWeight: '800', padding: '0.25rem 0.65rem', borderRadius: 'var(--radius-full)' }}>
-                TALLER 3D ERP
-              </span>
-              <span style={{ fontSize: '0.95rem', fontWeight: '700', color: '#e2e8f0' }}>
-                Centro de Operaciones & Manufactura
-              </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <div style={{ background: '#176B87', padding: '0.45rem', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Wrench size={20} color="#ffffff" />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <h1 style={{ fontSize: '1.15rem', fontWeight: '800', margin: 0, color: '#ffffff' }}>
+                  Taller & Administración IdeaForm
+                </h1>
+                <span style={{ background: '#10b981', color: '#ffffff', fontSize: '0.65rem', fontWeight: '800', padding: '0.15rem 0.45rem', borderRadius: 'var(--radius-full)' }}>
+                  EN LÍNEA
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: '#94a3b8', marginTop: '0.15rem' }}>
+                Operador: <strong>{user?.firstName || 'Ingeniero'}</strong> ({userRole}) | Parque de Impresión 3D Activo
+              </p>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
             <button
-              className="btn btn-primary btn-sm"
               onClick={() => setIsManualOrderModalOpen(true)}
-              style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+              className="btn btn-sm"
+              style={{ background: '#10b981', color: '#ffffff', border: 'none', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
             >
-              <Plus size={16} />
-              <span>+ Nuevo Pedido Multicanal</span>
+              <Plus size={14} />
+              <span>+ Nuevo Pedido Manual</span>
             </button>
 
             <button
-              className="btn btn-secondary btn-sm"
               onClick={() => navigateTo('home')}
+              className="btn btn-secondary btn-sm"
               style={{ color: '#ffffff', borderColor: '#475569', background: 'rgba(255,255,255,0.05)' }}
             >
               Ir a la Tienda
@@ -545,113 +445,161 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Navigation Sub-Header Tabs */}
-      <div style={{ background: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '0.75rem 0' }}>
-        <div className="container" style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+      {/* Main Tab Navigation Bar */}
+      <div style={{ background: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '0.65rem 0', position: 'sticky', top: 0, zIndex: 90 }}>
+        <div className="container" style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', gap: '0.4rem', flexWrap: 'wrap', overflowX: 'auto' }}>
+          
+          {/* 1. Línea de Producción */}
           <button
-            onClick={() => setActiveTab('kanban')}
+            onClick={() => setActiveTab('production')}
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.6rem 1.15rem',
+              gap: '0.45rem',
+              padding: '0.55rem 1rem',
               borderRadius: 'var(--radius-md)',
               border: 'none',
-              background: activeTab === 'kanban' ? 'rgba(23, 107, 135, 0.12)' : 'transparent',
-              color: activeTab === 'kanban' ? '#176B87' : '#64748b',
+              background: activeTab === 'production' ? 'rgba(23, 107, 135, 0.12)' : 'transparent',
+              color: activeTab === 'production' ? '#176B87' : '#64748b',
               fontWeight: '800',
-              fontSize: '0.88rem',
+              fontSize: '0.84rem',
               cursor: 'pointer'
             }}
           >
-            <Layers size={17} />
-            <span>1. Tablero Kanban ({productionOrders.length})</span>
+            <Layers size={16} />
+            <span>1. Línea de Producción ({productionOrders.length})</span>
           </button>
 
+          {/* 2. Parque de Impresoras 3D */}
+          <button
+            onClick={() => setActiveTab('printers')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              padding: '0.55rem 1rem',
+              borderRadius: 'var(--radius-md)',
+              border: 'none',
+              background: activeTab === 'printers' ? 'rgba(23, 107, 135, 0.12)' : 'transparent',
+              color: activeTab === 'printers' ? '#176B87' : '#64748b',
+              fontWeight: '800',
+              fontSize: '0.84rem',
+              cursor: 'pointer'
+            }}
+          >
+            <Printer size={16} />
+            <span>2. Parque de Impresoras ({printers.length})</span>
+          </button>
+
+          {/* 3. Inventario de Filamentos */}
           <button
             onClick={() => setActiveTab('inventory')}
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.6rem 1.15rem',
+              gap: '0.45rem',
+              padding: '0.55rem 1rem',
               borderRadius: 'var(--radius-md)',
               border: 'none',
               background: activeTab === 'inventory' ? 'rgba(23, 107, 135, 0.12)' : 'transparent',
               color: activeTab === 'inventory' ? '#176B87' : '#64748b',
               fontWeight: '800',
-              fontSize: '0.88rem',
+              fontSize: '0.84rem',
               cursor: 'pointer'
             }}
           >
-            <Activity size={17} />
-            <span>2. Inventario de Filamentos ({filamentInventory.length})</span>
+            <Activity size={16} />
+            <span>3. Inventario de Filamentos ({filamentInventory.length})</span>
           </button>
 
+          {/* 4. Analítica Financiera */}
           <button
-            onClick={() => setActiveTab('quotes')}
+            onClick={() => setActiveTab('finance')}
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.6rem 1.15rem',
+              gap: '0.45rem',
+              padding: '0.55rem 1rem',
               borderRadius: 'var(--radius-md)',
               border: 'none',
-              background: activeTab === 'quotes' ? 'rgba(23, 107, 135, 0.12)' : 'transparent',
-              color: activeTab === 'quotes' ? '#176B87' : '#64748b',
+              background: activeTab === 'finance' ? 'rgba(23, 107, 135, 0.12)' : 'transparent',
+              color: activeTab === 'finance' ? '#176B87' : '#64748b',
               fontWeight: '800',
-              fontSize: '0.88rem',
+              fontSize: '0.84rem',
               cursor: 'pointer'
             }}
           >
-            <FileSpreadsheet size={17} />
-            <span>3. Gestor de Cotizaciones B2B ({quotesList.length})</span>
+            <BarChart3 size={16} />
+            <span>4. Analítica Financiera & Canales</span>
           </button>
 
+          {/* 5. Costos & Gastos de Operación */}
           <button
-            onClick={() => setActiveTab('metrics')}
+            onClick={() => setActiveTab('costs')}
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.6rem 1.15rem',
+              gap: '0.45rem',
+              padding: '0.55rem 1rem',
               borderRadius: 'var(--radius-md)',
               border: 'none',
-              background: activeTab === 'metrics' ? 'rgba(23, 107, 135, 0.12)' : 'transparent',
-              color: activeTab === 'metrics' ? '#176B87' : '#64748b',
+              background: activeTab === 'costs' ? 'rgba(23, 107, 135, 0.12)' : 'transparent',
+              color: activeTab === 'costs' ? '#176B87' : '#64748b',
               fontWeight: '800',
-              fontSize: '0.88rem',
+              fontSize: '0.84rem',
               cursor: 'pointer'
             }}
           >
-            <BarChart3 size={17} />
-            <span>4. Métricas & Analítica</span>
+            <Receipt size={16} />
+            <span>5. Costos & Utilidad Neta</span>
           </button>
 
+          {/* 6. Catálogo de Productos */}
           <button
             onClick={() => setActiveTab('products')}
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.6rem 1.15rem',
+              gap: '0.45rem',
+              padding: '0.55rem 1rem',
               borderRadius: 'var(--radius-md)',
               border: 'none',
               background: activeTab === 'products' ? 'rgba(23, 107, 135, 0.12)' : 'transparent',
               color: activeTab === 'products' ? '#176B87' : '#64748b',
               fontWeight: '800',
-              fontSize: '0.88rem',
+              fontSize: '0.84rem',
               cursor: 'pointer'
             }}
           >
-            <Tag size={17} />
-            <span>5. Catálogo & Archivos 2D/3D ({productsCatalog.length})</span>
+            <Tag size={16} />
+            <span>6. Catálogo de Productos ({productsCatalog.length})</span>
+          </button>
+
+          {/* 7. Cotizaciones B2B */}
+          <button
+            onClick={() => setActiveTab('quotes')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              padding: '0.55rem 1rem',
+              borderRadius: 'var(--radius-md)',
+              border: 'none',
+              background: activeTab === 'quotes' ? 'rgba(23, 107, 135, 0.12)' : 'transparent',
+              color: activeTab === 'quotes' ? '#176B87' : '#64748b',
+              fontWeight: '800',
+              fontSize: '0.84rem',
+              cursor: 'pointer'
+            }}
+          >
+            <FileSpreadsheet size={16} />
+            <span>7. Cotizaciones B2B ({quotesList.length})</span>
           </button>
         </div>
       </div>
 
       <div className="container" style={{ maxWidth: '1280px', margin: '0 auto', paddingTop: '1.5rem', paddingBottom: '4rem' }}>
-        
+
         {/* Real-Time Stock & Filament Alert Notification Banner for Editor */}
         {(() => {
           const alerts = getFilamentStockAlerts();
@@ -664,8 +612,8 @@ const AdminDashboard = () => {
                 background: '#fff1f2',
                 border: '1px solid #fecaca',
                 borderRadius: 'var(--radius-lg)',
-                padding: '1rem 1.25rem',
-                marginBottom: '1.75rem',
+                padding: '0.85rem 1.25rem',
+                marginBottom: '1.5rem',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -675,23 +623,18 @@ const AdminDashboard = () => {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <AlertTriangle color="#e11d48" size={22} />
-                <div style={{ fontSize: '0.85rem', color: '#9f1239' }}>
-                  <strong style={{ fontSize: '0.9rem' }}>Centro de Notificaciones del Editor:</strong>
-                  <div style={{ marginTop: '0.2rem', lineHeight: '1.4' }}>
+                <AlertTriangle color="#e11d48" size={20} />
+                <div style={{ fontSize: '0.82rem', color: '#9f1239' }}>
+                  <strong style={{ fontSize: '0.88rem' }}>Alertas de Filamento en Taller:</strong>
+                  <div style={{ marginTop: '0.15rem' }}>
                     {alerts.outOfStock.length > 0 && (
                       <span style={{ fontWeight: '800', color: '#be123c', marginRight: '0.75rem' }}>
-                        🔴 {alerts.outOfStock.length} Filamento(s) AGOTADOS ({alerts.outOfStock.map((f) => f.name).join(', ')}). Las opciones ligadas se desactivaron automáticamente.
+                        🔴 {alerts.outOfStock.length} Agotados ({alerts.outOfStock.map((f) => f.name).join(', ')}).
                       </span>
                     )}
                     {alerts.lowStock.length > 0 && (
                       <span style={{ color: '#b45309', fontWeight: '700', marginRight: '0.75rem' }}>
-                        🟠 {alerts.lowStock.length} Filamento(s) en STOCK BAJO ({alerts.lowStock.map((f) => `${f.name}: ${f.stockGrams}g`).join(', ')}).
-                      </span>
-                    )}
-                    {alerts.blocked.length > 0 && (
-                      <span style={{ color: '#475569', fontWeight: '700' }}>
-                        🚫 {alerts.blocked.length} Filamento(s) Bloqueados ({alerts.blocked.map((f) => f.name).join(', ')}).
+                        🟠 {alerts.lowStock.length} Stock Bajo ({alerts.lowStock.map((f) => `${f.name}: ${f.stockGrams}g`).join(', ')}).
                       </span>
                     )}
                   </div>
@@ -701,201 +644,641 @@ const AdminDashboard = () => {
               <button
                 onClick={() => setActiveTab('inventory')}
                 className="btn btn-sm"
-                style={{ background: '#e11d48', color: '#ffffff', border: 'none', fontWeight: '800', padding: '0.45rem 0.9rem' }}
+                style={{ background: '#e11d48', color: '#ffffff', border: 'none', fontWeight: '800', padding: '0.35rem 0.75rem', fontSize: '0.75rem' }}
               >
-                Gestionar Stock
+                Reabastecer
               </button>
             </div>
           );
         })()}
 
         {/* =========================================================================
-            TAB 1: TABLERO KANBAN DE MANUFACTURA
+            TAB 1: LÍNEA DE PRODUCCIÓN (Vistas Kanban & Lista, Prioridades y Canales)
            ========================================================================= */}
-        {activeTab === 'kanban' && (
+        {activeTab === 'production' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+            {/* Header & Controls */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
-                <h2 style={{ fontSize: '1.45rem', fontWeight: '800', color: '#0F172A', margin: 0 }}>
-                  Línea de Producción & Fabricación 3D
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0F172A', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span>Línea de Producción</span>
+                  <span style={{ fontSize: '0.75rem', background: '#e0f2fe', color: '#176B87', padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-full)' }}>
+                    {filteredProductionOrders.length} órdenes activas
+                  </span>
                 </h2>
-                <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0, marginTop: '0.2rem' }}>
-                  Controla el avance por etapas, retrocede órdenes por incidencias y contacta al cliente vía WhatsApp.
+                <p style={{ color: '#64748b', fontSize: '0.82rem', margin: 0, marginTop: '0.15rem' }}>
+                  Administra el flujo de manufactura aditiva, prioridades operativas y canal de venta de cada pedido.
                 </p>
               </div>
 
-              {/* Granja 3D Telemetría */}
-              <div style={{ display: 'flex', gap: '1rem', background: '#ffffff', padding: '0.65rem 1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '0.82rem' }}>
-                  <span style={{ color: '#64748b' }}>Impresoras Activas: </span>
-                  <strong style={{ color: '#10b981' }}>{activePrintersCount} / {PRINTERS_LIST.length}</strong>
-                </div>
-                <div style={{ fontSize: '0.82rem', borderLeft: '1px solid #e2e8f0', paddingLeft: '1rem' }}>
-                  <span style={{ color: '#64748b' }}>Filamento Estimado: </span>
-                  <strong style={{ color: '#176B87' }}>{formatGrams(totalGramsConsumed)}</strong>
-                </div>
+              {/* View Mode Switcher: Kanban vs List */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#ffffff', padding: '0.35rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1' }}>
+                <button
+                  onClick={() => setProductionViewMode('kanban')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.4rem 0.85rem',
+                    borderRadius: 'var(--radius-sm)',
+                    border: 'none',
+                    background: productionViewMode === 'kanban' ? '#176B87' : 'transparent',
+                    color: productionViewMode === 'kanban' ? '#ffffff' : '#475569',
+                    fontWeight: '700',
+                    fontSize: '0.78rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Layers size={14} />
+                  <span>Tablero Kanban</span>
+                </button>
+
+                <button
+                  onClick={() => setProductionViewMode('list')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.4rem 0.85rem',
+                    borderRadius: 'var(--radius-sm)',
+                    border: 'none',
+                    background: productionViewMode === 'list' ? '#176B87' : 'transparent',
+                    color: productionViewMode === 'list' ? '#ffffff' : '#475569',
+                    fontWeight: '700',
+                    fontSize: '0.78rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <List size={14} />
+                  <span>Vista Lista / Tabla</span>
+                </button>
               </div>
             </div>
 
-            {/* Kanban Columns Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', alignItems: 'start' }} className="kanban-grid">
-              {KANBAN_STAGES.map((stage) => {
-                const stageOrders = productionOrders.filter((o) => o.status === stage.id);
+            {/* Filters Bar: Search, Priority Filter, Channel Filter */}
+            <div style={{ background: '#ffffff', padding: '0.85rem 1rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', marginBottom: '1.25rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+              {/* Search input */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f8fafc', padding: '0.45rem 0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', width: '280px' }}>
+                <Search size={15} color="#94a3b8" />
+                <input
+                  type="text"
+                  placeholder="Buscar por folio, cliente, texto grabado..."
+                  value={orderSearchQuery}
+                  onChange={(e) => setOrderSearchQuery(e.target.value)}
+                  style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '0.82rem', width: '100%' }}
+                />
+              </div>
+
+              {/* Priority Filter */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: '700', color: '#64748b' }}>Prioridad:</span>
+                {['ALL', 'URGENT', 'MEDIUM', 'LOW'].map((p) => {
+                  const labels = { ALL: 'Todas', URGENT: '🔴 Urgente', MEDIUM: '🟡 Medio', LOW: '🟢 Bajo' };
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => setPriorityFilter(p)}
+                      style={{
+                        padding: '0.35rem 0.7rem',
+                        borderRadius: 'var(--radius-full)',
+                        border: priorityFilter === p ? '1px solid #176B87' : '1px solid #e2e8f0',
+                        background: priorityFilter === p ? '#e0f2fe' : '#ffffff',
+                        color: priorityFilter === p ? '#176B87' : '#64748b',
+                        fontSize: '0.75rem',
+                        fontWeight: '700',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {labels[p]}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Channel Filter */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: '700', color: '#64748b' }}>Origen:</span>
+                <select
+                  value={channelFilter}
+                  onChange={(e) => setChannelFilter(e.target.value)}
+                  style={{
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.78rem',
+                    fontWeight: '700',
+                    background: '#ffffff',
+                    color: '#0F172A'
+                  }}
+                >
+                  <option value="ALL">Todos los Canales</option>
+                  <option value="WEB_AUTO">🌐 Web Automático</option>
+                  <option value="WHATSAPP">💬 WhatsApp Directo</option>
+                  <option value="INSTAGRAM">📸 Instagram DM</option>
+                  <option value="B2B">🏢 B2B Corporativo</option>
+                  <option value="LOCAL">🏬 Taller / Local</option>
+                </select>
+              </div>
+            </div>
+
+            {/* VIEW 1: KANBAN BOARD */}
+            {productionViewMode === 'kanban' && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', alignItems: 'start' }} className="kanban-grid">
+                {KANBAN_STAGES.map((stage) => {
+                  const stageOrders = filteredProductionOrders.filter((o) => o.status === stage.id);
+
+                  return (
+                    <div
+                      key={stage.id}
+                      style={{
+                        background: '#ffffff',
+                        borderRadius: 'var(--radius-lg)',
+                        border: '1px solid #e2e8f0',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        minHeight: '580px',
+                        boxShadow: 'var(--shadow-sm)'
+                      }}
+                    >
+                      {/* Column Header */}
+                      <div style={{ padding: '0.85rem 1rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: stage.bg, borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0' }}>
+                        <span style={{ fontSize: '0.82rem', fontWeight: '800', color: stage.color }}>
+                          {stage.label}
+                        </span>
+                        <span style={{ background: '#ffffff', color: stage.color, fontWeight: '800', fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)', border: '1px solid rgba(0,0,0,0.06)' }}>
+                          {stageOrders.length}
+                        </span>
+                      </div>
+
+                      {/* Orders Cards */}
+                      <div style={{ padding: '0.65rem', display: 'flex', flexDirection: 'column', gap: '0.65rem', flex: 1, overflowY: 'auto' }}>
+                        {stageOrders.map((ord) => {
+                          const priorityBadge = ord.priority === 'URGENT'
+                            ? { label: 'URGENTE', bg: '#fee2e2', color: '#dc2626', icon: Flame }
+                            : ord.priority === 'LOW'
+                            ? { label: 'BAJO', bg: '#f0fdf4', color: '#16a34a', icon: Clock }
+                            : { label: 'MEDIO', bg: '#fef3c7', color: '#d97706', icon: Activity };
+                          const IconComp = priorityBadge.icon;
+
+                          return (
+                            <div
+                              key={ord.id}
+                              style={{
+                                background: '#ffffff',
+                                border: ord.priority === 'URGENT' ? '1.5px solid #f87171' : '1px solid #e2e8f0',
+                                borderRadius: 'var(--radius-md)',
+                                padding: '0.85rem',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '0.5rem'
+                              }}
+                            >
+                              {/* Card Header: Order #, Priority & Channel */}
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div>
+                                  <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.85rem' }}>
+                                    #{ord.orderNumber}
+                                  </div>
+                                  <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{ord.customerName}</div>
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
+                                  {/* Priority tag selector */}
+                                  <select
+                                    value={ord.priority || 'MEDIUM'}
+                                    onChange={(e) => updateOrderPriority(ord.id, e.target.value)}
+                                    style={{
+                                      fontSize: '0.65rem',
+                                      fontWeight: '800',
+                                      padding: '0.15rem 0.35rem',
+                                      borderRadius: '4px',
+                                      background: priorityBadge.bg,
+                                      color: priorityBadge.color,
+                                      border: 'none',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    <option value="URGENT">🔴 Urgente</option>
+                                    <option value="MEDIUM">🟡 Medio</option>
+                                    <option value="LOW">🟢 Bajo</option>
+                                  </select>
+
+                                  <span style={{ fontSize: '0.62rem', fontWeight: '700', padding: '0.1rem 0.35rem', borderRadius: '3px', background: '#f1f5f9', color: '#475569' }}>
+                                    {ord.channel === 'WEB_AUTO' ? '🌐 Web' : ord.channel === 'WHATSAPP' ? '💬 WhatsApp' : ord.channel === 'INSTAGRAM' ? '📸 IG' : ord.channel === 'B2B' ? '🏢 B2B' : '🏬 Local'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Product & Custom Engraving Info */}
+                              <div style={{ background: '#f8fafc', padding: '0.45rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem' }}>
+                                <div style={{ fontWeight: '700', color: '#0F172A' }}>{ord.productName}</div>
+                                {ord.customText && (
+                                  <div style={{ color: '#176B87', fontWeight: '800', marginTop: '0.15rem' }}>
+                                    Grabado: "{ord.customText}"
+                                  </div>
+                                )}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', fontSize: '0.7rem', marginTop: '0.3rem' }}>
+                                  <span>{ord.filamentGrams}g</span>
+                                  <span>{ord.printTimeMins} min</span>
+                                  <strong style={{ color: '#0F172A' }}>{formatCurrency(ord.total)}</strong>
+                                </div>
+                              </div>
+
+                              {/* Assigned Printer Selection */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                <Printer size={13} color="#64748b" />
+                                <select
+                                  value={ord.assignedPrinter || ''}
+                                  onChange={(e) => assignPrinter(ord.id, e.target.value)}
+                                  style={{
+                                    flex: 1,
+                                    fontSize: '0.72rem',
+                                    padding: '0.25rem 0.4rem',
+                                    borderRadius: '4px',
+                                    border: '1px solid #cbd5e1',
+                                    background: '#ffffff'
+                                  }}
+                                >
+                                  <option value="">-- Sin Asignar --</option>
+                                  {printers.map((p) => (
+                                    <option key={p.id} value={p.name}>
+                                      {p.name} ({p.status})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {/* Action Buttons: WhatsApp & Move Stage */}
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.35rem', borderTop: '1px solid #f1f5f9' }}>
+                                <button
+                                  onClick={() => handleSendWhatsApp(ord, stage.id === 'READY_TO_SHIP' ? 'READY' : 'PRODUCTION')}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.25rem',
+                                    background: '#dcfce7',
+                                    color: '#15803d',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    padding: '0.25rem 0.5rem',
+                                    fontSize: '0.68rem',
+                                    fontWeight: '700',
+                                    cursor: 'pointer'
+                                  }}
+                                  title="Notificar avance al cliente por WhatsApp"
+                                >
+                                  <MessageCircle size={12} />
+                                  <span>WhatsApp</span>
+                                </button>
+
+                                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                  {stage.id !== 'QUEUED' && (
+                                    <button
+                                      onClick={() => handleMoveStage(ord.id, stage.id, 'backward')}
+                                      style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '4px', padding: '0.25rem 0.45rem', cursor: 'pointer' }}
+                                      title="Retroceder etapa"
+                                    >
+                                      <ArrowLeft size={12} />
+                                    </button>
+                                  )}
+                                  {stage.id !== 'READY_TO_SHIP' && (
+                                    <button
+                                      onClick={() => handleMoveStage(ord.id, stage.id, 'forward')}
+                                      style={{ background: '#176B87', color: '#fff', border: 'none', borderRadius: '4px', padding: '0.25rem 0.5rem', cursor: 'pointer' }}
+                                      title="Avanzar etapa"
+                                    >
+                                      <ArrowRight size={12} />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {stageOrders.length === 0 && (
+                          <div style={{ textAlign: 'center', padding: '2rem 1rem', color: '#94a3b8', fontSize: '0.78rem' }}>
+                            Sin órdenes en esta etapa
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* VIEW 2: HIGH-DENSITY OPERATIONAL LIST / TABLE */}
+            {productionViewMode === 'list' && (
+              <div className="card card-elevated" style={{ background: '#ffffff', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569', fontWeight: '800' }}>
+                        <th style={{ padding: '0.75rem 1rem' }}>Folio</th>
+                        <th style={{ padding: '0.75rem 1rem' }}>Cliente</th>
+                        <th style={{ padding: '0.75rem 1rem' }}>Origen</th>
+                        <th style={{ padding: '0.75rem 1rem' }}>Producto & Grabado</th>
+                        <th style={{ padding: '0.75rem 1rem' }}>Filamento</th>
+                        <th style={{ padding: '0.75rem 1rem' }}>Prioridad</th>
+                        <th style={{ padding: '0.75rem 1rem' }}>Impresora</th>
+                        <th style={{ padding: '0.75rem 1rem' }}>Estado</th>
+                        <th style={{ padding: '0.75rem 1rem' }}>Total</th>
+                        <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredProductionOrders.map((ord) => (
+                        <tr key={ord.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s ease' }}>
+                          <td style={{ padding: '0.75rem 1rem', fontWeight: '800', color: '#0F172A' }}>
+                            #{ord.orderNumber}
+                          </td>
+                          <td style={{ padding: '0.75rem 1rem' }}>
+                            <div style={{ fontWeight: '700', color: '#0F172A' }}>{ord.customerName}</div>
+                            <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{ord.date}</div>
+                          </td>
+                          <td style={{ padding: '0.75rem 1rem' }}>
+                            <span style={{ fontSize: '0.72rem', fontWeight: '800', padding: '0.2rem 0.5rem', borderRadius: '4px', background: '#f1f5f9', color: '#475569' }}>
+                              {ord.channel === 'WEB_AUTO' ? '🌐 Web' : ord.channel === 'WHATSAPP' ? '💬 WhatsApp' : ord.channel === 'INSTAGRAM' ? '📸 IG' : ord.channel === 'B2B' ? '🏢 B2B' : '🏬 Local'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '0.75rem 1rem' }}>
+                            <div style={{ fontWeight: '700', color: '#0F172A' }}>{ord.productName}</div>
+                            {ord.customText && (
+                              <div style={{ color: '#176B87', fontWeight: '800', fontSize: '0.75rem' }}>
+                                "{ord.customText}"
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ padding: '0.75rem 1rem', color: '#64748b' }}>
+                            <div>{ord.filament}</div>
+                            <div style={{ fontSize: '0.7rem' }}>{ord.filamentGrams}g | ~{ord.printTimeMins}m</div>
+                          </td>
+                          <td style={{ padding: '0.75rem 1rem' }}>
+                            <select
+                              value={ord.priority || 'MEDIUM'}
+                              onChange={(e) => updateOrderPriority(ord.id, e.target.value)}
+                              style={{
+                                fontSize: '0.72rem',
+                                fontWeight: '800',
+                                padding: '0.25rem 0.5rem',
+                                borderRadius: '4px',
+                                border: '1px solid #cbd5e1',
+                                background: ord.priority === 'URGENT' ? '#fee2e2' : ord.priority === 'LOW' ? '#f0fdf4' : '#fef3c7',
+                                color: ord.priority === 'URGENT' ? '#dc2626' : ord.priority === 'LOW' ? '#16a34a' : '#d97706'
+                              }}
+                            >
+                              <option value="URGENT">🔴 Urgente</option>
+                              <option value="MEDIUM">🟡 Medio</option>
+                              <option value="LOW">🟢 Bajo</option>
+                            </select>
+                          </td>
+                          <td style={{ padding: '0.75rem 1rem' }}>
+                            <select
+                              value={ord.assignedPrinter || ''}
+                              onChange={(e) => assignPrinter(ord.id, e.target.value)}
+                              style={{ fontSize: '0.72rem', padding: '0.25rem 0.4rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                            >
+                              <option value="">-- Sin asignar --</option>
+                              {printers.map((p) => (
+                                <option key={p.id} value={p.name}>{p.name}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td style={{ padding: '0.75rem 1rem' }}>
+                            <select
+                              value={ord.status}
+                              onChange={(e) => updateOrderStatus(ord.id, e.target.value)}
+                              style={{
+                                fontSize: '0.72rem',
+                                fontWeight: '800',
+                                padding: '0.25rem 0.5rem',
+                                borderRadius: '4px',
+                                border: '1px solid #cbd5e1',
+                                background: '#f8fafc'
+                              }}
+                            >
+                              {KANBAN_STAGES.map((st) => (
+                                <option key={st.id} value={st.id}>{st.label}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td style={{ padding: '0.75rem 1rem', fontWeight: '800', color: '#0F172A' }}>
+                            {formatCurrency(ord.total)}
+                          </td>
+                          <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
+                            <button
+                              onClick={() => handleSendWhatsApp(ord, ord.status === 'READY_TO_SHIP' ? 'READY' : 'PRODUCTION')}
+                              style={{
+                                background: '#dcfce7',
+                                color: '#15803d',
+                                border: 'none',
+                                borderRadius: '4px',
+                                padding: '0.3rem 0.6rem',
+                                fontSize: '0.72rem',
+                                fontWeight: '700',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              WhatsApp
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* =========================================================================
+            TAB 2: PARQUE DE IMPRESORAS 3D (Configuración & Telemetría)
+           ========================================================================= */}
+        {activeTab === 'printers' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0F172A', margin: 0 }}>
+                  Parque de Impresoras 3D & Hardware
+                </h2>
+                <p style={{ color: '#64748b', fontSize: '0.82rem', margin: 0, marginTop: '0.15rem' }}>
+                  Configura tus máquinas, boquillas, tipos de cama, ranuras AMS y asigna trabajos de impresión.
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setEditingPrinter(null);
+                  setPrinterFormData({
+                    name: `Bambu Lab P1S #${printers.length + 1}`,
+                    model: 'Bambu Lab P1S',
+                    nozzleSize: '0.4 mm Hardened',
+                    bedType: 'PEI Texturizado',
+                    bedDimensions: '256 x 256 x 256 mm',
+                    printHours: 0,
+                    status: 'AVAILABLE'
+                  });
+                  setIsPrinterModalOpen(true);
+                }}
+                className="btn btn-primary btn-sm"
+                style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+              >
+                <Plus size={15} />
+                <span>+ Registrar Nueva Impresora</span>
+              </button>
+            </div>
+
+            {/* Fleet Cards Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+              {printers.map((printer) => {
+                const statusBadge = printer.status === 'PRINTING'
+                  ? { label: 'IMPRIMIENDO', color: '#0284c7', bg: '#e0f2fe' }
+                  : printer.status === 'AVAILABLE'
+                  ? { label: 'LISTA / DISPONIBLE', color: '#16a34a', bg: '#dcfce7' }
+                  : printer.status === 'MAINTENANCE'
+                  ? { label: 'EN MANTENIMIENTO', color: '#d97706', bg: '#fef3c7' }
+                  : { label: 'DETENIDA / ERROR', color: '#dc2626', bg: '#fee2e2' };
 
                 return (
                   <div
-                    key={stage.id}
+                    key={printer.id}
+                    className="card card-elevated"
                     style={{
+                      padding: '1.25rem',
                       background: '#ffffff',
                       borderRadius: 'var(--radius-lg)',
-                      border: '1px solid #e2e8f0',
+                      border: printer.status === 'PRINTING' ? '1.5px solid #0284c7' : '1px solid #e2e8f0',
                       display: 'flex',
                       flexDirection: 'column',
-                      minHeight: '620px',
-                      boxShadow: 'var(--shadow-sm)'
+                      gap: '0.85rem'
                     }}
                   >
-                    {/* Stage Header */}
-                    <div style={{ padding: '0.9rem 1rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: stage.bg, borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0' }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: '800', color: stage.color }}>
-                        {stage.label}
-                      </span>
-                      <span style={{ background: '#ffffff', color: stage.color, fontWeight: '800', fontSize: '0.75rem', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)', border: '1px solid rgba(0,0,0,0.06)' }}>
-                        {stageOrders.length}
-                      </span>
+                    {/* Card Top: Machine Name & Status Selector */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ background: '#f1f5f9', padding: '0.5rem', borderRadius: 'var(--radius-md)' }}>
+                          <Printer size={20} color="#176B87" />
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: '800', fontSize: '0.95rem', color: '#0F172A' }}>{printer.name}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{printer.model}</div>
+                        </div>
+                      </div>
+
+                      <select
+                        value={printer.status}
+                        onChange={(e) => updatePrinterStatus(printer.id, e.target.value)}
+                        style={{
+                          fontSize: '0.72rem',
+                          fontWeight: '800',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: 'var(--radius-full)',
+                          background: statusBadge.bg,
+                          color: statusBadge.color,
+                          border: 'none',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value="AVAILABLE">🟢 Lista / Disponible</option>
+                        <option value="PRINTING">🔵 Imprimiendo</option>
+                        <option value="MAINTENANCE">🟠 En Mantenimiento</option>
+                        <option value="ERROR">🔴 Detenida / Error</option>
+                      </select>
                     </div>
 
-                    {/* Stage Cards List */}
-                    <div style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', flex: 1, overflowY: 'auto' }}>
-                      {stageOrders.map((ord) => {
-                        const notes = orderNotesMap[ord.orderNumber] || [];
+                    {/* Hardware Specs Grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', background: '#f8fafc', padding: '0.75rem', borderRadius: 'var(--radius-md)', fontSize: '0.75rem' }}>
+                      <div>
+                        <span style={{ color: '#64748b' }}>Boquilla: </span>
+                        <strong>{printer.nozzleSize}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#64748b' }}>Cama: </span>
+                        <strong>{printer.bedType}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#64748b' }}>Volumen: </span>
+                        <strong>{printer.bedDimensions}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#64748b' }}>Horas de Uso: </span>
+                        <strong style={{ color: '#176B87' }}>{printer.printHours} hrs</strong>
+                      </div>
+                    </div>
 
-                        return (
-                          <div
-                            key={ord.id}
-                            style={{
-                              background: '#ffffff',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: 'var(--radius-md)',
-                              padding: '1rem',
-                              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '0.6rem'
-                            }}
-                          >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                              <div>
-                                <span style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.88rem' }}>
-                                  #{ord.orderNumber}
-                                </span>
-                                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{ord.customerName}</div>
-                              </div>
-
-                              <span style={{ fontSize: '0.7rem', fontWeight: '800', padding: '0.15rem 0.45rem', borderRadius: '4px', background: ord.channel === 'WHATSAPP' ? '#dcfce7' : '#f1f5f9', color: ord.channel === 'WHATSAPP' ? '#15803d' : '#475569' }}>
-                                {ord.channel || 'WEB'}
+                    {/* AMS / Multi-Color Loaded Filament Slots */}
+                    {printer.amsSlots && printer.amsSlots.length > 0 && (
+                      <div>
+                        <div style={{ fontSize: '0.72rem', fontWeight: '800', color: '#475569', marginBottom: '0.35rem' }}>
+                          RANURAS AMS / FILAMENTOS CARGADOS:
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.35rem' }}>
+                          {printer.amsSlots.map((slot) => (
+                            <div
+                              key={slot.slot}
+                              style={{
+                                background: '#f1f5f9',
+                                padding: '0.35rem 0.45rem',
+                                borderRadius: '4px',
+                                fontSize: '0.68rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.3rem'
+                              }}
+                            >
+                              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: slot.hex, border: '1px solid #cbd5e1' }} />
+                              <span style={{ fontWeight: '700', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                #{slot.slot} {slot.colorName}
                               </span>
                             </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-                            <div style={{ background: '#f8fafc', padding: '0.5rem 0.65rem', borderRadius: '4px', fontSize: '0.78rem' }}>
-                              <div style={{ fontWeight: '700', color: '#0F172A' }}>{ord.productName}</div>
-                              <div style={{ color: '#64748b', fontSize: '0.72rem' }}>
-                                Grabado: <strong>"{ord.customText}"</strong> • {ord.filament}
-                              </div>
-                            </div>
+                    {/* Live Job Progress (if printing) */}
+                    {printer.status === 'PRINTING' && (
+                      <div style={{ background: '#e0f2fe', padding: '0.65rem', borderRadius: 'var(--radius-md)', border: '1px solid #bae6fd' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: '800', color: '#0369a1', marginBottom: '0.35rem' }}>
+                          <span>Trabajo en progreso: #{printer.currentJobId || 'ORD-Activa'}</span>
+                          <span>{printer.currentJobProgress || 65}%</span>
+                        </div>
+                        <div style={{ height: '6px', background: '#bae6fd', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${printer.currentJobProgress || 65}%`, background: '#0284c7', borderRadius: 'var(--radius-full)' }} />
+                        </div>
+                      </div>
+                    )}
 
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                              <Printer size={13} color="#64748b" />
-                              <select
-                                value={ord.printerAssigned || ''}
-                                onChange={(e) => assignPrinter(ord.id, e.target.value)}
-                                style={{ flex: 1, padding: '0.3rem', fontSize: '0.72rem', borderRadius: '4px', border: '1px solid #cbd5e1', background: '#ffffff' }}
-                              >
-                                <option value="">Sin impresora</option>
-                                {PRINTERS_LIST.map((p) => (
-                                  <option key={p} value={p}>{p}</option>
-                                ))}
-                              </select>
-                            </div>
+                    {/* Maintenance Notes & Actions */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.5rem', borderTop: '1px solid #f1f5f9' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                        Último mant.: {printer.lastMaintenance ? printer.lastMaintenance.split(' ')[0] : 'Al día'}
+                      </span>
 
-                            <div style={{ display: 'flex', gap: '0.35rem', borderTop: '1px solid #f1f5f9', paddingTop: '0.5rem' }}>
-                              <button
-                                title="Enviar WhatsApp al cliente"
-                                onClick={() => handleSendWhatsApp(ord, stage.id === 'READY_TO_SHIP' ? 'READY' : 'PRODUCTION')}
-                                style={{ flex: 1, padding: '0.35rem', background: '#25D366', color: '#ffffff', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.2rem', fontSize: '0.72rem', fontWeight: '700' }}
-                              >
-                                <MessageCircle size={13} />
-                                <span>WA</span>
-                              </button>
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        <button
+                          onClick={() => {
+                            setSelectedPrinterForMaint(printer);
+                            setMaintenanceNotes(printer.lastMaintenance || '');
+                            setIsMaintenanceModalOpen(true);
+                          }}
+                          className="btn btn-secondary btn-sm"
+                          style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem' }}
+                        >
+                          Mantenimiento
+                        </button>
 
-                              <button
-                                title="Ver archivo y estado de vectorización"
-                                onClick={() => setSelectedOrderForImage(ord)}
-                                style={{ padding: '0.35rem 0.5rem', background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }}
-                              >
-                                <ImageIcon size={13} />
-                              </button>
-
-                              <button
-                                title="Bitácora y comentarios internos"
-                                onClick={() => setSelectedOrderForNotes(ord)}
-                                style={{ padding: '0.35rem 0.5rem', background: notes.length > 0 ? '#e0f2fe' : '#f1f5f9', color: notes.length > 0 ? '#176B87' : '#334155', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.72rem', fontWeight: '700' }}
-                              >
-                                <Edit3 size={13} />
-                                {notes.length > 0 && <span>{notes.length}</span>}
-                              </button>
-                            </div>
-
-                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.4rem', marginTop: '0.2rem' }}>
-                              <button
-                                disabled={stage.id === 'QUEUED'}
-                                onClick={() => handleMoveStage(ord.id, stage.id, 'backward')}
-                                style={{
-                                  flex: 1,
-                                  padding: '0.35rem',
-                                  fontSize: '0.7rem',
-                                  fontWeight: '700',
-                                  borderRadius: '4px',
-                                  border: '1px solid #cbd5e1',
-                                  background: stage.id === 'QUEUED' ? '#f1f5f9' : '#ffffff',
-                                  color: stage.id === 'QUEUED' ? '#94a3b8' : '#334155',
-                                  cursor: stage.id === 'QUEUED' ? 'not-allowed' : 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  gap: '0.2rem'
-                                }}
-                              >
-                                <ArrowLeft size={12} />
-                                <span>Atrás</span>
-                              </button>
-
-                              <button
-                                disabled={stage.id === 'READY_TO_SHIP'}
-                                onClick={() => handleMoveStage(ord.id, stage.id, 'forward')}
-                                style={{
-                                  flex: 1.5,
-                                  padding: '0.35rem',
-                                  fontSize: '0.7rem',
-                                  fontWeight: '800',
-                                  borderRadius: '4px',
-                                  border: 'none',
-                                  background: stage.id === 'READY_TO_SHIP' ? '#f1f5f9' : '#176B87',
-                                  color: stage.id === 'READY_TO_SHIP' ? '#94a3b8' : '#ffffff',
-                                  cursor: stage.id === 'READY_TO_SHIP' ? 'not-allowed' : 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  gap: '0.2rem'
-                                }}
-                              >
-                                <span>Avanzar</span>
-                                <ArrowRight size={12} />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
+                        <button
+                          onClick={() => deletePrinter(printer.id)}
+                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.25rem' }}
+                          title="Eliminar impresora"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -905,1040 +1288,1314 @@ const AdminDashboard = () => {
         )}
 
         {/* =========================================================================
-            TAB 2: INVENTARIO DE FILAMENTOS & VINCULACIÓN CON OPCIONES
+            TAB 3: INVENTARIO DE FILAMENTOS (Con Modales No Invasivos)
            ========================================================================= */}
         {activeTab === 'inventory' && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
-                <h2 style={{ fontSize: '1.45rem', fontWeight: '800', color: '#0F172A', margin: 0 }}>
-                  Inventario de Filamentos & Insumos 3D
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0F172A', margin: 0 }}>
+                  Inventario de Filamentos & Materias Primas
                 </h2>
-                <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0, marginTop: '0.2rem' }}>
-                  Todos los colores y combos de la plataforma están directamente vinculados a este stock en tiempo real.
+                <p style={{ color: '#64748b', fontSize: '0.82rem', margin: 0, marginTop: '0.15rem' }}>
+                  Monitorea bobinas activas, calibra pesos con tara de carrete y abre las fichas técnicas en modales limpios.
                 </p>
               </div>
 
               <button
-                className="btn btn-primary btn-sm"
                 onClick={() => setIsNewMaterialModalOpen(true)}
-                style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                className="btn btn-primary btn-sm"
+                style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
               >
-                <Plus size={16} />
-                <span>+ Registrar Nuevo Color / Filamento</span>
+                <Plus size={15} />
+                <span>+ Registrar Nueva Bobina</span>
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
-              {filamentInventory.map((mat) => {
-                const isOutOfStock = (mat.stockGrams || 0) <= 0;
-                const isLowStock = !isOutOfStock && (mat.stockGrams || 0) <= (mat.minAlertGrams || 300);
-                const isBlocked = mat.isBlocked;
-                const isArchived = mat.isArchived;
+            {/* Filament Spools Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
+              {filamentInventory.map((fil) => {
+                const stockPercent = Math.min(100, Math.round(((fil.stockGrams || 0) / 1000) * 100));
+                const isOutOfStock = (fil.stockGrams || 0) <= 0;
+                const isLowStock = !isOutOfStock && (fil.stockGrams || 0) <= (fil.minAlertGrams || 400);
 
                 return (
                   <div
-                    key={mat.id}
-                    className="card"
+                    key={fil.id}
+                    className="card card-elevated"
                     style={{
-                      background: '#ffffff',
-                      border: isArchived ? '1.5px dashed #cbd5e1' : isBlocked ? '2px solid #94a3b8' : isOutOfStock ? '2px solid #ef4444' : isLowStock ? '2px solid #f59e0b' : '1px solid #e2e8f0',
-                      borderRadius: 'var(--radius-lg)',
                       padding: '1.25rem',
+                      background: '#ffffff',
+                      borderRadius: 'var(--radius-lg)',
+                      border: isOutOfStock ? '1.5px solid #f87171' : isLowStock ? '1.5px solid #fbbf24' : '1px solid #e2e8f0',
+                      opacity: fil.isArchived ? 0.6 : 1,
                       display: 'flex',
                       flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      opacity: isArchived ? 0.65 : 1
+                      gap: '0.75rem'
                     }}
                   >
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: mat.hex, border: '1.5px solid rgba(0,0,0,0.2)' }} />
-                          <strong style={{ fontSize: '0.95rem', color: '#0F172A' }}>{mat.name}</strong>
-                        </div>
-
-                        <span
+                    {/* Spool Header */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                        <div
                           style={{
-                            fontSize: '0.7rem',
-                            fontWeight: '800',
-                            padding: '0.2rem 0.55rem',
-                            borderRadius: 'var(--radius-full)',
-                            background: isArchived ? '#f1f5f9' : isBlocked ? '#fef3c7' : isOutOfStock ? '#fee2e2' : isLowStock ? '#ffedd5' : '#ecfdf5',
-                            color: isArchived ? '#64748b' : isBlocked ? '#b45309' : isOutOfStock ? '#dc2626' : isLowStock ? '#c2410c' : '#059669'
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '50%',
+                            background: fil.hex,
+                            border: '2px solid #cbd5e1',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
                           }}
-                        >
-                          {isArchived ? '📦 Archivado' : isBlocked ? '🚫 Bloqueado' : isOutOfStock ? '🔴 Agotado (0g)' : isLowStock ? '🟠 Stock Bajo' : '🟢 En Stock'}
+                        />
+                        <div>
+                          <div style={{ fontWeight: '800', fontSize: '0.92rem', color: '#0F172A' }}>{fil.name}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{fil.type} • {fil.supplier || 'Polymaker'}</div>
+                        </div>
+                      </div>
+
+                      {fil.isBlocked ? (
+                        <span style={{ fontSize: '0.68rem', fontWeight: '800', background: '#f1f5f9', color: '#64748b', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                          BLOQUEADO
                         </span>
-                      </div>
+                      ) : isOutOfStock ? (
+                        <span style={{ fontSize: '0.68rem', fontWeight: '800', background: '#fee2e2', color: '#dc2626', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                          AGOTADO
+                        </span>
+                      ) : isLowStock ? (
+                        <span style={{ fontSize: '0.68rem', fontWeight: '800', background: '#fef3c7', color: '#d97706', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                          STOCK BAJO
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.68rem', fontWeight: '800', background: '#dcfce7', color: '#16a34a', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                          DISPONIBLE
+                        </span>
+                      )}
+                    </div>
 
-                      <div style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: '0.75rem' }}>
-                        Tipo: <strong>{mat.type || 'PLA_SILK'}</strong> • Prov: {mat.supplier || 'Polymaker'} • HEX: <code style={{ fontSize: '0.75rem' }}>{mat.hex}</code>
+                    {/* Live Grams Progress Bar */}
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '0.35rem' }}>
+                        <span style={{ color: '#64748b' }}>Gramos restantes:</span>
+                        <strong style={{ color: isOutOfStock ? '#dc2626' : isLowStock ? '#d97706' : '#0F172A' }}>
+                          {formatGrams(fil.stockGrams || 0)}
+                        </strong>
                       </div>
-
-                      <div style={{ marginBottom: '1rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '0.3rem' }}>
-                          <span style={{ color: '#64748b' }}>Stock Disponible:</span>
-                          <strong style={{ color: isOutOfStock ? '#dc2626' : isLowStock ? '#c2410c' : '#176B87' }}>
-                            {mat.stockGrams || 0} gramos ({((mat.stockGrams || 0) / 1000).toFixed(2)} kg)
-                          </strong>
-                        </div>
-                        <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${Math.min(100, ((mat.stockGrams || 0) / 3000) * 100)}%`, background: isOutOfStock ? '#ef4444' : isLowStock ? '#f59e0b' : '#176B87' }} />
-                        </div>
+                      <div style={{ height: '8px', background: '#f1f5f9', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+                        <div
+                          style={{
+                            height: '100%',
+                            width: `${stockPercent}%`,
+                            background: isOutOfStock ? '#ef4444' : isLowStock ? '#f59e0b' : '#176B87',
+                            borderRadius: 'var(--radius-full)'
+                          }}
+                        />
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '0.4rem', borderTop: '1px solid #f1f5f9', paddingTop: '0.75rem', flexWrap: 'wrap' }}>
+                    {/* Quick Modal Triggers */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', paddingTop: '0.5rem', borderTop: '1px solid #f1f5f9' }}>
                       <button
-                        onClick={() => setMovementModal({ isOpen: true, material: mat, type: 'ENTRADA', grams: 1000, reason: 'Ingreso Lote de Bobinas' })}
-                        style={{ flex: 1, padding: '0.4rem 0.6rem', background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}
+                        onClick={() => {
+                          setSelectedFilamentDetails(fil);
+                          setIsFilamentDetailsModalOpen(true);
+                        }}
+                        className="btn btn-secondary btn-sm"
+                        style={{ fontSize: '0.72rem', padding: '0.35rem 0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
                       >
-                        + Entrada
+                        <FileText size={13} />
+                        <span>Ficha Técnica</span>
                       </button>
 
                       <button
-                        onClick={() => setMovementModal({ isOpen: true, material: mat, type: 'SALIDA', grams: 200, reason: 'Salida / Merma / Calibración' })}
-                        style={{ flex: 1, padding: '0.4rem 0.6rem', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}
+                        onClick={() => {
+                          setTaraData({
+                            filament: fil,
+                            grossWeight: (fil.stockGrams || 0) + 220,
+                            spoolTare: 220,
+                            calculatedNet: fil.stockGrams || 0
+                          });
+                          setIsTaraCalibrationModalOpen(true);
+                        }}
+                        className="btn btn-secondary btn-sm"
+                        style={{ fontSize: '0.72rem', padding: '0.35rem 0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
                       >
-                        - Salida
+                        <Scale size={13} />
+                        <span>Calibrar Tara</span>
+                      </button>
+                    </div>
+
+                    {/* Bottom Status Toggles */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem' }}>
+                      <button
+                        onClick={() => toggleBlockFilament(fil.id)}
+                        style={{ background: 'none', border: 'none', color: fil.isBlocked ? '#16a34a' : '#64748b', cursor: 'pointer', fontWeight: '700' }}
+                      >
+                        {fil.isBlocked ? '✓ Desbloquear' : '🚫 Bloquear'}
                       </button>
 
                       <button
-                        title={mat.isBlocked ? 'Reanudar disponibilidad en tienda' : 'Bloquear temporalmente en tienda'}
-                        onClick={() => toggleBlockFilament(mat.id)}
-                        style={{ padding: '0.4rem 0.65rem', background: mat.isBlocked ? '#fef3c7' : '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }}
+                        onClick={() => fil.isArchived ? unarchiveFilament(fil.id) : archiveFilament(fil.id)}
+                        style={{ background: 'none', border: 'none', color: fil.isArchived ? '#0284c7' : '#ef4444', cursor: 'pointer', fontWeight: '700' }}
                       >
-                        <Ban size={14} color={mat.isBlocked ? '#b45309' : '#dc2626'} />
-                      </button>
-
-                      <button
-                        title={mat.isArchived ? 'Restaurar filamento al catálogo' : 'Archivar / Filamento descontinuado'}
-                        onClick={() => (mat.isArchived ? unarchiveFilament(mat.id) : archiveFilament(mat.id))}
-                        style={{ padding: '0.4rem 0.65rem', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }}
-                      >
-                        <Archive size={14} color="#64748b" />
+                        {fil.isArchived ? 'Restaurar' : 'Archivar'}
                       </button>
                     </div>
                   </div>
                 );
               })}
             </div>
+          </div>
+        )}
 
-            <div className="card" style={{ background: '#ffffff', borderRadius: 'var(--radius-lg)', padding: '1.5rem' }}>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#0F172A', marginBottom: '1rem' }}>
-                Historial de Movimientos de Almacén (Kardex)
-              </h3>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                <thead>
-                  <tr style={{ background: '#f8fafc', color: '#64748b', textAlign: 'left' }}>
-                    <th style={{ padding: '0.6rem' }}>Fecha</th>
-                    <th style={{ padding: '0.6rem' }}>Material</th>
-                    <th style={{ padding: '0.6rem' }}>Tipo</th>
-                    <th style={{ padding: '0.6rem', textAlign: 'right' }}>Cantidad</th>
-                    <th style={{ padding: '0.6rem' }}>Motivo / Referencia</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {kardexHistory.map((k) => (
-                    <tr key={k.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '0.65rem', color: '#64748b' }}>{k.date}</td>
-                      <td style={{ padding: '0.65rem', fontWeight: '700', color: '#0F172A' }}>{k.materialName}</td>
-                      <td style={{ padding: '0.65rem' }}>
-                        <span style={{ fontSize: '0.72rem', fontWeight: '800', padding: '0.2rem 0.5rem', borderRadius: '4px', background: k.type === 'ENTRADA' ? '#ecfdf5' : k.type === 'MERMA' ? '#fff1f2' : '#eff6ff', color: k.type === 'ENTRADA' ? '#059669' : k.type === 'MERMA' ? '#e11d48' : '#2563eb' }}>
-                          {k.type}
-                        </span>
-                      </td>
-                      <td style={{ padding: '0.65rem', textAlign: 'right', fontWeight: '800', color: k.type === 'ENTRADA' ? '#059669' : '#dc2626' }}>
-                        {k.type === 'ENTRADA' ? `+${k.grams} g` : `-${k.grams} g`}
-                      </td>
-                      <td style={{ padding: '0.65rem', color: '#475569' }}>{k.reason}</td>
+        {/* =========================================================================
+            TAB 4: ANALÍTICA FINANCIERA & CANALES DE VENTA
+           ========================================================================= */}
+        {activeTab === 'finance' && (
+          <div>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0F172A', margin: 0 }}>
+                Analítica Financiera & Canales de Venta
+              </h2>
+              <p style={{ color: '#64748b', fontSize: '0.82rem', margin: 0, marginTop: '0.15rem' }}>
+                Monitorea ingresos automáticos de la web vs pedidos de WhatsApp, Instagram, cotizaciones B2B y mostrador.
+              </p>
+            </div>
+
+            {/* Financial KPI Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div className="card card-elevated" style={{ padding: '1.25rem', background: '#ffffff', borderRadius: 'var(--radius-lg)' }}>
+                <div style={{ color: '#64748b', fontSize: '0.78rem', fontWeight: '700' }}>INGRESOS TOTALES</div>
+                <div style={{ fontSize: '1.65rem', fontWeight: '800', color: '#176B87', margin: '0.35rem 0' }}>
+                  {formatCurrency(financialMetrics.totalRevenue)}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: '#10b981' }}>↑ Ventas registradas en plataforma</div>
+              </div>
+
+              <div className="card card-elevated" style={{ padding: '1.25rem', background: '#ffffff', borderRadius: 'var(--radius-lg)' }}>
+                <div style={{ color: '#64748b', fontSize: '0.78rem', fontWeight: '700' }}>TICKET PROMEDIO</div>
+                <div style={{ fontSize: '1.65rem', fontWeight: '800', color: '#0F172A', margin: '0.35rem 0' }}>
+                  {formatCurrency(financialMetrics.avgTicket)}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Por pedido finalizado</div>
+              </div>
+
+              <div className="card card-elevated" style={{ padding: '1.25rem', background: '#ffffff', borderRadius: 'var(--radius-lg)' }}>
+                <div style={{ color: '#64748b', fontSize: '0.78rem', fontWeight: '700' }}>PEDIDOS TOTALES</div>
+                <div style={{ fontSize: '1.65rem', fontWeight: '800', color: '#0F172A', margin: '0.35rem 0' }}>
+                  {financialMetrics.totalOrders}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Todas las etapas</div>
+              </div>
+
+              <div className="card card-elevated" style={{ padding: '1.25rem', background: '#ffffff', borderRadius: 'var(--radius-lg)' }}>
+                <div style={{ color: '#64748b', fontSize: '0.78rem', fontWeight: '700' }}>VENTAS AUTOMÁTICAS (WEB)</div>
+                <div style={{ fontSize: '1.65rem', fontWeight: '800', color: '#10b981', margin: '0.35rem 0' }}>
+                  {financialMetrics.channelCounts.WEB_AUTO} pedidos
+                </div>
+                <div style={{ fontSize: '0.72rem', color: '#10b981' }}>{formatCurrency(financialMetrics.channelRevenue.WEB_AUTO)}</div>
+              </div>
+            </div>
+
+            {/* Sales Channels Breakdown Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+              
+              {/* Channel Breakdown Card */}
+              <div className="card card-elevated" style={{ padding: '1.5rem', background: '#ffffff', borderRadius: 'var(--radius-lg)' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: '800', color: '#0F172A', marginBottom: '1rem' }}>
+                  Distribución de Ingresos por Canal de Origen
+                </h3>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                  {[
+                    { id: 'WEB_AUTO', name: '🌐 Plataforma Web (Automático)', color: '#176B87' },
+                    { id: 'WHATSAPP', name: '💬 WhatsApp Directo', color: '#25D366' },
+                    { id: 'INSTAGRAM', name: '📸 Instagram DM / Redes', color: '#E1306C' },
+                    { id: 'B2B', name: '🏢 B2B Corporativo & Eventos', color: '#6366F1' },
+                    { id: 'LOCAL', name: '🏬 Taller & Mostrador Presencial', color: '#F59E0B' }
+                  ].map((ch) => {
+                    const rev = financialMetrics.channelRevenue[ch.id] || 0;
+                    const count = financialMetrics.channelCounts[ch.id] || 0;
+                    const pct = financialMetrics.totalRevenue > 0 ? Math.round((rev / financialMetrics.totalRevenue) * 100) : 0;
+
+                    return (
+                      <div key={ch.id}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '0.25rem' }}>
+                          <span style={{ fontWeight: '700', color: '#0F172A' }}>{ch.name} ({count})</span>
+                          <strong>{formatCurrency(rev)} ({pct}%)</strong>
+                        </div>
+                        <div style={{ height: '8px', background: '#f1f5f9', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${pct}%`, background: ch.color, borderRadius: 'var(--radius-full)' }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Payment Methods Breakdown */}
+              <div className="card card-elevated" style={{ padding: '1.5rem', background: '#ffffff', borderRadius: 'var(--radius-lg)' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: '800', color: '#0F172A', marginBottom: '1rem' }}>
+                  Métodos de Pago & Pasarelas
+                </h3>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.85rem' }}>Stripe / Tarjetas de Crédito & Débito</strong>
+                      <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Cobro automático en checkout web</div>
+                    </div>
+                    <span style={{ background: '#dcfce7', color: '#16a34a', fontWeight: '800', fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                      Activo
+                    </span>
+                  </div>
+
+                  <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.85rem' }}>Transferencia SPEI / Banco</strong>
+                      <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Validación con comprobante de depósito</div>
+                    </div>
+                    <span style={{ background: '#e0f2fe', color: '#0284c7', fontWeight: '800', fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                      Manual
+                    </span>
+                  </div>
+
+                  <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.85rem' }}>Mercado Pago / OXXO Pay</strong>
+                      <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Pagos en efectivo y billeteras digitales</div>
+                    </div>
+                    <span style={{ background: '#dcfce7', color: '#16a34a', fontWeight: '800', fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                      Activo
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================================
+            TAB 5: COSTOS Y GASTOS DE OPERACIÓN (Utilidad Neta Real)
+           ========================================================================= */}
+        {activeTab === 'costs' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0F172A', margin: 0 }}>
+                  Costos de Operación & Margen Neto Real
+                </h2>
+                <p style={{ color: '#64748b', fontSize: '0.82rem', margin: 0, marginTop: '0.15rem' }}>
+                  Registra empaque, embalaje, guías de paquetería, luz eléctrica e insumos para conocer tu rentabilidad exacta.
+                </p>
+              </div>
+
+              <button
+                onClick={() => setIsExpenseModalOpen(true)}
+                className="btn btn-primary btn-sm"
+                style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+              >
+                <Plus size={15} />
+                <span>+ Registrar Gasto Operativo</span>
+              </button>
+            </div>
+
+            {/* Net Profit Summary Hero Card */}
+            <div
+              className="card card-elevated"
+              style={{
+                padding: '1.75rem',
+                background: 'linear-gradient(135deg, #0F172A 0%, #176B87 100%)',
+                color: '#ffffff',
+                borderRadius: 'var(--radius-xl)',
+                marginBottom: '1.5rem',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '1.5rem',
+                alignItems: 'center'
+              }}
+            >
+              <div>
+                <div style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: '700' }}>INGRESOS TOTALES</div>
+                <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#ffffff' }}>
+                  {formatCurrency(financialMetrics.totalRevenue)}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: '700' }}>TOTAL COSTOS & GASTOS</div>
+                <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#f87171' }}>
+                  - {formatCurrency(financialMetrics.totalDirectAndOperatingCosts)}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.82rem', color: '#6ee7b7', fontWeight: '700' }}>UTILIDAD NETA REAL</div>
+                <div style={{ fontSize: '2.1rem', fontWeight: '800', color: '#10b981' }}>
+                  {formatCurrency(financialMetrics.netProfit)}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.82rem', color: '#6ee7b7', fontWeight: '700' }}>MARGEN DE GANANCIA NETO</div>
+                <div style={{ fontSize: '2.1rem', fontWeight: '800', color: '#38bdf8' }}>
+                  {financialMetrics.netProfitMargin.toFixed(1)}%
+                </div>
+              </div>
+            </div>
+
+            {/* Operating Expenses Table */}
+            <div className="card card-elevated" style={{ background: '#ffffff', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+              <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #e2e8f0', fontWeight: '800', color: '#0F172A', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Bitácora de Gastos de Operación Registrados</span>
+                <span style={{ fontSize: '0.78rem', color: '#64748b' }}>{operatingExpenses.length} registros</span>
+              </div>
+
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569', fontWeight: '800' }}>
+                      <th style={{ padding: '0.75rem 1rem' }}>Fecha</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Categoría</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Descripción del Gasto</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Proveedor</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Frecuencia</th>
+                      <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Monto</th>
+                      <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Acción</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+                  </thead>
+                  <tbody>
+                    {operatingExpenses.map((exp) => {
+                      const catLabels = {
+                        PACKAGING: { label: '📦 Empaque / Embalaje', bg: '#fef3c7', color: '#b45309' },
+                        SHIPPING: { label: '🚚 Paquetería / Guías', bg: '#e0f2fe', color: '#0284c7' },
+                        ELECTRICITY: { label: '⚡ Luz / Electricidad', bg: '#fef9c3', color: '#a16207' },
+                        SUPPLIES: { label: '🛠️ Insumos / Taller', bg: '#f3e8ff', color: '#7e22ce' },
+                        FIXED: { label: '💼 Gastos Fijos', bg: '#f1f5f9', color: '#475569' }
+                      };
+                      const cat = catLabels[exp.category] || catLabels.FIXED;
 
-        {/* =========================================================================
-            TAB 3: GESTOR DE COTIZACIONES B2B
-           ========================================================================= */}
-        {activeTab === 'quotes' && (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-              <div>
-                <h2 style={{ fontSize: '1.45rem', fontWeight: '800', color: '#0F172A', margin: 0 }}>
-                  Gestor de Cotizaciones Formales B2B
-                </h2>
-                <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0, marginTop: '0.2rem' }}>
-                  Edita presupuestos, aplica notas de reembolso, exporta PDFs simétricos y envía notificaciones por WhatsApp/Email.
-                </p>
-              </div>
-
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <div style={{ position: 'relative' }}>
-                  <Search size={16} color="#94a3b8" style={{ position: 'absolute', top: '50%', left: '0.75rem', transform: 'translateY(-50%)' }} />
-                  <input
-                    type="text"
-                    placeholder="Buscar por empresa o folio..."
-                    value={quoteSearchTerm}
-                    onChange={(e) => setQuoteSearchTerm(e.target.value)}
-                    style={{ padding: '0.55rem 0.75rem 0.55rem 2.25rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none' }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="card" style={{ background: '#ffffff', borderRadius: 'var(--radius-lg)', padding: '1.25rem' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                <thead>
-                  <tr style={{ background: '#f8fafc', color: '#64748b', textAlign: 'left' }}>
-                    <th style={{ padding: '0.75rem' }}>Folio</th>
-                    <th style={{ padding: '0.75rem' }}>Empresa / Cliente</th>
-                    <th style={{ padding: '0.75rem' }}>Piezas</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'right' }}>Total Neto</th>
-                    <th style={{ padding: '0.75rem' }}>Estado</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'center' }}>Acciones Directas</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {quotesList
-                    .filter((q) => (q.companyName || '').toLowerCase().includes(quoteSearchTerm.toLowerCase()) || (q.quoteNumber || '').toLowerCase().includes(quoteSearchTerm.toLowerCase()))
-                    .map((quote) => (
-                      <tr key={quote.quoteNumber} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '0.75rem', fontWeight: '800', color: '#176B87' }}>
-                          {quote.quoteNumber}
-                        </td>
-                        <td style={{ padding: '0.75rem' }}>
-                          <div style={{ fontWeight: '700', color: '#0F172A' }}>{quote.companyName}</div>
-                          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>RFC: {quote.rfc || 'XAXX010101000'}</div>
-                        </td>
-                        <td style={{ padding: '0.75rem', fontWeight: '700' }}>{quote.units || quote.quantity || 100} pcs</td>
-                        <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '800', color: '#0F172A' }}>
-                          {formatCurrency(quote.finalTotal || quote.totalAmount)}
-                        </td>
-                        <td style={{ padding: '0.75rem' }}>
-                          <span style={{ fontSize: '0.72rem', fontWeight: '800', padding: '0.2rem 0.5rem', borderRadius: '4px', background: '#ecfdf5', color: '#059669' }}>
-                            {quote.status || 'VIGENTE'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '0.75rem' }}>
-                          <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center' }}>
+                      return (
+                        <tr key={exp.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '0.75rem 1rem', color: '#64748b' }}>{exp.date}</td>
+                          <td style={{ padding: '0.75rem 1rem' }}>
+                            <span style={{ fontSize: '0.72rem', fontWeight: '800', padding: '0.2rem 0.5rem', borderRadius: '4px', background: cat.bg, color: cat.color }}>
+                              {cat.label}
+                            </span>
+                          </td>
+                          <td style={{ padding: '0.75rem 1rem', fontWeight: '700', color: '#0F172A' }}>{exp.description}</td>
+                          <td style={{ padding: '0.75rem 1rem', color: '#64748b' }}>{exp.supplier || 'N/A'}</td>
+                          <td style={{ padding: '0.75rem 1rem', color: '#64748b' }}>{exp.recurring || 'Único'}</td>
+                          <td style={{ padding: '0.75rem 1rem', fontWeight: '800', color: '#dc2626', textAlign: 'right' }}>
+                            - {formatCurrency(exp.amount)}
+                          </td>
+                          <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
                             <button
-                              title="Editar o Corregir Datos"
-                              onClick={() => setSelectedQuoteForDetail(quote)}
-                              className="btn btn-secondary btn-sm"
-                              style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', fontWeight: '700' }}
+                              onClick={() => deleteOperatingExpense(exp.id)}
+                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
                             >
-                              <Edit3 size={13} />
-                              <span>Editar</span>
+                              <Trash2 size={15} />
                             </button>
-
-                            <button
-                              title="Descargar PDF Oficial"
-                              onClick={() => generateB2BQuotePDF(quote)}
-                              className="btn btn-primary btn-sm"
-                              style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', fontWeight: '700' }}
-                            >
-                              <FileDown size={13} />
-                              <span>PDF</span>
-                            </button>
-
-                            <button
-                              title="Enviar WhatsApp"
-                              onClick={() => handleSendQuoteWhatsApp(quote)}
-                              style={{ padding: '0.35rem 0.6rem', background: '#25D366', color: '#ffffff', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.75rem', fontWeight: '700' }}
-                            >
-                              <MessageCircle size={13} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* =========================================================================
-            TAB 4: MÉTRICAS & ANALÍTICA
-           ========================================================================= */}
-        {activeTab === 'metrics' && (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-              <div>
-                <h2 style={{ fontSize: '1.45rem', fontWeight: '800', color: '#0F172A', margin: 0 }}>
-                  Analítica Financiera & Desempeño 3D
-                </h2>
-                <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0, marginTop: '0.2rem' }}>
-                  Filtra por período temporal, canal de captación y analiza rendimientos de granja.
-                </p>
-              </div>
-
-              <div style={{ display: 'flex', gap: '0.4rem', background: '#ffffff', padding: '0.3rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1' }}>
-                <button
-                  onClick={() => setMetricsPeriod('TODAY')}
-                  style={{ padding: '0.4rem 0.75rem', border: 'none', borderRadius: '4px', background: metricsPeriod === 'TODAY' ? '#176B87' : 'transparent', color: metricsPeriod === 'TODAY' ? '#ffffff' : '#64748b', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer' }}
-                >
-                  Hoy
-                </button>
-                <button
-                  onClick={() => setMetricsPeriod('WEEK')}
-                  style={{ padding: '0.4rem 0.75rem', border: 'none', borderRadius: '4px', background: metricsPeriod === 'WEEK' ? '#176B87' : 'transparent', color: metricsPeriod === 'WEEK' ? '#ffffff' : '#64748b', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer' }}
-                >
-                  Esta Semana
-                </button>
-                <button
-                  onClick={() => setMetricsPeriod('MONTH')}
-                  style={{ padding: '0.4rem 0.75rem', border: 'none', borderRadius: '4px', background: metricsPeriod === 'MONTH' ? '#176B87' : 'transparent', color: metricsPeriod === 'MONTH' ? '#ffffff' : '#64748b', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer' }}
-                >
-                  Este Mes
-                </button>
-                <button
-                  onClick={() => setMetricsPeriod('ALL')}
-                  style={{ padding: '0.4rem 0.75rem', border: 'none', borderRadius: '4px', background: metricsPeriod === 'ALL' ? '#176B87' : 'transparent', color: metricsPeriod === 'ALL' ? '#ffffff' : '#64748b', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer' }}
-                >
-                  Histórico Total
-                </button>
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
-              <div className="card" style={{ padding: '1.5rem', background: '#ffffff', borderRadius: 'var(--radius-lg)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '700' }}>VENTAS TOTALES</span>
-                  <DollarSign size={20} color="#10b981" />
-                </div>
-                <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#0F172A' }}>
-                  {formatCurrency(totalRevenue)}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '0.3rem', fontWeight: '700' }}>
-                  ↑ +18.4% vs mes anterior
-                </div>
-              </div>
-
-              <div className="card" style={{ padding: '1.5rem', background: '#ffffff', borderRadius: 'var(--radius-lg)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '700' }}>HORAS MÁQUINA</span>
-                  <Clock size={20} color="#3b82f6" />
-                </div>
-                <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#0F172A' }}>
-                  {totalMachineHours.toFixed(1)} hrs
-                </div>
-                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.3rem' }}>
-                  En 5 impresoras activas
-                </div>
-              </div>
-
-              <div className="card" style={{ padding: '1.5rem', background: '#ffffff', borderRadius: 'var(--radius-lg)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '700' }}>FILAMENTO IMPRESO</span>
-                  <Activity size={20} color="#176B87" />
-                </div>
-                <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#0F172A' }}>
-                  {formatGrams(totalGramsConsumed)}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.3rem' }}>
-                  Merma global: <strong>2.8%</strong> (Óptima)
-                </div>
-              </div>
-
-              <div className="card" style={{ padding: '1.5rem', background: '#ffffff', borderRadius: 'var(--radius-lg)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '700' }}>CONTROL DE CALIDAD</span>
-                  <ShieldCheck size={20} color="#8b5cf6" />
-                </div>
-                <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#0F172A' }}>
-                  98.2%
-                </div>
-                <div style={{ fontSize: '0.75rem', color: '#059669', marginTop: '0.3rem', fontWeight: '700' }}>
-                  Tasa de aprobación en primer intento
-                </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
         )}
 
         {/* =========================================================================
-            TAB 5: CATÁLOGO DE PRODUCTOS & CARGA DIRECTA DE ARCHIVOS 2D / 3D
+            TAB 6: CATÁLOGO Y EDITOR DE PRODUCTOS (Vinculado a Filamentos Reales)
            ========================================================================= */}
         {activeTab === 'products' && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
-                <h2 style={{ fontSize: '1.45rem', fontWeight: '800', color: '#0F172A', margin: 0 }}>
-                  Gestión Total de Catálogo & Archivos 2D / 3D
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0F172A', margin: 0 }}>
+                  Catálogo de Productos & Configuración 3D
                 </h2>
-                <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0, marginTop: '0.2rem' }}>
-                  Sube fotos 2D o modelos 3D (.GLB, .GLTF, .STL), configura colores por zonas y publica directamente sin tocar código.
+                <p style={{ color: '#64748b', fontSize: '0.82rem', margin: 0, marginTop: '0.15rem' }}>
+                  Edita tus productos. Los colores seleccionables se sincronizan directamente con tu inventario de filamentos.
                 </p>
               </div>
 
               <button
+                onClick={() => {
+                  setEditingProduct(null);
+                  setProductFormData({
+                    name: '',
+                    subcollection: 'hogar',
+                    basePrice: 180,
+                    description: '',
+                    modelType: 'sphere',
+                    custom3DFileUrl: null,
+                    custom3DFileType: null,
+                    filamentGrams: 60,
+                    printTimeMins: 120,
+                    allowBaseColor: true,
+                    allowAccentColor: true,
+                    allowReliefColor: true,
+                    allowCustomText: true,
+                    allowLogoUpload: true,
+                    previewBaseColor: '#FFFFFF',
+                    previewAccentColor: '#176B87',
+                    previewReliefColor: '#0F172A',
+                    isActive: true,
+                    image2D: null
+                  });
+                  setIsProductModalOpen(true);
+                }}
                 className="btn btn-primary btn-sm"
-                onClick={handleOpenNewProductModal}
-                style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
               >
-                <Plus size={16} />
-                <span>+ Crear / Subir Nuevo Producto</span>
+                <Plus size={15} />
+                <span>+ Crear Nuevo Producto</span>
               </button>
             </div>
 
-            {/* Products Grid */}
+            {/* Products Cards Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
               {productsCatalog.map((prod) => (
                 <div
                   key={prod.id}
-                  className="card"
+                  className="card card-elevated"
                   style={{
+                    padding: '1.25rem',
                     background: '#ffffff',
                     borderRadius: 'var(--radius-lg)',
-                    border: '1px solid #e2e8f0',
-                    padding: '1.25rem',
                     display: 'flex',
                     flexDirection: 'column',
-                    justifyContent: 'space-between'
+                    justifyContent: 'space-between',
+                    gap: '1rem'
                   }}
                 >
                   <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                      <span className="badge" style={{ background: '#f1f5f9', color: '#475569' }}>
-                        {prod.subcollection || 'General'}
-                      </span>
-                      <span style={{ fontSize: '0.7rem', fontWeight: '800', padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-full)', background: prod.isActive !== false ? '#ecfdf5' : '#fee2e2', color: prod.isActive !== false ? '#059669' : '#dc2626' }}>
-                        {prod.isActive !== false ? 'Activo en Tienda' : 'Oculto'}
-                      </span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <div style={{ fontWeight: '800', fontSize: '0.95rem', color: '#0F172A' }}>{prod.name}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{prod.categoryName || prod.subcollection}</div>
+                      </div>
+                      <strong style={{ color: '#176B87', fontSize: '1rem' }}>{formatCurrency(prod.basePrice)}</strong>
                     </div>
 
-                    {/* 2D Image or 3D Icon */}
-                    <div style={{ height: '140px', background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.75rem', overflow: 'hidden' }}>
-                      {prod.image ? (
-                        <img src={prod.image} alt={prod.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        <div style={{ textAlign: 'center' }}>
-                          <Box size={36} color="#176B87" style={{ opacity: 0.8 }} />
-                          <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '0.25rem', fontWeight: '700' }}>
-                            {prod.modelType === 'custom_file' ? `3D Custom (${(prod.custom3DFileType || '3D').toUpperCase()})` : `3D ${prod.modelType}`}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#0F172A', marginBottom: '0.25rem' }}>
-                      {prod.name}
-                    </h3>
-                    <p style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: '1.4', marginBottom: '0.75rem' }}>
-                      {prod.description}
+                    <p style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: '1.4', margin: '0.5rem 0' }}>
+                      {prod.description || 'Sin descripción'}
                     </p>
 
-                    {/* Enabled Zones Badges */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginBottom: '0.75rem' }}>
-                      <span style={{ fontSize: '0.68rem', fontWeight: '700', padding: '0.15rem 0.45rem', borderRadius: '4px', background: 'rgba(23, 107, 135, 0.1)', color: '#176B87' }}>
-                        🎨 Base
-                      </span>
-                      {prod.allowAccentColor !== false && (
-                        <span style={{ fontSize: '0.68rem', fontWeight: '700', padding: '0.15rem 0.45rem', borderRadius: '4px', background: '#fef3c7', color: '#b45309' }}>
-                          ✨ Acento
-                        </span>
-                      )}
-                      {prod.isCustomizable !== false && (
-                        <span style={{ fontSize: '0.68rem', fontWeight: '700', padding: '0.15rem 0.45rem', borderRadius: '4px', background: '#f3e8ff', color: '#7e22ce' }}>
-                          ✍️ Relieve 3D
-                        </span>
-                      )}
+                    <div style={{ background: '#f8fafc', padding: '0.5rem 0.65rem', borderRadius: 'var(--radius-sm)', fontSize: '0.72rem', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Modelo: <strong>{prod.modelType || 'keychain'}</strong></span>
+                      <span>Filamento: <strong>{prod.weightGrams || 50}g</strong></span>
+                      <span>Tiempo: <strong>~{prod.printTimeMins || 60}m</strong></span>
                     </div>
                   </div>
 
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '0.6rem', marginBottom: '0.6rem' }}>
-                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Precio Base:</span>
-                      <strong style={{ fontSize: '1.15rem', color: '#176B87' }}>{formatCurrency(prod.basePrice)}</strong>
-                    </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', borderTop: '1px solid #f1f5f9', paddingTop: '0.5rem' }}>
+                    <button
+                      onClick={() => {
+                        setEditingProduct(prod);
+                        setProductFormData({
+                          ...prod,
+                          previewBaseColor: prod.previewBaseColor || '#FFFFFF',
+                          previewAccentColor: prod.previewAccentColor || '#176B87',
+                          previewReliefColor: prod.previewReliefColor || '#0F172A'
+                        });
+                        setIsProductModalOpen(true);
+                      }}
+                      className="btn btn-secondary btn-sm"
+                      style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}
+                    >
+                      <Edit3 size={13} />
+                      <span>Editar Producto</span>
+                    </button>
 
-                    <div style={{ display: 'flex', gap: '0.4rem' }}>
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        style={{ flex: 1, fontSize: '0.75rem', fontWeight: '700' }}
-                        onClick={() => handleEditProduct(prod)}
-                      >
-                        <Edit3 size={13} />
-                        <span>Editar / Zonas</span>
-                      </button>
-
-                      <button
-                        title="Eliminar Producto"
-                        onClick={() => handleDeleteProduct(prod.id, prod.name)}
-                        style={{ padding: '0.4rem 0.6rem', background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '4px', cursor: 'pointer', color: '#dc2626' }}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => deleteProduct(prod.id)}
+                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.35rem' }}
+                    >
+                      <Trash2 size={15} />
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         )}
+
+        {/* =========================================================================
+            TAB 7: COTIZACIONES B2B
+           ========================================================================= */}
+        {activeTab === 'quotes' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0F172A', margin: 0 }}>
+                  Gestor de Cotizaciones B2B & Empresas
+                </h2>
+                <p style={{ color: '#64748b', fontSize: '0.82rem', margin: 0, marginTop: '0.15rem' }}>
+                  Genera propuestas comerciales mayoristas con cálculo de escalado y descarga en PDF oficial.
+                </p>
+              </div>
+            </div>
+
+            <div className="card card-elevated" style={{ background: '#ffffff', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569', fontWeight: '800' }}>
+                      <th style={{ padding: '0.75rem 1rem' }}>Folio</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Empresa / Contacto</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Producto</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Unidades</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Descuento</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>Total con IVA</th>
+                      <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {quotesList.map((q) => (
+                      <tr key={q.quoteNumber} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '0.75rem 1rem', fontWeight: '800', color: '#176B87' }}>{q.quoteNumber}</td>
+                        <td style={{ padding: '0.75rem 1rem' }}>
+                          <div style={{ fontWeight: '700', color: '#0F172A' }}>{q.companyName}</div>
+                          <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{q.contactName} • {q.email}</div>
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem' }}>{q.productName}</td>
+                        <td style={{ padding: '0.75rem 1rem', fontWeight: '800' }}>{q.units || q.quantity} u</td>
+                        <td style={{ padding: '0.75rem 1rem', color: '#10b981', fontWeight: '800' }}>{q.discountPercent}% OFF</td>
+                        <td style={{ padding: '0.75rem 1rem', fontWeight: '800', color: '#0F172A' }}>
+                          {formatCurrency(q.finalTotal || q.totalAmount)}
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
+                          <button
+                            onClick={() => generateB2BQuotePDF(q)}
+                            className="btn btn-secondary btn-sm"
+                            style={{ fontSize: '0.72rem', padding: '0.3rem 0.6rem' }}
+                          >
+                            <FileDown size={13} />
+                            <span>Descargar PDF</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* =========================================================================
-          MODAL 5: ALTA / EDICIÓN CON CARGA DIRECTA 2D Y 3D Y TESTER DE RELIEVE
+          MODAL 1: FICHA TÉCNICA DE FILAMENTO
+         ========================================================================= */}
+      {isFilamentDetailsModalOpen && selectedFilamentDetails && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div className="card card-elevated" style={{ background: '#ffffff', borderRadius: 'var(--radius-xl)', maxWidth: '520px', width: '100%', padding: '1.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: selectedFilamentDetails.hex, border: '2px solid #cbd5e1' }} />
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: '#0F172A' }}>
+                  Ficha Técnica: {selectedFilamentDetails.name}
+                </h3>
+              </div>
+              <button onClick={() => setIsFilamentDetailsModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', fontSize: '0.82rem', marginBottom: '1.25rem' }}>
+              <div style={{ background: '#f8fafc', padding: '0.65rem', borderRadius: 'var(--radius-md)' }}>
+                <span style={{ color: '#64748b' }}>Tipo de Polímero:</span>
+                <div style={{ fontWeight: '800', color: '#0F172A' }}>{selectedFilamentDetails.type}</div>
+              </div>
+              <div style={{ background: '#f8fafc', padding: '0.65rem', borderRadius: 'var(--radius-md)' }}>
+                <span style={{ color: '#64748b' }}>Fabricante / Proveedor:</span>
+                <div style={{ fontWeight: '800', color: '#0F172A' }}>{selectedFilamentDetails.supplier || 'Polymaker México'}</div>
+              </div>
+              <div style={{ background: '#f8fafc', padding: '0.65rem', borderRadius: 'var(--radius-md)' }}>
+                <span style={{ color: '#64748b' }}>Temp. Extrusión Sugerida:</span>
+                <div style={{ fontWeight: '800', color: '#176B87' }}>{selectedFilamentDetails.extrusionTemp || '205 - 225 °C'}</div>
+              </div>
+              <div style={{ background: '#f8fafc', padding: '0.65rem', borderRadius: 'var(--radius-md)' }}>
+                <span style={{ color: '#64748b' }}>Temp. Cama Caliente:</span>
+                <div style={{ fontWeight: '800', color: '#176B87' }}>{selectedFilamentDetails.bedTemp || '55 - 65 °C'}</div>
+              </div>
+              <div style={{ background: '#f8fafc', padding: '0.65rem', borderRadius: 'var(--radius-md)' }}>
+                <span style={{ color: '#64748b' }}>Densidad:</span>
+                <div style={{ fontWeight: '800', color: '#0F172A' }}>{selectedFilamentDetails.density || '1.24 g/cm³'}</div>
+              </div>
+              <div style={{ background: '#f8fafc', padding: '0.65rem', borderRadius: 'var(--radius-md)' }}>
+                <span style={{ color: '#64748b' }}>Lote / Batch:</span>
+                <div style={{ fontWeight: '800', color: '#0F172A' }}>{selectedFilamentDetails.batchNumber || 'LOT-2026-08'}</div>
+              </div>
+            </div>
+
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.75rem', borderRadius: 'var(--radius-md)', fontSize: '0.78rem', color: '#166534', marginBottom: '1.25rem' }}>
+              <strong>Notas de Impresión: </strong>
+              {selectedFilamentDetails.notes || 'Excelente adherencia entre capas y acabado silk suave con alta definición en relieves tridimensionales.'}
+            </div>
+
+            <button onClick={() => setIsFilamentDetailsModalOpen(false)} className="btn btn-primary" style={{ width: '100%', fontWeight: '800' }}>
+              Cerrar Ficha
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL 2: CALIBRACIÓN DE TARA / BÁSCULA
+         ========================================================================= */}
+      {isTaraCalibrationModalOpen && taraData.filament && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div className="card card-elevated" style={{ background: '#ffffff', borderRadius: 'var(--radius-xl)', maxWidth: '480px', width: '100%', padding: '1.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Scale size={20} color="#176B87" />
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: '#0F172A' }}>
+                  Calibración de Tara: {taraData.filament.name}
+                </h3>
+              </div>
+              <button onClick={() => setIsTaraCalibrationModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.8rem', color: '#64748b', lineHeight: '1.45', marginBottom: '1.25rem' }}>
+              Coloca el carrete en la báscula de taller. Ingresa el peso bruto y el sistema restará el peso del plástico vacío (tara) para calcular los gramos netos exactos.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '1.25rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '800', color: '#475569', marginBottom: '0.3rem' }}>
+                  PESO BRUTO EN BÁSCULA (GRAMOS)
+                </label>
+                <input
+                  type="number"
+                  value={taraData.grossWeight}
+                  onChange={(e) => {
+                    const gross = Number(e.target.value) || 0;
+                    const net = Math.max(0, gross - taraData.spoolTare);
+                    setTaraData({ ...taraData, grossWeight: gross, calculatedNet: net });
+                  }}
+                  style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.9rem', fontWeight: '800' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '800', color: '#475569', marginBottom: '0.3rem' }}>
+                  TARA CARRETE VACÍO (GRAMOS)
+                </label>
+                <input
+                  type="number"
+                  value={taraData.spoolTare}
+                  onChange={(e) => {
+                    const tare = Number(e.target.value) || 0;
+                    const net = Math.max(0, taraData.grossWeight - tare);
+                    setTaraData({ ...taraData, spoolTare: tare, calculatedNet: net });
+                  }}
+                  style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.9rem', fontWeight: '800' }}
+                />
+              </div>
+
+              <div style={{ background: '#e0f2fe', padding: '0.85rem', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
+                <div style={{ fontSize: '0.75rem', color: '#0369a1', fontWeight: '700' }}>STOCK NETO CALCULADO</div>
+                <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0284c7', margin: '0.2rem 0' }}>
+                  {taraData.calculatedNet} g
+                </div>
+                <div style={{ fontSize: '0.72rem', color: '#0369a1' }}>
+                  Valor residual: {formatCurrency((taraData.calculatedNet / 1000) * (taraData.filament.costPerKg || 450))}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button onClick={() => setIsTaraCalibrationModalOpen(false)} className="btn btn-secondary" style={{ flex: 1 }}>
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  saveFilament({ ...taraData.filament, stockGrams: taraData.calculatedNet });
+                  setIsTaraCalibrationModalOpen(false);
+                }}
+                className="btn btn-primary"
+                style={{ flex: 1, fontWeight: '800' }}
+              >
+                Guardar Calibración
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL 3: REGISTRO DE GASTO OPERATIVO
+         ========================================================================= */}
+      {isExpenseModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div className="card card-elevated" style={{ background: '#ffffff', borderRadius: 'var(--radius-xl)', maxWidth: '480px', width: '100%', padding: '1.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Receipt size={20} color="#176B87" />
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: '#0F172A' }}>
+                  Registrar Gasto Operativo
+                </h3>
+              </div>
+              <button onClick={() => setIsExpenseModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!expenseFormData.description || !expenseFormData.amount) {
+                  showToast('Por favor completa la descripción y el monto', 'warning');
+                  return;
+                }
+                saveOperatingExpense({
+                  ...expenseFormData,
+                  amount: Number(expenseFormData.amount)
+                });
+                setIsExpenseModalOpen(false);
+                setExpenseFormData({
+                  category: 'PACKAGING',
+                  description: '',
+                  amount: '',
+                  date: new Date().toISOString().split('T')[0],
+                  supplier: '',
+                  recurring: 'Mensual'
+                });
+              }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}
+            >
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '800', color: '#475569', marginBottom: '0.3rem' }}>
+                  CATEGORÍA DE GASTO
+                </label>
+                <select
+                  value={expenseFormData.category}
+                  onChange={(e) => setExpenseFormData({ ...expenseFormData, category: e.target.value })}
+                  style={{ width: '100%', padding: '0.65rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: '700' }}
+                >
+                  <option value="PACKAGING">📦 Empaque & Embalaje (Cajas, burbuja, stickers)</option>
+                  <option value="SHIPPING">🚚 Paquetería & Guías (DHL, Estafeta, FedEx)</option>
+                  <option value="ELECTRICITY">⚡ Consumo Eléctrico (CFE / Taller 3D)</option>
+                  <option value="SUPPLIES">🛠️ Insumos & Mantenimiento (Alcohol, boquillas, PEI)</option>
+                  <option value="FIXED">💼 Gastos Fijos (Renta, internet, servicios)</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '800', color: '#475569', marginBottom: '0.3rem' }}>
+                  DESCRIPCIÓN DEL GASTO
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej. 100 Cajas Kraft 15x15 + Cinta de embalaje"
+                  value={expenseFormData.description}
+                  onChange={(e) => setExpenseFormData({ ...expenseFormData, description: e.target.value })}
+                  style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '800', color: '#475569', marginBottom: '0.3rem' }}>
+                    MONTO (MXN $)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={expenseFormData.amount}
+                    onChange={(e) => setExpenseFormData({ ...expenseFormData, amount: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.9rem', fontWeight: '800' }}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '800', color: '#475569', marginBottom: '0.3rem' }}>
+                    PROVEEDOR
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej. Empaques MX"
+                    value={expenseFormData.supplier}
+                    onChange={(e) => setExpenseFormData({ ...expenseFormData, supplier: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button type="button" onClick={() => setIsExpenseModalOpen(false)} className="btn btn-secondary" style={{ flex: 1 }}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1, fontWeight: '800' }}>
+                  Guardar Gasto
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL 4: CREACIÓN DE PEDIDO MANUAL MULTICANAL
+         ========================================================================= */}
+      {isManualOrderModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div className="card card-elevated" style={{ background: '#ffffff', borderRadius: 'var(--radius-xl)', maxWidth: '520px', width: '100%', padding: '1.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Plus size={20} color="#176B87" />
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: '#0F172A' }}>
+                  Crear Pedido Manual (WhatsApp / IG / Local)
+                </h3>
+              </div>
+              <button onClick={() => setIsManualOrderModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                createManualOrder(manualOrderData);
+                setIsManualOrderModalOpen(false);
+              }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
+            >
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                    CANAL DE ORIGEN
+                  </label>
+                  <select
+                    value={manualOrderData.channel}
+                    onChange={(e) => setManualOrderData({ ...manualOrderData, channel: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.82rem', fontWeight: '700' }}
+                  >
+                    <option value="WHATSAPP">💬 WhatsApp Directo</option>
+                    <option value="INSTAGRAM">📸 Instagram DM</option>
+                    <option value="B2B">🏢 B2B Corporativo</option>
+                    <option value="LOCAL">🏬 Taller / Local</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                    PRIORIDAD
+                  </label>
+                  <select
+                    value={manualOrderData.priority}
+                    onChange={(e) => setManualOrderData({ ...manualOrderData, priority: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.82rem', fontWeight: '700' }}
+                  >
+                    <option value="URGENT">🔴 Urgente Express</option>
+                    <option value="MEDIUM">🟡 Medio Estándar</option>
+                    <option value="LOW">🟢 Bajo / Stock</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                  NOMBRE DEL CLIENTE
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej. Carlos Mendoza"
+                  value={manualOrderData.customerName}
+                  onChange={(e) => setManualOrderData({ ...manualOrderData, customerName: e.target.value })}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                    PRODUCTO
+                  </label>
+                  <input
+                    type="text"
+                    value={manualOrderData.productName}
+                    onChange={(e) => setManualOrderData({ ...manualOrderData, productName: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                    GRABADO / RELIEVE 3D
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej. VALENTINA"
+                    value={manualOrderData.customText}
+                    onChange={(e) => setManualOrderData({ ...manualOrderData, customText: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                    TOTAL COBRADO ($ MXN)
+                  </label>
+                  <input
+                    type="number"
+                    value={manualOrderData.total}
+                    onChange={(e) => setManualOrderData({ ...manualOrderData, total: Number(e.target.value) })}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.9rem', fontWeight: '800' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                    FILAMENTO CONSUMIDO (G)
+                  </label>
+                  <input
+                    type="number"
+                    value={manualOrderData.filamentGrams}
+                    onChange={(e) => setManualOrderData({ ...manualOrderData, filamentGrams: Number(e.target.value) })}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.9rem', fontWeight: '800' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button type="button" onClick={() => setIsManualOrderModalOpen(false)} className="btn btn-secondary" style={{ flex: 1 }}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1, fontWeight: '800' }}>
+                  Crear e Ingresar a Cola
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL 5: REGISTRAR / EDITAR IMPRESORA 3D
+         ========================================================================= */}
+      {isPrinterModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div className="card card-elevated" style={{ background: '#ffffff', borderRadius: 'var(--radius-xl)', maxWidth: '480px', width: '100%', padding: '1.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Printer size={20} color="#176B87" />
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: '#0F172A' }}>
+                  {editingPrinter ? 'Editar Impresora' : 'Registrar Nueva Impresora 3D'}
+                </h3>
+              </div>
+              <button onClick={() => setIsPrinterModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                savePrinter(printerFormData);
+                setIsPrinterModalOpen(false);
+              }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
+            >
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                  NOMBRE / IDENTIFICADOR DE TALLER
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej. Bambu Lab X1C #03"
+                  value={printerFormData.name}
+                  onChange={(e) => setPrinterFormData({ ...printerFormData, name: e.target.value })}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                    MODELO
+                  </label>
+                  <select
+                    value={printerFormData.model}
+                    onChange={(e) => setPrinterFormData({ ...printerFormData, model: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+                  >
+                    <option value="Bambu Lab X1-Carbon">Bambu Lab X1-Carbon</option>
+                    <option value="Bambu Lab P1S">Bambu Lab P1S</option>
+                    <option value="Bambu Lab A1">Bambu Lab A1</option>
+                    <option value="Creality K1 Max">Creality K1 Max</option>
+                    <option value="Original Prusa MK4">Original Prusa MK4</option>
+                    <option value="Ender 3 V3">Ender 3 V3</option>
+                    <option value="Otro Modelo">Otro Modelo Custom</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                    BOQUILLA ACTIVA
+                  </label>
+                  <select
+                    value={printerFormData.nozzleSize}
+                    onChange={(e) => setPrinterFormData({ ...printerFormData, nozzleSize: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+                  >
+                    <option value="0.2 mm Detail">0.2 mm (Ultra Detalle)</option>
+                    <option value="0.4 mm Hardened Steel">0.4 mm (Estándar Taller)</option>
+                    <option value="0.6 mm High Flow">0.6 mm (Rápida / Alta Resistencia)</option>
+                    <option value="0.8 mm Draft">0.8 mm (Gran Formato)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                    TIPO DE CAMA
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej. PEI Texturizado"
+                    value={printerFormData.bedType}
+                    onChange={(e) => setPrinterFormData({ ...printerFormData, bedType: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                    VOLUMEN X Y Z (MM)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="256 x 256 x 256 mm"
+                    value={printerFormData.bedDimensions}
+                    onChange={(e) => setPrinterFormData({ ...printerFormData, bedDimensions: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button type="button" onClick={() => setIsPrinterModalOpen(false)} className="btn btn-secondary" style={{ flex: 1 }}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1, fontWeight: '800' }}>
+                  Guardar Impresora
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL 6: REGISTRO DE MANTENIMIENTO DE IMPRESORA
+         ========================================================================= */}
+      {isMaintenanceModalOpen && selectedPrinterForMaint && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div className="card card-elevated" style={{ background: '#ffffff', borderRadius: 'var(--radius-xl)', maxWidth: '480px', width: '100%', padding: '1.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Wrench size={20} color="#176B87" />
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: '#0F172A' }}>
+                  Mantenimiento: {selectedPrinterForMaint.name}
+                </h3>
+              </div>
+              <button onClick={() => setIsMaintenanceModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                  DETALLE DEL MANTENIMIENTO REALIZADO
+                </label>
+                <textarea
+                  rows={4}
+                  placeholder="Ej. Limpieza y desengrase de varillas de carbono, lubricación de husillo Z, cambio de boquilla 0.4mm y calibración de nivelación de cama."
+                  value={maintenanceNotes}
+                  onChange={(e) => setMaintenanceNotes(e.target.value)}
+                  style={{ width: '100%', padding: '0.65rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button onClick={() => setIsMaintenanceModalOpen(false)} className="btn btn-secondary" style={{ flex: 1 }}>
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    savePrinter({
+                      ...selectedPrinterForMaint,
+                      lastMaintenance: `${todayStr} (${maintenanceNotes})`,
+                      status: 'AVAILABLE'
+                    });
+                    setIsMaintenanceModalOpen(false);
+                  }}
+                  className="btn btn-primary"
+                  style={{ flex: 1, fontWeight: '800' }}
+                >
+                  Registrar & Marcar Lista
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL 7: EDITAR PRODUCTO & ZONAS 3D DINÁMICAS (LIGADAS AL STOCK)
          ========================================================================= */}
       {isProductModalOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.75)',
-            backdropFilter: 'blur(6px)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '1.5rem'
-          }}
-          onClick={() => setIsProductModalOpen(false)}
-        >
-          <div
-            style={{
-              background: '#ffffff',
-              borderRadius: 'var(--radius-xl)',
-              width: '100%',
-              maxWidth: '980px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              padding: '2rem',
-              position: 'relative'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: '800', color: '#0F172A' }}>
-                  {editingProduct ? `Editar Producto: ${editingProduct.name}` : 'Cargar & Publicar Nuevo Producto'}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div className="card card-elevated" style={{ background: '#ffffff', borderRadius: 'var(--radius-xl)', maxWidth: '960px', width: '100%', maxHeight: '90vh', overflowY: 'auto', padding: '1.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Tag size={20} color="#176B87" />
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: '#0F172A' }}>
+                  {editingProduct ? `Editar: ${editingProduct.name}` : 'Crear Nuevo Producto 3D'}
                 </h3>
-                <p style={{ color: '#64748b', fontSize: '0.82rem', margin: 0, marginTop: '0.2rem' }}>
-                  Sube fotos 2D o modelos 3D (.GLB, .GLTF, .STL) y configura los colores por zonas.
-                </p>
               </div>
               <button onClick={() => setIsProductModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
                 <X size={20} />
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: '2rem', alignItems: 'start' }}>
-              
-              {/* Left Form: Product Data & Uploads */}
-              <form onSubmit={handleSaveProduct}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                  <div>
-                    <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>
-                      Nombre del Producto *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Ej. Esfera Navideña Personalizada"
-                      value={productFormData.name}
-                      onChange={(e) => setProductFormData({ ...productFormData, name: e.target.value })}
-                      style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                    />
-                  </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '1.5rem' }}>
+              {/* Left Form */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  saveProduct({
+                    ...productFormData,
+                    id: editingProduct ? editingProduct.id : `prod-${Date.now()}`
+                  });
+                  setIsProductModalOpen(false);
+                }}
+                style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
+              >
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                    NOMBRE DEL PRODUCTO
+                  </label>
+                  <input
+                    type="text"
+                    value={productFormData.name}
+                    onChange={(e) => setProductFormData({ ...productFormData, name: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                    required
+                  />
+                </div>
 
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
                   <div>
-                    <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>
-                      Subcolección / Categoría *
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                      COLECCIÓN
                     </label>
                     <select
                       value={productFormData.subcollection}
                       onChange={(e) => setProductFormData({ ...productFormData, subcollection: e.target.value })}
-                      style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                      style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
                     >
                       <option value="escolar">Escolar & Estudiantes</option>
                       <option value="oficina">Oficina & Escritorio</option>
-                      <option value="hogar">Hogar & Decoración</option>
+                      <option value="hogar">Hogar & Deco</option>
                       <option value="personal">Personal & Accesorios</option>
-                      <option value="kids">Kids & Juguetes 3D</option>
-                      <option value="empresas">Empresas & B2B</option>
-                      <option value="eventos">Eventos & Souvenirs</option>
+                      <option value="kids">Kids & Juguetes</option>
+                      <option value="empresas">Empresas (B2B)</option>
+                      <option value="eventos">Eventos & Recuerdos</option>
                     </select>
                   </div>
-                </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                   <div>
-                    <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>
-                      Precio Base ($ MXN) *
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                      PRECIO BASE ($ MXN)
                     </label>
                     <input
                       type="number"
-                      required
-                      min="10"
                       value={productFormData.basePrice}
-                      onChange={(e) => setProductFormData({ ...productFormData, basePrice: e.target.value })}
-                      style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: '700' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>
-                      Geometría 3D Base
-                    </label>
-                    <select
-                      value={productFormData.modelType}
-                      onChange={(e) => setProductFormData({ ...productFormData, modelType: e.target.value })}
-                      style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                    >
-                      <option value="sphere">Esfera Decorativa / Navideña</option>
-                      <option value="keychain">Llavero / Tag Bicapa</option>
-                      <option value="car">Auto a Escala</option>
-                      <option value="cup">Taza / Cilindro</option>
-                      <option value="planter">Maceta Geométrica</option>
-                      <option value="trophy">Trofeo Ejecutivo</option>
-                      <option value="custom_file">📁 Modelo 3D Subido (.GLB/.STL)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>
-                      Gramos BOM (g)
-                    </label>
-                    <input
-                      type="number"
-                      value={productFormData.filamentGrams}
-                      onChange={(e) => setProductFormData({ ...productFormData, filamentGrams: e.target.value })}
-                      style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                      onChange={(e) => setProductFormData({ ...productFormData, basePrice: Number(e.target.value) })}
+                      style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: '800' }}
+                      required
                     />
                   </div>
                 </div>
 
-                {/* 2D Image Upload & Live Thumbnail Box */}
-                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <ImageIcon size={16} color="#176B87" />
-                      <strong style={{ fontSize: '0.82rem', color: '#0F172A' }}>
-                        Imagen 2D / Render Fotográfico
-                      </strong>
-                    </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
+                    GEOMETRÍA / MODELO 3D
+                  </label>
+                  <select
+                    value={productFormData.modelType}
+                    onChange={(e) => setProductFormData({ ...productFormData, modelType: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+                  >
+                    <option value="keychain">Llavero / Placa Tag (2 Caras Grabadas)</option>
+                    <option value="trophy">Trofeo Corporativo / Prisma Award</option>
+                    <option value="sphere">Esfera Geométrica / Deco</option>
+                    <option value="car">Vehículo / Modelo Articulado</option>
+                    <option value="cup">Taza / Portalápices de Escritorio</option>
+                    <option value="planter">Maceta Hexagonal con Relieve</option>
+                  </select>
+                </div>
 
-                    {productFormData.image2D && (
-                      <span style={{ fontSize: '0.7rem', fontWeight: '800', padding: '0.15rem 0.5rem', borderRadius: '4px', background: '#ecfdf5', color: '#059669' }}>
-                        ✓ Imagen Cargada
-                      </span>
-                    )}
+                {/* Live Filament-Linked Color Palette */}
+                <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#0F172A', marginBottom: '0.4rem' }}>
+                    COLORES LIGADOS AL STOCK DISPONIBLE
                   </div>
-
-                  {productFormData.image2D ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: '#ffffff', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid #e2e8f0' }}>
-                      <img
-                        src={productFormData.image2D}
-                        alt="Preview 2D"
-                        style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                      />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.82rem', fontWeight: '700', color: '#0F172A' }}>Vista Previa en Tienda Activa</div>
-                        <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Se mostrará en la tarjeta de producto</div>
-                      </div>
+                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    {filamentInventory.filter((f) => !f.isArchived).map((fil) => (
                       <button
+                        key={fil.id}
                         type="button"
-                        onClick={() => setProductFormData({ ...productFormData, image2D: null })}
-                        style={{ padding: '0.35rem 0.65rem', background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
+                        onClick={() => setProductFormData({ ...productFormData, previewBaseColor: fil.hex })}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          padding: '0.3rem 0.5rem',
+                          borderRadius: '4px',
+                          border: productFormData.previewBaseColor === fil.hex ? '2px solid #176B87' : '1px solid #cbd5e1',
+                          background: '#ffffff',
+                          fontSize: '0.7rem',
+                          fontWeight: '700',
+                          cursor: 'pointer'
+                        }}
                       >
-                        Quitar
+                        <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: fil.hex, border: '1px solid #cbd5e1' }} />
+                        <span>{fil.name} ({fil.stockGrams}g)</span>
                       </button>
-                    </div>
-                  ) : (
-                    <div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handle2DImageChange}
-                        style={{ fontSize: '0.82rem', width: '100%' }}
-                      />
-                      <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.25rem' }}>
-                        Formatos soportados: .PNG, .JPG, .WEBP (hasta 25 MB)
-                      </div>
-                    </div>
-                  )}
+                    ))}
+                  </div>
                 </div>
 
-                {/* 3D Model File Uploader & Status Box */}
-                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <FileUp size={16} color="#176B87" />
-                      <strong style={{ fontSize: '0.82rem', color: '#0F172A' }}>
-                        Archivo 3D Personalizado (.GLB / .GLTF / .STL)
-                      </strong>
-                    </div>
-
-                    {productFormData.custom3DFileUrl && (
-                      <span style={{ fontSize: '0.7rem', fontWeight: '800', padding: '0.15rem 0.5rem', borderRadius: '4px', background: '#e0f2fe', color: '#0369a1' }}>
-                        ✓ Modelo 3D Activo
-                      </span>
-                    )}
-                  </div>
-
-                  {productFormData.custom3DFileUrl ? (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid #e2e8f0' }}>
-                      <div>
-                        <div style={{ fontSize: '0.82rem', fontWeight: '700', color: '#0F172A' }}>
-                          Archivo 3D: {(productFormData.custom3DFileType || '3D').toUpperCase()}
-                        </div>
-                        <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Renderizándose en vivo en el visor derecho</div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setProductFormData({ ...productFormData, modelType: 'keychain', custom3DFileUrl: null, custom3DFileType: null })}
-                        style={{ padding: '0.35rem 0.65rem', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
-                      >
-                        Revertir a Estándar
-                      </button>
-                    </div>
-                  ) : (
-                    <div>
-                      <input
-                        type="file"
-                        accept=".glb,.gltf,.stl"
-                        onChange={handle3DModelFileChange}
-                        style={{ fontSize: '0.82rem', width: '100%' }}
-                      />
-                      <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.25rem' }}>
-                        Sube archivos 3D exportados de Fusion 360, Blender o Tinkercad.
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Color Customization Mode (Free vs Predefined Options/Combos) */}
-                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 'var(--radius-lg)', border: '1px solid #e2e8f0', marginBottom: '1.25rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem' }}>
-                    <Palette size={16} color="#176B87" />
-                    <strong style={{ fontSize: '0.85rem', color: '#0F172A' }}>
-                      Modo de Selección de Colores para el Cliente
-                    </strong>
-                  </div>
-
-                  {/* Mode Selector Radio */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
-                    <button
-                      type="button"
-                      onClick={() => setProductFormData({ ...productFormData, colorMode: 'FREE' })}
-                      style={{
-                        padding: '0.65rem 0.5rem',
-                        borderRadius: 'var(--radius-md)',
-                        border: productFormData.colorMode !== 'PRESETS' ? '2px solid #176B87' : '1px solid #cbd5e1',
-                        background: productFormData.colorMode !== 'PRESETS' ? '#e0f2fe' : '#ffffff',
-                        color: productFormData.colorMode !== 'PRESETS' ? '#0369a1' : '#64748b',
-                        fontWeight: '700',
-                        fontSize: '0.78rem',
-                        cursor: 'pointer',
-                        textAlign: 'center'
-                      }}
-                    >
-                      🎨 Selección Libre por Capas
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setProductFormData({ ...productFormData, colorMode: 'PRESETS' })}
-                      style={{
-                        padding: '0.65rem 0.5rem',
-                        borderRadius: 'var(--radius-md)',
-                        border: productFormData.colorMode === 'PRESETS' ? '2px solid #176B87' : '1px solid #cbd5e1',
-                        background: productFormData.colorMode === 'PRESETS' ? '#e0f2fe' : '#ffffff',
-                        color: productFormData.colorMode === 'PRESETS' ? '#0369a1' : '#64748b',
-                        fontWeight: '700',
-                        fontSize: '0.78rem',
-                        cursor: 'pointer',
-                        textAlign: 'center'
-                      }}
-                    >
-                      🎯 Combos / Opciones Fijas
-                    </button>
-                  </div>
-
-                  {productFormData.colorMode === 'PRESETS' ? (
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                          Configura las opciones fijas disponibles para el comprador:
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const activeFilaments = filamentInventory.filter((f) => !f.isArchived && !f.isBlocked && (f.stockGrams || 0) > 0);
-                            const base = activeFilaments[0] || filamentInventory[0];
-                            const accent = activeFilaments[1] || filamentInventory[1] || base;
-                            const relief = activeFilaments[2] || filamentInventory[2] || base;
-                            const newPreset = {
-                              id: `preset-${Date.now()}`,
-                              name: `Opción ${(productFormData.colorPresets || []).length + 1}: ${base.name}, ${accent.name} & ${relief.name}`,
-                              description: 'Combinación personalizada por IdeaForm',
-                              baseColor: { id: base.id, name: base.name, hex: base.hex },
-                              accentColor: { id: accent.id, name: accent.name, hex: accent.hex },
-                              reliefColor: { id: relief.id, name: relief.name, hex: relief.hex }
-                            };
-                            setProductFormData((prev) => ({
-                              ...prev,
-                              colorPresets: [...(prev.colorPresets || []), newPreset]
-                            }));
-                          }}
-                          style={{
-                            padding: '0.3rem 0.65rem',
-                            background: '#176B87',
-                            color: '#ffffff',
-                            border: 'none',
-                            borderRadius: '4px',
-                            fontSize: '0.72rem',
-                            fontWeight: '800',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          + Agregar Combo Fijo
-                        </button>
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '260px', overflowY: 'auto' }}>
-                        {(productFormData.colorPresets || []).map((preset, pIdx) => {
-                          const availability = isComboAvailable(preset);
-
-                          return (
-                            <div
-                              key={preset.id || pIdx}
-                              style={{
-                                background: '#ffffff',
-                                border: availability.available ? '1px solid #cbd5e1' : '1.5px solid #ef4444',
-                                borderRadius: 'var(--radius-md)',
-                                padding: '0.75rem',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '0.5rem'
-                              }}
-                            >
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
-                                <input
-                                  type="text"
-                                  value={preset.name}
-                                  onChange={(e) => {
-                                    const nextName = e.target.value;
-                                    setProductFormData((prev) => ({
-                                      ...prev,
-                                      colorPresets: prev.colorPresets.map((p, idx) =>
-                                        idx === pIdx ? { ...p, name: nextName } : p
-                                      )
-                                    }));
-                                  }}
-                                  placeholder="Nombre del combo..."
-                                  style={{
-                                    flex: 1,
-                                    padding: '0.35rem 0.55rem',
-                                    fontSize: '0.8rem',
-                                    fontWeight: '800',
-                                    borderRadius: '4px',
-                                    border: '1px solid #cbd5e1',
-                                    color: '#0F172A'
-                                  }}
-                                />
-
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setProductFormData((prev) => ({
-                                      ...prev,
-                                      previewBaseColor: preset.baseColor?.hex || preset.baseColor || '#176B87',
-                                      previewAccentColor: preset.accentColor?.hex || preset.accentColor || '#D4AF37',
-                                      previewReliefColor: preset.reliefColor?.hex || preset.reliefColor || '#FFFFFF'
-                                    }));
-                                  }}
-                                  style={{
-                                    padding: '0.3rem 0.6rem',
-                                    background: '#e0f2fe',
-                                    color: '#0369a1',
-                                    border: '1px solid #bae6fd',
-                                    borderRadius: '4px',
-                                    fontSize: '0.7rem',
-                                    fontWeight: '800',
-                                    cursor: 'pointer'
-                                  }}
-                                >
-                                  👁️ Probar 3D
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setProductFormData((prev) => ({
-                                      ...prev,
-                                      colorPresets: prev.colorPresets.filter((_, idx) => idx !== pIdx)
-                                    }));
-                                  }}
-                                  style={{
-                                    padding: '0.3rem 0.5rem',
-                                    background: '#fee2e2',
-                                    color: '#dc2626',
-                                    border: '1px solid #fca5a5',
-                                    borderRadius: '4px',
-                                    fontSize: '0.7rem',
-                                    cursor: 'pointer'
-                                  }}
-                                  title="Eliminar combo"
-                                >
-                                  <Trash2 size={12} />
-                                </button>
-                              </div>
-
-                              {/* 3 Colors Selector from Inventory */}
-                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.4rem' }}>
-                                <div>
-                                  <label style={{ fontSize: '0.68rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.15rem' }}>
-                                    1. Base / Fondo:
-                                  </label>
-                                  <select
-                                    value={preset.baseColor?.id || preset.baseColor?.hex}
-                                    onChange={(e) => {
-                                      const found = filamentInventory.find((f) => f.id === e.target.value || f.hex === e.target.value);
-                                      if (found) {
-                                        setProductFormData((prev) => ({
-                                          ...prev,
-                                          colorPresets: prev.colorPresets.map((p, idx) =>
-                                            idx === pIdx
-                                              ? { ...p, baseColor: { id: found.id, name: found.name, hex: found.hex } }
-                                              : p
-                                          )
-                                        }));
-                                      }
-                                    }}
-                                    style={{ width: '100%', padding: '0.35rem', fontSize: '0.72rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                                  >
-                                    {filamentInventory.map((f) => (
-                                      <option key={f.id} value={f.id}>
-                                        {f.name} ({f.stockGrams}g) {f.isBlocked ? '🚫' : (f.stockGrams || 0) === 0 ? '🔴' : ''}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-
-                                <div>
-                                  <label style={{ fontSize: '0.68rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.15rem' }}>
-                                    2. Acento / Bisel:
-                                  </label>
-                                  <select
-                                    value={preset.accentColor?.id || preset.accentColor?.hex}
-                                    onChange={(e) => {
-                                      const found = filamentInventory.find((f) => f.id === e.target.value || f.hex === e.target.value);
-                                      if (found) {
-                                        setProductFormData((prev) => ({
-                                          ...prev,
-                                          colorPresets: prev.colorPresets.map((p, idx) =>
-                                            idx === pIdx
-                                              ? { ...p, accentColor: { id: found.id, name: found.name, hex: found.hex } }
-                                              : p
-                                          )
-                                        }));
-                                      }
-                                    }}
-                                    style={{ width: '100%', padding: '0.35rem', fontSize: '0.72rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                                  >
-                                    {filamentInventory.map((f) => (
-                                      <option key={f.id} value={f.id}>
-                                        {f.name} ({f.stockGrams}g) {f.isBlocked ? '🚫' : (f.stockGrams || 0) === 0 ? '🔴' : ''}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-
-                                <div>
-                                  <label style={{ fontSize: '0.68rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.15rem' }}>
-                                    3. Relieve / Texto:
-                                  </label>
-                                  <select
-                                    value={preset.reliefColor?.id || preset.reliefColor?.hex}
-                                    onChange={(e) => {
-                                      const found = filamentInventory.find((f) => f.id === e.target.value || f.hex === e.target.value);
-                                      if (found) {
-                                        setProductFormData((prev) => ({
-                                          ...prev,
-                                          colorPresets: prev.colorPresets.map((p, idx) =>
-                                            idx === pIdx
-                                              ? { ...p, reliefColor: { id: found.id, name: found.name, hex: found.hex } }
-                                              : p
-                                          )
-                                        }));
-                                      }
-                                    }}
-                                    style={{ width: '100%', padding: '0.35rem', fontSize: '0.72rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                                  >
-                                    {filamentInventory.map((f) => (
-                                      <option key={f.id} value={f.id}>
-                                        {f.name} ({f.stockGrams}g) {f.isBlocked ? '🚫' : (f.stockGrams || 0) === 0 ? '🔴' : ''}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
-
-                              {/* Status Badge */}
-                              <div style={{ fontSize: '0.68rem', fontWeight: '700' }}>
-                                {availability.available ? (
-                                  <span style={{ color: '#059669' }}>✓ 100% Disponible para venta en tienda</span>
-                                ) : (
-                                  <span style={{ color: '#dc2626' }}>
-                                    ⚠️ Desactivado automáticamente en la tienda (Falta: {availability.missingColors.join(', ')})
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8rem', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={productFormData.allowBaseColor}
-                          onChange={(e) => setProductFormData({ ...productFormData, allowBaseColor: e.target.checked })}
-                        />
-                        <span><strong>Zona 1: Color Base / Cuerpo Principal</strong></span>
-                      </label>
-
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8rem', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={productFormData.allowAccentColor}
-                          onChange={(e) => setProductFormData({ ...productFormData, allowAccentColor: e.target.checked })}
-                        />
-                        <span><strong>Zona 2: Color de Acentos / Bisel</strong></span>
-                      </label>
-
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8rem', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={productFormData.allowReliefColor}
-                          onChange={(e) => setProductFormData({ ...productFormData, allowReliefColor: e.target.checked })}
-                        />
-                        <span><strong>Zona 3: Color de Relieve / Texto 3D</strong></span>
-                      </label>
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                  <button type="button" className="btn btn-secondary" onClick={() => setIsProductModalOpen(false)}>
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  <button type="button" onClick={() => setIsProductModalOpen(false)} className="btn btn-secondary" style={{ flex: 1 }}>
                     Cancelar
                   </button>
-                  <button type="submit" className="btn btn-primary" style={{ fontWeight: '800' }}>
-                    Guardar y Publicar en Tienda
+                  <button type="submit" className="btn btn-primary" style={{ flex: 1, fontWeight: '800' }}>
+                    Guardar Producto
                   </button>
                 </div>
               </form>
 
-              {/* Right: Live Interactive 3D Model Tester */}
+              {/* Right Live 3D Tester */}
               <div style={{ background: '#f1f5f9', borderRadius: 'var(--radius-lg)', padding: '1.25rem', border: '1px solid #cbd5e1' }}>
                 <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                   <IdeaFormLogo size="small" showTagline={false} />
@@ -1950,56 +2607,13 @@ const AdminDashboard = () => {
                 <div style={{ height: '320px', background: '#ffffff', borderRadius: 'var(--radius-md)', overflow: 'hidden', position: 'relative', border: '1px solid #e2e8f0' }}>
                   <ThreeViewer
                     modelType={productFormData.modelType}
-                    custom3DFileUrl={productFormData.custom3DFileUrl}
-                    custom3DFileType={productFormData.custom3DFileType}
                     baseColor={productFormData.previewBaseColor}
                     accentColor={productFormData.previewAccentColor}
                     reliefColor={productFormData.previewReliefColor}
-                    textColor={productFormData.previewReliefColor}
-                    customText="MUESTRA 3D"
+                    materialType="PLA_SILK"
+                    customText="IDEAFORM"
+                    showDimensions={false}
                   />
-                </div>
-
-                {/* Color Swatches Tester for the Admin */}
-                <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.78rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff', padding: '0.4rem 0.75rem', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
-                    <span style={{ fontWeight: '700', color: '#334155' }}>Color de Base / Fondo:</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <input
-                        type="color"
-                        value={productFormData.previewBaseColor}
-                        onChange={(e) => setProductFormData({ ...productFormData, previewBaseColor: e.target.value })}
-                        style={{ border: 'none', width: '28px', height: '24px', cursor: 'pointer', borderRadius: '4px' }}
-                      />
-                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>{productFormData.previewBaseColor}</span>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff', padding: '0.4rem 0.75rem', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
-                    <span style={{ fontWeight: '700', color: '#334155' }}>Color de Acento / Bisel:</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <input
-                        type="color"
-                        value={productFormData.previewAccentColor}
-                        onChange={(e) => setProductFormData({ ...productFormData, previewAccentColor: e.target.value })}
-                        style={{ border: 'none', width: '28px', height: '24px', cursor: 'pointer', borderRadius: '4px' }}
-                      />
-                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>{productFormData.previewAccentColor}</span>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff', padding: '0.4rem 0.75rem', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
-                    <span style={{ fontWeight: '700', color: '#334155' }}>Color de Relieve / Texto 3D:</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <input
-                        type="color"
-                        value={productFormData.previewReliefColor}
-                        onChange={(e) => setProductFormData({ ...productFormData, previewReliefColor: e.target.value })}
-                        style={{ border: 'none', width: '28px', height: '24px', cursor: 'pointer', borderRadius: '4px' }}
-                      />
-                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>{productFormData.previewReliefColor}</span>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -2007,578 +2621,12 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* =========================================================================
-          MODAL 1: EDICIÓN Y DETALLE COMPLETO DE COTIZACIÓN B2B
-         ========================================================================= */}
-      {selectedQuoteForDetail && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.75)',
-            backdropFilter: 'blur(6px)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '1.5rem'
-          }}
-          onClick={() => setSelectedQuoteForDetail(null)}
-        >
-          <div
-            style={{
-              background: '#ffffff',
-              borderRadius: 'var(--radius-xl)',
-              width: '100%',
-              maxWidth: '700px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              padding: '2rem',
-              position: 'relative'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span className="badge badge-primary" style={{ background: '#176B87' }}>
-                  FOLIO: {selectedQuoteForDetail.quoteNumber}
-                </span>
-                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: '#0F172A' }}>
-                  Detalle & Edición de Cotización
-                </h3>
-              </div>
-              <button onClick={() => setSelectedQuoteForDetail(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
-                <X size={20} />
-              </button>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-              <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Razón Social</label>
-                <input
-                  type="text"
-                  value={selectedQuoteForDetail.companyName}
-                  onChange={(e) => setSelectedQuoteForDetail({ ...selectedQuoteForDetail, companyName: e.target.value })}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>RFC (CFDI 4.0)</label>
-                <input
-                  type="text"
-                  value={selectedQuoteForDetail.rfc || ''}
-                  onChange={(e) => setSelectedQuoteForDetail({ ...selectedQuoteForDetail, rfc: e.target.value.toUpperCase() })}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                />
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-              <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Piezas / Volumen</label>
-                <input
-                  type="number"
-                  value={selectedQuoteForDetail.units || selectedQuoteForDetail.quantity || 100}
-                  onChange={(e) => {
-                    const newUnits = Number(e.target.value);
-                    const unitPrice = selectedQuoteForDetail.unitPrice || 85;
-                    const disc = selectedQuoteForDetail.discountPercent || 25;
-                    const sub = unitPrice * (1 - disc / 100) * newUnits;
-                    const iva = sub * 0.16;
-                    setSelectedQuoteForDetail({
-                      ...selectedQuoteForDetail,
-                      units: newUnits,
-                      quantity: newUnits,
-                      subtotal: sub,
-                      iva: iva,
-                      finalTotal: sub + iva,
-                      totalAmount: sub + iva
-                    });
-                  }}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Descuento B2B (%)</label>
-                <input
-                  type="number"
-                  value={selectedQuoteForDetail.discountPercent || 25}
-                  onChange={(e) => {
-                    const newDisc = Number(e.target.value);
-                    const newUnits = selectedQuoteForDetail.units || 100;
-                    const unitPrice = selectedQuoteForDetail.unitPrice || 85;
-                    const sub = unitPrice * (1 - newDisc / 100) * newUnits;
-                    const iva = sub * 0.16;
-                    setSelectedQuoteForDetail({
-                      ...selectedQuoteForDetail,
-                      discountPercent: newDisc,
-                      subtotal: sub,
-                      iva: iva,
-                      finalTotal: sub + iva,
-                      totalAmount: sub + iva
-                    });
-                  }}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                />
-              </div>
-            </div>
-
-            {/* Total Summary */}
-            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Total Neto Calculado:</div>
-                <div style={{ fontSize: '1.35rem', fontWeight: '800', color: '#176B87' }}>
-                  {formatCurrency(selectedQuoteForDetail.finalTotal || selectedQuoteForDetail.totalAmount)}
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => generateB2BQuotePDF(selectedQuoteForDetail)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: '700' }}
-                >
-                  <FileDown size={14} />
-                  <span>Descargar PDF</span>
-                </button>
-
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => handleUpdateQuote(selectedQuoteForDetail)}
-                  style={{ fontWeight: '700' }}
-                >
-                  Guardar Cambios
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================================
-          MODAL 2: BITÁCORA Y NOTAS DE TALLER
-         ========================================================================= */}
-      {selectedOrderForNotes && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.75)',
-            backdropFilter: 'blur(6px)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '1.5rem'
-          }}
-          onClick={() => setSelectedOrderForNotes(null)}
-        >
-          <div
-            style={{
-              background: '#ffffff',
-              borderRadius: 'var(--radius-xl)',
-              width: '100%',
-              maxWidth: '540px',
-              padding: '2rem',
-              position: 'relative'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '800', color: '#0F172A' }}>
-                Bitácora de Taller — #{selectedOrderForNotes.orderNumber}
-              </h3>
-              <button onClick={() => setSelectedOrderForNotes(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
-                <X size={18} />
-              </button>
-            </div>
-
-            <div style={{ maxHeight: '240px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.25rem' }}>
-              {(orderNotesMap[selectedOrderForNotes.orderNumber] || []).length === 0 ? (
-                <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem', padding: '1rem' }}>
-                  No hay notas registradas para esta orden.
-                </div>
-              ) : (
-                (orderNotesMap[selectedOrderForNotes.orderNumber] || []).map((n) => (
-                  <div key={n.id} style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid #e2e8f0', fontSize: '0.85rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', fontSize: '0.72rem', marginBottom: '0.2rem' }}>
-                      <strong>{n.author}</strong>
-                      <span>{n.timestamp}</span>
-                    </div>
-                    <div style={{ color: '#0F172A' }}>{n.text}</div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <input
-                type="text"
-                placeholder="Escribe una nota interna..."
-                value={newCommentText}
-                onChange={(e) => setNewCommentText(e.target.value)}
-                style={{ flex: 1, padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-sm)', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none' }}
-              />
-              <button
-                className="btn btn-primary"
-                onClick={() => handleAddComment(selectedOrderForNotes.orderNumber)}
-                style={{ fontWeight: '700', padding: '0.65rem 1rem' }}
-              >
-                Agregar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================================
-          MODAL 3: NUEVO PEDIDO MANUAL MULTICANAL
-         ========================================================================= */}
-      {isManualOrderModalOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.75)',
-            backdropFilter: 'blur(6px)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '1.5rem'
-          }}
-          onClick={() => setIsManualOrderModalOpen(false)}
-        >
-          <form
-            onSubmit={handleCreateManualOrder}
-            style={{
-              background: '#ffffff',
-              borderRadius: 'var(--radius-xl)',
-              width: '100%',
-              maxWidth: '560px',
-              padding: '2rem',
-              position: 'relative'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: '#0F172A' }}>
-                Registrar Pedido Multicanal
-              </h3>
-              <button type="button" onClick={() => setIsManualOrderModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
-                <X size={18} />
-              </button>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-              <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Canal de Captación</label>
-                <select
-                  value={manualOrderData.channel}
-                  onChange={(e) => setManualOrderData({ ...manualOrderData, channel: e.target.value })}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                >
-                  <option value="WHATSAPP">WhatsApp Business</option>
-                  <option value="INSTAGRAM">Instagram Direct</option>
-                  <option value="STORE">Mostrador / Taller Físico</option>
-                  <option value="PHONE">Llamada Telefónica</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Nombre del Cliente *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Lic. Fernando Garza"
-                  value={manualOrderData.customerName}
-                  onChange={(e) => setManualOrderData({ ...manualOrderData, customerName: e.target.value })}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                />
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-              <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Teléfono de Contacto (WhatsApp)</label>
-                <input
-                  type="tel"
-                  placeholder="612 123 4567"
-                  value={manualOrderData.customerPhone}
-                  onChange={(e) => setManualOrderData({ ...manualOrderData, customerPhone: e.target.value })}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Cantidad de Piezas</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={manualOrderData.quantity}
-                  onChange={(e) => setManualOrderData({ ...manualOrderData, quantity: Number(e.target.value) })}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                />
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-              <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Producto a Fabricar</label>
-                <input
-                  type="text"
-                  value={manualOrderData.productName}
-                  onChange={(e) => setManualOrderData({ ...manualOrderData, productName: e.target.value })}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Monto Total ($ MXN)</label>
-                <input
-                  type="number"
-                  value={manualOrderData.totalPrice}
-                  onChange={(e) => setManualOrderData({ ...manualOrderData, totalPrice: Number(e.target.value) })}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                />
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-              <button type="button" className="btn btn-secondary" onClick={() => setIsManualOrderModalOpen(false)}>
-                Cancelar
-              </button>
-              <button type="submit" className="btn btn-primary" style={{ fontWeight: '800' }}>
-                Registrar e Iniciar en Cola
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* =========================================================================
-          MODAL 4: REGISTRO DE MOVIMIENTO KARDEX
-         ========================================================================= */}
-      {movementModal.isOpen && movementModal.material && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.75)',
-            backdropFilter: 'blur(6px)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '1.5rem'
-          }}
-          onClick={() => setMovementModal({ ...movementModal, isOpen: false })}
-        >
-          <form
-            onSubmit={handleApplyMovement}
-            style={{
-              background: '#ffffff',
-              borderRadius: 'var(--radius-xl)',
-              width: '100%',
-              maxWidth: '480px',
-              padding: '2rem',
-              position: 'relative'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '800', color: '#0F172A' }}>
-                {movementModal.type === 'ENTRADA' ? '📥 Registrar Entrada de Carrete' : '📤 Registrar Salida / Merma'}
-              </h3>
-              <button type="button" onClick={() => setMovementModal({ ...movementModal, isOpen: false })} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
-                <X size={18} />
-              </button>
-            </div>
-
-            <div style={{ marginBottom: '1rem' }}>
-              <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.2rem' }}>Material Seleccionado:</div>
-              <strong style={{ fontSize: '1.05rem', color: '#176B87' }}>{movementModal.material.name}</strong>
-            </div>
-
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Cantidad (Gramos) *</label>
-              <input
-                type="number"
-                required
-                min="1"
-                value={movementModal.grams}
-                onChange={(e) => setMovementModal({ ...movementModal, grams: e.target.value })}
-                style={{ width: '100%', padding: '0.7rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.95rem', fontWeight: '800' }}
-              />
-            </div>
-
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Motivo / Proveedor / Lote *</label>
-              <input
-                type="text"
-                required
-                placeholder="Ej. Compra de 2 carretes Polymaker Lote #89"
-                value={movementModal.reason}
-                onChange={(e) => setMovementModal({ ...movementModal, reason: e.target.value })}
-                style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-              <button type="button" className="btn btn-secondary" onClick={() => setMovementModal({ ...movementModal, isOpen: false })}>
-                Cancelar
-              </button>
-              <button type="submit" className="btn btn-primary" style={{ fontWeight: '800' }}>
-                Aplicar al Kardex
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* =========================================================================
-          MODAL 6: REGISTRO DE NUEVO FILAMENTO / COLOR
-         ========================================================================= */}
-      {isNewMaterialModalOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.75)',
-            backdropFilter: 'blur(6px)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '1.5rem'
-          }}
-          onClick={() => setIsNewMaterialModalOpen(false)}
-        >
-          <form
-            onSubmit={handleAddNewMaterial}
-            style={{
-              background: '#ffffff',
-              borderRadius: 'var(--radius-xl)',
-              width: '100%',
-              maxWidth: '520px',
-              padding: '2rem',
-              position: 'relative'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: '#0F172A' }}>
-                Registrar Nuevo Filamento en Stock
-              </h3>
-              <button type="button" onClick={() => setIsNewMaterialModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
-                <X size={18} />
-              </button>
-            </div>
-
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Nombre del Color / Filamento *</label>
-              <input
-                type="text"
-                required
-                placeholder="Ej. Naranja Mandarina Seda"
-                value={newMaterialData.name}
-                onChange={(e) => setNewMaterialData({ ...newMaterialData, name: e.target.value })}
-                style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-              />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-              <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Color HEX *</label>
-                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                  <input
-                    type="color"
-                    value={newMaterialData.hex}
-                    onChange={(e) => setNewMaterialData({ ...newMaterialData, hex: e.target.value })}
-                    style={{ width: '38px', height: '38px', borderRadius: '4px', border: '1px solid #cbd5e1', cursor: 'pointer', padding: 0 }}
-                  />
-                  <input
-                    type="text"
-                    required
-                    value={newMaterialData.hex}
-                    onChange={(e) => setNewMaterialData({ ...newMaterialData, hex: e.target.value })}
-                    style={{ flex: 1, padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Tipo de Polímero</label>
-                <select
-                  value={newMaterialData.type}
-                  onChange={(e) => setNewMaterialData({ ...newMaterialData, type: e.target.value })}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                >
-                  <option value="PLA_SILK">PLA Seda (Silk)</option>
-                  <option value="PLA_PLUS">PLA+ Reforzado</option>
-                  <option value="PETG">PETG Alta Resistencia</option>
-                  <option value="TPU">TPU Flexible 95A</option>
-                  <option value="MATTE">PLA Mate Texturizado</option>
-                </select>
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-              <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Stock Inicial (Gramos) *</label>
-                <input
-                  type="number"
-                  min="0"
-                  required
-                  value={newMaterialData.stockGrams}
-                  onChange={(e) => setNewMaterialData({ ...newMaterialData, stockGrams: Number(e.target.value) })}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: '800' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Alerta Stock Bajo (Gramos)</label>
-                <input
-                  type="number"
-                  min="50"
-                  value={newMaterialData.minAlertGrams}
-                  onChange={(e) => setNewMaterialData({ ...newMaterialData, minAlertGrams: Number(e.target.value) })}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                />
-              </div>
-            </div>
-
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Proveedor / Marca</label>
-              <input
-                type="text"
-                placeholder="Polymaker, eSUN, Sunlu..."
-                value={newMaterialData.supplier}
-                onChange={(e) => setNewMaterialData({ ...newMaterialData, supplier: e.target.value })}
-                style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-              <button type="button" className="btn btn-secondary" onClick={() => setIsNewMaterialModalOpen(false)}>
-                Cancelar
-              </button>
-              <button type="submit" className="btn btn-primary" style={{ fontWeight: '800' }}>
-                Dar de Alta Filamento
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Responsive Styles */}
       <style>{`
         @media (max-width: 1024px) {
-          .kanban-grid {
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important;
-          }
+          .kanban-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+        @media (max-width: 640px) {
+          .kanban-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </div>

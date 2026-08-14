@@ -1,5 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { PRODUCTS, FILAMENT_MATERIALS, FILAMENT_COLORS, MOCK_ORDERS_KANBAN, MOCK_B2B_QUOTES, B2B_PRICE_TIERS } from '../data/mockData';
+import {
+  PRODUCTS,
+  FILAMENT_MATERIALS,
+  FILAMENT_COLORS,
+  MOCK_ORDERS_KANBAN,
+  MOCK_B2B_QUOTES,
+  B2B_PRICE_TIERS,
+  MOCK_3D_PRINTERS,
+  MOCK_OPERATING_EXPENSES
+} from '../data/mockData';
 import { generateFolio } from '../utils/formatters';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { getRoleForEmail } from '../config/authorizedUsers';
@@ -168,7 +177,87 @@ export const AppProvider = ({ children }) => {
     return { outOfStock, lowStock, blocked };
   };
 
-  // Kanban Production Orders
+  // 3D Printer Fleet State (Persisted in localStorage)
+  const [printers, setPrinters] = useState(() => {
+    const saved = localStorage.getItem('ideaform_printers');
+    return saved ? JSON.parse(saved) : MOCK_3D_PRINTERS;
+  });
+
+  const savePrinter = (newOrUpdatedPrinter) => {
+    setPrinters((prev) => {
+      const exists = prev.some((p) => p.id === newOrUpdatedPrinter.id);
+      let updated;
+      if (exists) {
+        updated = prev.map((p) => (p.id === newOrUpdatedPrinter.id ? { ...p, ...newOrUpdatedPrinter } : p));
+      } else {
+        const id = newOrUpdatedPrinter.id || `prt-${Date.now()}`;
+        updated = [...prev, { ...newOrUpdatedPrinter, id }];
+      }
+      localStorage.setItem('ideaform_printers', JSON.stringify(updated));
+      return updated;
+    });
+    showToast(`Impresora "${newOrUpdatedPrinter.name}" guardada correctamente`, 'success');
+  };
+
+  const deletePrinter = (printerId) => {
+    setPrinters((prev) => {
+      const updated = prev.filter((p) => p.id !== printerId);
+      localStorage.setItem('ideaform_printers', JSON.stringify(updated));
+      return updated;
+    });
+    showToast('Impresora eliminada del parque de impresión', 'warning');
+  };
+
+  const updatePrinterStatus = (printerId, newStatus, currentJobId = null) => {
+    setPrinters((prev) => {
+      const updated = prev.map((p) => {
+        if (p.id === printerId) {
+          return {
+            ...p,
+            status: newStatus,
+            currentJobId: currentJobId !== undefined ? currentJobId : p.currentJobId
+          };
+        }
+        return p;
+      });
+      localStorage.setItem('ideaform_printers', JSON.stringify(updated));
+      return updated;
+    });
+    showToast(`Estado de impresora actualizado a "${newStatus}"`, 'info');
+  };
+
+  // Operating Expenses State (Persisted in localStorage)
+  const [operatingExpenses, setOperatingExpenses] = useState(() => {
+    const saved = localStorage.getItem('ideaform_expenses');
+    return saved ? JSON.parse(saved) : MOCK_OPERATING_EXPENSES;
+  });
+
+  const saveOperatingExpense = (newOrUpdatedExpense) => {
+    setOperatingExpenses((prev) => {
+      const exists = prev.some((e) => e.id === newOrUpdatedExpense.id);
+      let updated;
+      if (exists) {
+        updated = prev.map((e) => (e.id === newOrUpdatedExpense.id ? { ...e, ...newOrUpdatedExpense } : e));
+      } else {
+        const id = newOrUpdatedExpense.id || `exp-${Date.now()}`;
+        updated = [ { ...newOrUpdatedExpense, id }, ...prev ];
+      }
+      localStorage.setItem('ideaform_expenses', JSON.stringify(updated));
+      return updated;
+    });
+    showToast('Gasto operativo registrado exitosamente', 'success');
+  };
+
+  const deleteOperatingExpense = (expenseId) => {
+    setOperatingExpenses((prev) => {
+      const updated = prev.filter((e) => e.id !== expenseId);
+      localStorage.setItem('ideaform_expenses', JSON.stringify(updated));
+      return updated;
+    });
+    showToast('Gasto operativo eliminado', 'warning');
+  };
+
+  // Production Orders (Kanban & List Views)
   const [productionOrders, setProductionOrders] = useState(() => {
     const saved = localStorage.getItem('ideaform_kanban');
     return saved ? JSON.parse(saved) : MOCK_ORDERS_KANBAN;
@@ -538,7 +627,11 @@ export const AppProvider = ({ children }) => {
       filamentColorHex: cart[0]?.selectedColor?.hex || '#0F5F6D',
       filamentGrams: (cart[0]?.filamentGrams || 45) * totalItemsCount,
       printTimeMins: (cart[0]?.printTimeMins || 120) * totalItemsCount,
-      status: 'QUEUED', // QUEUED -> SLICING -> PRINTING -> QUALITY_CONTROL -> READY_TO_SHIP
+      status: 'QUEUED',
+      priority: 'MEDIUM',
+      channel: 'WEB_AUTO',
+      paymentMethod: 'STRIPE',
+      paymentStatus: 'PAID',
       printerAssigned: null,
       date: new Date().toLocaleDateString('es-MX'),
       total: cartTotal
@@ -556,15 +649,57 @@ export const AppProvider = ({ children }) => {
     showToast(`Estado de orden actualizado a "${newStatus}"`, 'info');
   };
 
+  const updateOrderPriority = (orderId, priority) => {
+    setProductionOrders((prev) =>
+      prev.map((ord) => (ord.id === orderId ? { ...ord, priority } : ord))
+    );
+    showToast(`Prioridad de orden cambiada a "${priority}"`, 'info');
+  };
+
+  const updateOrderChannel = (orderId, channel) => {
+    setProductionOrders((prev) =>
+      prev.map((ord) => (ord.id === orderId ? { ...ord, channel } : ord))
+    );
+    showToast(`Canal de origen actualizado a "${channel}"`, 'info');
+  };
+
   const assignPrinter = (orderId, printerName) => {
     setProductionOrders((prev) =>
       prev.map((ord) =>
         ord.id === orderId
-          ? { ...ord, printerAssigned: printerName, status: ord.status === 'QUEUED' ? 'PRINTING' : ord.status }
+          ? { ...ord, assignedPrinter: printerName, printerAssigned: printerName, status: ord.status === 'QUEUED' ? 'PRINTING' : ord.status }
           : ord
       )
     );
     showToast(`Orden asignada a ${printerName}`, 'success');
+  };
+
+  const createManualOrder = (orderData) => {
+    const newOrder = {
+      id: `ord-${Date.now()}`,
+      orderNumber: `IDF-${Math.floor(10000 + Math.random() * 90000)}`,
+      customerName: orderData.customerName || 'Cliente Particular',
+      productName: orderData.productName || 'Producto Personalizado 3D',
+      customText: orderData.customText || '',
+      filament: orderData.filament || 'Blanco Puro (#FAEEEB)',
+      filamentGrams: Number(orderData.filamentGrams) || 50,
+      printTimeMins: Number(orderData.printTimeMins) || 60,
+      status: orderData.status || 'QUEUED',
+      priority: orderData.priority || 'MEDIUM',
+      channel: orderData.channel || 'WHATSAPP',
+      paymentMethod: orderData.paymentMethod || 'SPEI',
+      paymentStatus: orderData.paymentStatus || 'PAID',
+      assignedPrinter: orderData.assignedPrinter || null,
+      progressPercent: 0,
+      packagingCost: Number(orderData.packagingCost) || 20,
+      shippingCostReal: Number(orderData.shippingCostReal) || 135,
+      total: Number(orderData.total) || 0,
+      date: new Date().toISOString().split('T')[0]
+    };
+
+    setProductionOrders((prev) => [newOrder, ...prev]);
+    showToast(`Orden manual ${newOrder.orderNumber} creada con éxito`, 'success');
+    return newOrder;
   };
 
   // Raw Material Inventory (BOM Deduction)
@@ -629,10 +764,20 @@ export const AppProvider = ({ children }) => {
         isComboAvailable,
         getFilamentStockAlerts,
         updateFilamentStock,
+        printers,
+        savePrinter,
+        deletePrinter,
+        updatePrinterStatus,
+        operatingExpenses,
+        saveOperatingExpense,
+        deleteOperatingExpense,
         productionOrders,
         updateOrderStatus,
+        updateOrderPriority,
+        updateOrderChannel,
         assignPrinter,
         createOrder,
+        createManualOrder,
         b2bQuotes,
         saveB2BQuote,
         products,

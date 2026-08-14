@@ -579,8 +579,14 @@ export const MOCK_ORDERS_KANBAN = [
     filamentGrams: 36,
     printTimeMins: 70,
     status: 'PRINTING',
+    priority: 'URGENT',
+    channel: 'WHATSAPP',
+    paymentMethod: 'SPEI',
+    paymentStatus: 'PAID',
     assignedPrinter: 'Bambu Lab X1C #01',
     progressPercent: 65,
+    packagingCost: 15.00,
+    shippingCostReal: 135.00,
     total: 170.00,
     date: '2026-08-13'
   },
@@ -594,8 +600,14 @@ export const MOCK_ORDERS_KANBAN = [
     filamentGrams: 165,
     printTimeMins: 240,
     status: 'QUEUED',
+    priority: 'MEDIUM',
+    channel: 'WEB_AUTO',
+    paymentMethod: 'STRIPE',
+    paymentStatus: 'PAID',
     assignedPrinter: 'Creality K1 Max #01',
     progressPercent: 0,
+    packagingCost: 28.00,
+    shippingCostReal: 145.00,
     total: 280.00,
     date: '2026-08-13'
   },
@@ -609,10 +621,158 @@ export const MOCK_ORDERS_KANBAN = [
     filamentGrams: 210,
     printTimeMins: 380,
     status: 'READY_TO_SHIP',
-    assignedPrinter: 'Bambu Lab X1C #02',
+    priority: 'LOW',
+    channel: 'INSTAGRAM',
+    paymentMethod: 'MERCADOPAGO',
+    paymentStatus: 'PAID',
+    assignedPrinter: 'Bambu Lab P1S #02',
     progressPercent: 100,
+    packagingCost: 35.00,
+    shippingCostReal: 140.00,
     total: 380.00,
     date: '2026-08-12'
+  },
+  {
+    id: 'ord-10024',
+    orderNumber: 'IDF-84923',
+    customerName: 'Corporativo TechVanguard',
+    productName: 'Trofeo Prisma Award B2B (x25)',
+    customText: 'TECH VANGUARD EXCELLENCE',
+    filament: 'Carbón Mate (#1A1A1A)',
+    filamentGrams: 950,
+    printTimeMins: 1200,
+    status: 'POST_PROCESSING',
+    priority: 'URGENT',
+    channel: 'B2B',
+    paymentMethod: 'TRANSFERENCIA_EMPRESARIAL',
+    paymentStatus: 'PAID',
+    assignedPrinter: 'Bambu Lab X1C #01',
+    progressPercent: 90,
+    packagingCost: 180.00,
+    shippingCostReal: 280.00,
+    total: 8250.00,
+    date: '2026-08-11'
+  }
+];
+
+export const MOCK_3D_PRINTERS = [
+  {
+    id: 'prt-01',
+    name: 'Bambu Lab X1-Carbon #01',
+    model: 'Bambu Lab X1-Carbon',
+    status: 'PRINTING',
+    nozzleSize: '0.4 mm Hardened Steel',
+    bedType: 'PEI Texturizado Dual-Side',
+    bedDimensions: '256 x 256 x 256 mm',
+    printHours: 428,
+    currentJobId: 'ord-10021',
+    currentJobProgress: 65,
+    amsSlots: [
+      { slot: 1, colorName: 'Carbón Mate', hex: '#1A1A1A', material: 'PLA Silk' },
+      { slot: 2, colorName: 'Blanco Puro', hex: '#FAEEEB', material: 'PLA Silk' },
+      { slot: 3, colorName: 'Coral Terracota', hex: '#C9685B', material: 'PLA Silk' },
+      { slot: 4, colorName: 'Oro Seda', hex: '#D4AF37', material: 'PLA Silk' }
+    ],
+    lastMaintenance: '2026-08-01 (Limpieza de varillas de carbono y calibración de cama)'
+  },
+  {
+    id: 'prt-02',
+    name: 'Bambu Lab P1S #02',
+    model: 'Bambu Lab P1S',
+    status: 'AVAILABLE',
+    nozzleSize: '0.4 mm Stainless',
+    bedType: 'PEI Texturizado',
+    bedDimensions: '256 x 256 x 256 mm',
+    printHours: 312,
+    currentJobId: null,
+    currentJobProgress: 0,
+    amsSlots: [
+      { slot: 1, colorName: 'Azul Océano', hex: '#21658A', material: 'PLA Silk' },
+      { slot: 2, colorName: 'Verde Salvia', hex: '#638C6D', material: 'PLA Mate' },
+      { slot: 3, colorName: 'Mostaza Cálido', hex: '#B77B21', material: 'PLA Silk' },
+      { slot: 4, colorName: 'Blanco Puro', hex: '#FAEEEB', material: 'PLA Silk' }
+    ],
+    lastMaintenance: '2026-08-05 (Lubricación de husillos Z)'
+  },
+  {
+    id: 'prt-03',
+    name: 'Creality K1 Max #01',
+    model: 'Creality K1 Max (Gran Formato)',
+    status: 'PRINTING',
+    nozzleSize: '0.6 mm High Flow',
+    bedType: 'PEI Liso',
+    bedDimensions: '300 x 300 x 300 mm',
+    printHours: 580,
+    currentJobId: 'ord-10022',
+    currentJobProgress: 35,
+    amsSlots: [
+      { slot: 1, colorName: 'Azul Océano', hex: '#21658A', material: 'PLA Silk' }
+    ],
+    lastMaintenance: '2026-07-28 (Cambio de boquilla a 0.6mm)'
+  },
+  {
+    id: 'prt-04',
+    name: 'Prusa MK4 #01',
+    model: 'Original Prusa MK4 Nextruder',
+    status: 'MAINTENANCE',
+    nozzleSize: '0.4 mm Brass',
+    bedType: 'Lámina Satinada',
+    bedDimensions: '250 x 210 x 220 mm',
+    printHours: 890,
+    currentJobId: null,
+    currentJobProgress: 0,
+    amsSlots: [
+      { slot: 1, colorName: 'Carbón Mate', hex: '#1A1A1A', material: 'PETG' }
+    ],
+    lastMaintenance: '2026-08-14 (En mantenimiento preventivo: cambio de thermistor)'
+  }
+];
+
+export const MOCK_OPERATING_EXPENSES = [
+  {
+    id: 'exp-01',
+    category: 'PACKAGING',
+    description: 'Cajas de cartón microcorrugado Kraft (Pack 100u) + viruta protectora',
+    amount: 680.00,
+    date: '2026-08-10',
+    supplier: 'Empaques de México S.A.',
+    recurring: 'Mensual'
+  },
+  {
+    id: 'exp-02',
+    category: 'PACKAGING',
+    description: 'Bolsas compostables sellables con desecante + Stickers con logo (Pack 500u)',
+    amount: 420.00,
+    date: '2026-08-08',
+    supplier: 'PrintStickers MX',
+    recurring: 'Bimestral'
+  },
+  {
+    id: 'exp-03',
+    category: 'SHIPPING',
+    description: 'Recarga de saldo guías prepagadas Estafeta & DHL Express (15 guías)',
+    amount: 2250.00,
+    date: '2026-08-12',
+    supplier: 'EnviaYa / Skydropx',
+    recurring: 'Semanal'
+  },
+  {
+    id: 'exp-04',
+    category: 'ELECTRICITY',
+    description: 'Consumo eléctrico del Taller de Impresión 3D (CFE Bimestre)',
+    amount: 1450.00,
+    date: '2026-08-01',
+    supplier: 'CFE Suministrador de Servicios Básicos',
+    recurring: 'Bimestral'
+  },
+  {
+    id: 'exp-05',
+    category: 'SUPPLIES',
+    description: 'Alcohol isopropílico 99% (4 Litros) + Adhesivo 3Dlac + 2 Boquillas 0.4mm',
+    amount: 890.00,
+    date: '2026-08-05',
+    supplier: '3D Market MX',
+    recurring: 'Mensual'
   }
 ];
 

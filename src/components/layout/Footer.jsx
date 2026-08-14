@@ -64,6 +64,79 @@ const Footer = () => {
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: '1.6', marginTop: '1rem', marginBottom: '1.25rem' }}>
             Manufactura aditiva y comercio electrónico de artículos personalizados y stock para hogar, oficina y eventos.
           </p>
+
+          {/* Social Media Channels */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem' }}>
+            <a
+              href="https://wa.me/5215512345678?text=Hola%20IdeaForm%20quiero%20cotizar%20un%20proyecto"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="WhatsApp Taller 3D"
+              style={{
+                width: '34px',
+                height: '34px',
+                borderRadius: '50%',
+                background: '#25D366',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textDecoration: 'none',
+                transition: 'transform 0.15s ease'
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1.0)')}
+            >
+              <Phone size={16} />
+            </a>
+
+            <a
+              href="https://instagram.com/ideaform3d"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Instagram @ideaform3d"
+              style={{
+                width: '34px',
+                height: '34px',
+                borderRadius: '50%',
+                background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textDecoration: 'none',
+                transition: 'transform 0.15s ease'
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1.0)')}
+            >
+              <Sparkles size={16} />
+            </a>
+
+            <a
+              href="https://facebook.com/ideaform3d"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Facebook Oficial"
+              style={{
+                width: '34px',
+                height: '34px',
+                borderRadius: '50%',
+                background: '#1877F2',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textDecoration: 'none',
+                transition: 'transform 0.15s ease'
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1.0)')}
+            >
+              <Mail size={16} />
+            </a>
+          </div>
+
           <div style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)' }}>
             © {new Date().getFullYear()} IdeaForm. Todos los derechos reservados.
           </div>
