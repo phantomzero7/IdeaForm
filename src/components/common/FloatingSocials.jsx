@@ -12,7 +12,6 @@ import {
   Clock,
   CheckCircle2,
   ChevronRight,
-  Bot,
   User,
   RotateCcw,
   ExternalLink
@@ -22,6 +21,7 @@ import IdeaFormLogo from './IdeaFormLogo';
 const WHATSAPP_TEST_NUMBER = '526121403409';
 const INSTAGRAM_URL = 'https://www.instagram.com/ideaform.mx/';
 const FACEBOOK_URL = 'https://www.facebook.com/ideaform3d';
+const BOT_AVATAR_SRC = '/ideaform-bot.png';
 
 const CHATBOT_KNOWLEDGE = {
   cotizacion: {
@@ -55,10 +55,11 @@ const CHATBOT_KNOWLEDGE = {
 const FloatingSocials = () => {
   const { navigateTo, productionOrders } = useApp();
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [showGreetingTooltip, setShowGreetingTooltip] = useState(true);
   const [chatHistory, setChatHistory] = useState([
     {
       sender: 'bot',
-      text: '¡Hola! 👋 Bienvenido a **IdeaForm 3D**. Soy tu asistente virtual de taller. ¿En qué podemos ayudarte hoy?',
+      text: '¡Hola! 👋 Soy tu **Asistente IdeaForm 3D**. Estoy conectado con el taller en vivo. ¿En qué proyecto o duda te puedo apoyar hoy?',
       time: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -68,6 +69,7 @@ const FloatingSocials = () => {
 
   useEffect(() => {
     if (isChatOpen) {
+      setShowGreetingTooltip(false);
       chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [chatHistory, isChatOpen]);
@@ -76,7 +78,6 @@ const FloatingSocials = () => {
     const item = CHATBOT_KNOWLEDGE[key];
     if (!item) return;
 
-    // User message
     const userMsg = {
       sender: 'user',
       text: item.title,
@@ -164,7 +165,6 @@ const FloatingSocials = () => {
   };
 
   const handleTransferToWhatsApp = (intent = 'GENERAL') => {
-    // Generate summarized transcript
     const userQueries = chatHistory
       .filter((m) => m.sender === 'user')
       .map((m) => m.text)
@@ -189,7 +189,7 @@ const FloatingSocials = () => {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '0.65rem',
+          gap: '0.75rem',
           fontFamily: "'Plus Jakarta Sans', sans-serif"
         }}
       >
@@ -249,44 +249,102 @@ const FloatingSocials = () => {
           </svg>
         </a>
 
-        {/* Interactive Chatbot & WhatsApp Trigger Button */}
-        <button
-          onClick={() => setIsChatOpen(!isChatOpen)}
-          title="Asistente Virtual & WhatsApp Taller"
-          style={{
-            width: '58px',
-            height: '58px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #176B87 0%, #0F5F6D 100%)',
-            color: '#ffffff',
-            border: 'none',
-            boxShadow: '0 6px 20px rgba(23, 107, 135, 0.45)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            position: 'relative',
-            transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)'
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.12)')}
-          onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1.0)')}
-        >
-          {isChatOpen ? <X size={26} /> : <Bot size={28} />}
+        {/* Mascot Robot Chatbot Floating Button Container */}
+        <div style={{ position: 'relative' }}>
+          
+          {/* Pop-in Greeting Tooltip Badge */}
+          {showGreetingTooltip && !isChatOpen && (
+            <div
+              onClick={() => setIsChatOpen(true)}
+              style={{
+                position: 'absolute',
+                right: '72px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: '#0F172A',
+                color: '#ffffff',
+                padding: '0.45rem 0.85rem',
+                borderRadius: 'var(--radius-lg)',
+                fontSize: '0.75rem',
+                fontWeight: '700',
+                whiteSpace: 'nowrap',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                border: '1px solid #334155',
+                animation: 'bounceIn 0.4s ease-out'
+              }}
+            >
+              <span>💬 ¿Dudas o Cotización 3D?</span>
+              <span style={{ color: '#00e5ff' }}>¡Pregúntame!</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowGreetingTooltip(false);
+                }}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 0, marginLeft: '0.2rem' }}
+              >
+                <X size={13} />
+              </button>
+            </div>
+          )}
 
-          {/* Online green indicator badge */}
-          <span
+          {/* Robot Mascot Trigger Button */}
+          <button
+            onClick={() => setIsChatOpen(!isChatOpen)}
+            title="Asistente Virtual Robot IdeaForm"
             style={{
-              position: 'absolute',
-              top: '2px',
-              right: '2px',
-              width: '14px',
-              height: '14px',
+              width: '64px',
+              height: '64px',
               borderRadius: '50%',
-              background: '#22c55e',
-              border: '2px solid #ffffff'
+              background: 'linear-gradient(135deg, #0F172A 0%, #176B87 100%)',
+              border: '2.5px solid #00e5ff',
+              boxShadow: '0 8px 24px rgba(0, 229, 255, 0.35), 0 4px 12px rgba(15, 23, 42, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              position: 'relative',
+              padding: '2px',
+              overflow: 'visible',
+              transition: 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)'
             }}
-          />
-        </button>
+            onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.12)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1.0)')}
+          >
+            {isChatOpen ? (
+              <X size={30} color="#ffffff" />
+            ) : (
+              <img
+                src={BOT_AVATAR_SRC}
+                alt="IdeaForm Robot Mascot"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+                }}
+              />
+            )}
+
+            {/* Online green indicator badge */}
+            <span
+              style={{
+                position: 'absolute',
+                top: '-2px',
+                right: '-2px',
+                width: '16px',
+                height: '16px',
+                borderRadius: '50%',
+                background: '#22c55e',
+                border: '2.5px solid #ffffff',
+                boxShadow: '0 0 8px rgba(34, 197, 94, 0.8)'
+              }}
+            />
+          </button>
+        </div>
       </aside>
 
       {/* 2. CHATBOT ASSISTANT WINDOW */}
@@ -298,15 +356,15 @@ const FloatingSocials = () => {
           style={{
             position: 'fixed',
             right: '1.25rem',
-            bottom: '7rem',
-            width: '360px',
+            bottom: '7.5rem',
+            width: '370px',
             maxWidth: 'calc(100vw - 2.5rem)',
-            height: '520px',
-            maxHeight: 'calc(100vh - 8.5rem)',
+            height: '540px',
+            maxHeight: 'calc(100vh - 9rem)',
             background: '#ffffff',
             borderRadius: 'var(--radius-xl)',
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 16px 40px rgba(0, 0, 0, 0.18)',
+            border: '1px solid #cbd5e1',
+            boxShadow: '0 20px 48px rgba(0, 0, 0, 0.22)',
             display: 'flex',
             flexDirection: 'column',
             zIndex: 1000,
@@ -314,39 +372,58 @@ const FloatingSocials = () => {
             animation: 'fadeInUp 0.25s ease-out'
           }}
         >
-          {/* Chatbot Header */}
+          {/* Chatbot Header with Robot Mascot */}
           <div
             style={{
               background: 'linear-gradient(135deg, #0F172A 0%, #176B87 100%)',
               color: '#ffffff',
-              padding: '0.9rem 1.15rem',
+              padding: '0.85rem 1.15rem',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              borderBottom: '1px solid rgba(255,255,255,0.1)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-              <div style={{ background: 'rgba(255,255,255,0.15)', padding: '0.45rem', borderRadius: '50%' }}>
-                <Bot size={20} color="#00e5ff" />
+              <div
+                style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '50%',
+                  background: 'rgba(255,255,255,0.12)',
+                  border: '1.5px solid #00e5ff',
+                  padding: '2px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 0 10px rgba(0, 229, 255, 0.3)'
+                }}
+              >
+                <img
+                  src={BOT_AVATAR_SRC}
+                  alt="IdeaForm Robot"
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                />
               </div>
+
               <div>
                 <div style={{ fontWeight: '800', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <span>IdeaForm Assistant</span>
-                  <span style={{ fontSize: '0.62rem', background: '#10b981', color: '#fff', padding: '0.1rem 0.4rem', borderRadius: 'var(--radius-full)' }}>
-                    AI 3D
+                  <span>IdeaForm Bot</span>
+                  <span style={{ fontSize: '0.62rem', background: '#10b981', color: '#fff', padding: '0.1rem 0.45rem', borderRadius: 'var(--radius-full)', fontWeight: '800' }}>
+                    EN VIVO
                   </span>
                 </div>
-                <div style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>
-                  Taller de Manufactura en Línea
+                <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                  Asistente & Taller 3D Inteligente
                 </div>
               </div>
             </div>
 
             <button
               onClick={() => setIsChatOpen(false)}
-              style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer' }}
+              style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', padding: '0.2rem' }}
             >
-              <X size={18} />
+              <X size={20} />
             </button>
           </div>
 
@@ -368,89 +445,125 @@ const FloatingSocials = () => {
                 key={idx}
                 style={{
                   display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: msg.sender === 'user' ? 'flex-end' : 'flex-start'
+                  alignItems: 'flex-start',
+                  gap: '0.5rem',
+                  flexDirection: msg.sender === 'user' ? 'row-reverse' : 'row'
                 }}
               >
+                {/* Bot / User Avatar */}
+                {msg.sender === 'bot' && (
+                  <div
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      background: '#0F172A',
+                      border: '1px solid #00e5ff',
+                      padding: '1px',
+                      flexShrink: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <img
+                      src={BOT_AVATAR_SRC}
+                      alt="Robot Avatar"
+                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    />
+                  </div>
+                )}
+
                 <div
                   style={{
-                    maxWidth: '85%',
-                    padding: '0.75rem 0.95rem',
-                    borderRadius: msg.sender === 'user' ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
-                    background: msg.sender === 'user' ? '#176B87' : '#ffffff',
-                    color: msg.sender === 'user' ? '#ffffff' : '#0F172A',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                    lineHeight: '1.45',
-                    border: msg.sender === 'user' ? 'none' : '1px solid #e2e8f0',
-                    whiteSpace: 'pre-line'
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                    maxWidth: '82%'
                   }}
                 >
-                  {msg.text}
+                  <div
+                    style={{
+                      padding: '0.75rem 0.95rem',
+                      borderRadius: msg.sender === 'user' ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
+                      background: msg.sender === 'user' ? '#176B87' : '#ffffff',
+                      color: msg.sender === 'user' ? '#ffffff' : '#0F172A',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                      lineHeight: '1.45',
+                      border: msg.sender === 'user' ? 'none' : '1px solid #e2e8f0',
+                      whiteSpace: 'pre-line'
+                    }}
+                  >
+                    {msg.text}
 
-                  {/* Optional Action Button embedded in Bot Message */}
-                  {msg.actionLabel && (
-                    <div style={{ marginTop: '0.65rem', paddingTop: '0.5rem', borderTop: '1px solid #f1f5f9' }}>
-                      {msg.actionRoute ? (
-                        <button
-                          onClick={() => {
-                            navigateTo(msg.actionRoute);
-                            setIsChatOpen(false);
-                          }}
-                          style={{
-                            background: '#e0f2fe',
-                            color: '#0369a1',
-                            border: 'none',
-                            borderRadius: 'var(--radius-sm)',
-                            padding: '0.35rem 0.65rem',
-                            fontSize: '0.75rem',
-                            fontWeight: '800',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.3rem',
-                            cursor: 'pointer',
-                            width: '100%',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          <span>{msg.actionLabel}</span>
-                          <ArrowRight size={13} />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleTransferToWhatsApp(msg.intent || 'GENERAL')}
-                          style={{
-                            background: '#25D366',
-                            color: '#ffffff',
-                            border: 'none',
-                            borderRadius: 'var(--radius-sm)',
-                            padding: '0.4rem 0.65rem',
-                            fontSize: '0.75rem',
-                            fontWeight: '800',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.35rem',
-                            cursor: 'pointer',
-                            width: '100%',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          <MessageCircle size={14} />
-                          <span>{msg.actionLabel}</span>
-                        </button>
-                      )}
-                    </div>
-                  )}
+                    {/* Optional Action Button embedded in Bot Message */}
+                    {msg.actionLabel && (
+                      <div style={{ marginTop: '0.65rem', paddingTop: '0.5rem', borderTop: '1px solid #f1f5f9' }}>
+                        {msg.actionRoute ? (
+                          <button
+                            onClick={() => {
+                              navigateTo(msg.actionRoute);
+                              setIsChatOpen(false);
+                            }}
+                            style={{
+                              background: '#e0f2fe',
+                              color: '#0369a1',
+                              border: 'none',
+                              borderRadius: 'var(--radius-sm)',
+                              padding: '0.35rem 0.65rem',
+                              fontSize: '0.75rem',
+                              fontWeight: '800',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              cursor: 'pointer',
+                              width: '100%',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            <span>{msg.actionLabel}</span>
+                            <ArrowRight size={13} />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleTransferToWhatsApp(msg.intent || 'GENERAL')}
+                            style={{
+                              background: '#25D366',
+                              color: '#ffffff',
+                              border: 'none',
+                              borderRadius: 'var(--radius-sm)',
+                              padding: '0.4rem 0.65rem',
+                              fontSize: '0.75rem',
+                              fontWeight: '800',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              cursor: 'pointer',
+                              width: '100%',
+                              justifyContent: 'center',
+                              boxShadow: '0 2px 8px rgba(37, 211, 102, 0.3)'
+                            }}
+                          >
+                            <MessageCircle size={14} />
+                            <span>{msg.actionLabel}</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <span style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '0.2rem', padding: '0 0.35rem' }}>
+                    {msg.time}
+                  </span>
                 </div>
-                <span style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '0.2rem', padding: '0 0.35rem' }}>
-                  {msg.time}
-                </span>
               </div>
             ))}
 
             {isTyping && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#64748b', fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>
-                <Bot size={14} />
-                <span>IdeaForm está escribiendo...</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b', fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>
+                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#0F172A', padding: '1px' }}>
+                  <img src={BOT_AVATAR_SRC} alt="Typing" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                </div>
+                <span>IdeaForm Bot está escribiendo...</span>
               </div>
             )}
 
@@ -473,7 +586,7 @@ const FloatingSocials = () => {
                 whiteSpace: 'nowrap'
               }}
             >
-              🎨 Cotizar
+              🎨 Cotizar 3D
             </button>
 
             <button
@@ -490,7 +603,7 @@ const FloatingSocials = () => {
                 whiteSpace: 'nowrap'
               }}
             >
-              🚚 Rastrear
+              🚚 Rastrear Folio
             </button>
 
             <button
