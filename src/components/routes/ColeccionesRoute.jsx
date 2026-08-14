@@ -31,10 +31,11 @@ const FONTS_LIST = [
 ];
 
 const ColeccionesRoute = () => {
-  const { navigateTo, addToCart, showToast, products } = useApp();
+  const { navigateTo, addToCart, showToast, products, filamentInventory, isColorAvailable, isComboAvailable } = useApp();
   const viewerRef = useRef(null);
 
   const availableProducts = products || PRODUCTS;
+  const availableFilaments = filamentInventory || FILAMENT_COLORS;
 
   // Stepper State (1 to 6)
   const [activeStep, setActiveStep] = useState(1);
@@ -47,9 +48,9 @@ const ColeccionesRoute = () => {
 
   // Multi-Layer Color State (Nike By You style)
   const [activeLayer, setActiveLayer] = useState('BASE'); // 'BASE' | 'ACCENT' | 'RELIEF'
-  const [selectedBaseColor, setSelectedBaseColor] = useState(FILAMENT_COLORS[1] || FILAMENT_COLORS[0]); // Azul Océano
-  const [selectedAccentColor, setSelectedAccentColor] = useState(FILAMENT_COLORS[2] || FILAMENT_COLORS[0]); // Oro Imperial
-  const [selectedReliefColor, setSelectedReliefColor] = useState(FILAMENT_COLORS[5] || FILAMENT_COLORS[0]); // Blanco Nieve
+  const [selectedBaseColor, setSelectedBaseColor] = useState(availableFilaments[0] || FILAMENT_COLORS[0]);
+  const [selectedAccentColor, setSelectedAccentColor] = useState(availableFilaments[1] || FILAMENT_COLORS[1]);
+  const [selectedReliefColor, setSelectedReliefColor] = useState(availableFilaments[2] || FILAMENT_COLORS[2]);
 
   const [viewMode, setViewMode] = useState('3D'); // '3D' | '2D'
   const [quantity, setQuantity] = useState(1);
@@ -577,7 +578,7 @@ const ColeccionesRoute = () => {
                   ))}
                 </div>
               </div>
-                        {/* Color Customization: Predefined Combos (Option 1, Option 2...) vs Free Layer Selection */}
+              {/* Color Customization: Predefined Combos (Option 1, Option 2...) vs Free Layer Selection */}
               <div style={{ marginBottom: '1.5rem', background: '#FAEEEB', padding: '1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid #F0D7D2' }}>
                 
                 {selectedProduct.colorMode === 'PRESETS' || (selectedProduct.colorPresets && selectedProduct.colorPresets.length > 0) ? (
@@ -594,7 +595,9 @@ const ColeccionesRoute = () => {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                       {(selectedProduct.colorPresets || DEFAULT_COLOR_PRESETS).map((combo, cIdx) => {
+                        const availability = isComboAvailable(combo);
                         const isComboSelected =
+                          availability.available &&
                           selectedBaseColor.hex.toLowerCase() === combo.baseColor.hex.toLowerCase() &&
                           selectedAccentColor.hex.toLowerCase() === combo.accentColor.hex.toLowerCase() &&
                           selectedReliefColor.hex.toLowerCase() === combo.reliefColor.hex.toLowerCase();
@@ -603,6 +606,10 @@ const ColeccionesRoute = () => {
                           <div
                             key={combo.id || cIdx}
                             onClick={() => {
+                              if (!availability.available) {
+                                showToast(`Esta combinación está agotada (Falta: ${availability.missingColors.join(', ')})`, 'error');
+                                return;
+                              }
                               setSelectedBaseColor(combo.baseColor);
                               setSelectedAccentColor(combo.accentColor);
                               setSelectedReliefColor(combo.reliefColor);
@@ -611,11 +618,12 @@ const ColeccionesRoute = () => {
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'space-between',
-                              background: isComboSelected ? '#ffffff' : 'rgba(255,255,255,0.7)',
-                              border: isComboSelected ? '2px solid #A94D43' : '1px solid #F0D7D2',
+                              background: !availability.available ? '#f8fafc' : isComboSelected ? '#ffffff' : 'rgba(255,255,255,0.7)',
+                              border: !availability.available ? '1px dashed #cbd5e1' : isComboSelected ? '2px solid #A94D43' : '1px solid #F0D7D2',
                               borderRadius: 'var(--radius-md)',
                               padding: '0.75rem 1rem',
-                              cursor: 'pointer',
+                              cursor: availability.available ? 'pointer' : 'not-allowed',
+                              opacity: availability.available ? 1 : 0.6,
                               boxShadow: isComboSelected ? '0 4px 12px rgba(169, 77, 67, 0.12)' : 'none',
                               transition: 'all 0.2s ease'
                             }}
@@ -638,32 +646,44 @@ const ColeccionesRoute = () => {
                               </div>
 
                               <div>
-                                <div style={{ fontSize: '0.85rem', fontWeight: '800', color: isComboSelected ? '#A94D43' : '#0F172A' }}>
+                                <div style={{ fontSize: '0.85rem', fontWeight: '800', color: !availability.available ? '#94a3b8' : isComboSelected ? '#A94D43' : '#0F172A' }}>
                                   {combo.name}
                                 </div>
-                                {combo.description && (
-                                  <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                                    {combo.description}
+                                {availability.available ? (
+                                  combo.description && (
+                                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                                      {combo.description}
+                                    </div>
+                                  )
+                                ) : (
+                                  <div style={{ fontSize: '0.72rem', color: '#dc2626', fontWeight: '700' }}>
+                                    ⚠️ Agotado Temporalmente (Falta filamento: {availability.missingColors.join(', ')})
                                   </div>
                                 )}
                               </div>
                             </div>
 
-                            <div
-                              style={{
-                                width: '22px',
-                                height: '22px',
-                                borderRadius: '50%',
-                                border: isComboSelected ? '2px solid #A94D43' : '2px solid #cbd5e1',
-                                background: isComboSelected ? '#A94D43' : 'transparent',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: '#ffffff'
-                              }}
-                            >
-                              {isComboSelected && <Check size={14} strokeWidth={3} />}
-                            </div>
+                            {availability.available ? (
+                              <div
+                                style={{
+                                  width: '22px',
+                                  height: '22px',
+                                  borderRadius: '50%',
+                                  border: isComboSelected ? '2px solid #A94D43' : '2px solid #cbd5e1',
+                                  background: isComboSelected ? '#A94D43' : 'transparent',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  color: '#ffffff'
+                                }}
+                              >
+                                {isComboSelected && <Check size={14} strokeWidth={3} />}
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '0.68rem', fontWeight: '800', padding: '0.2rem 0.5rem', borderRadius: '4px', background: '#fee2e2', color: '#dc2626' }}>
+                                NO DISPONIBLE
+                              </span>
+                            )}
                           </div>
                         );
                       })}
@@ -755,23 +775,30 @@ const ColeccionesRoute = () => {
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap' }}>
-                      {FILAMENT_COLORS.map((col) => (
-                        <button
-                          key={col.id}
-                          onClick={() => handleColorSelect(col)}
-                          style={{
-                            width: '34px',
-                            height: '34px',
-                            borderRadius: '50%',
-                            background: col.hex,
-                            border: currentLayerColor.id === col.id ? '3px solid #A94D43' : '2px solid rgba(0,0,0,0.15)',
-                            boxShadow: currentLayerColor.id === col.id ? '0 0 0 2px #ffffff' : 'none',
-                            cursor: 'pointer',
-                            transition: 'transform 0.15s ease'
-                          }}
-                          title={col.name}
-                        />
-                      ))}
+                      {availableFilaments.filter((f) => !f.isArchived).map((col) => {
+                        const isAvail = isColorAvailable(col.id || col.hex);
+
+                        return (
+                          <button
+                            key={col.id}
+                            disabled={!isAvail}
+                            onClick={() => handleColorSelect(col)}
+                            style={{
+                              width: '34px',
+                              height: '34px',
+                              borderRadius: '50%',
+                              background: col.hex,
+                              border: currentLayerColor.id === col.id ? '3px solid #A94D43' : isAvail ? '2px solid rgba(0,0,0,0.15)' : '2px dashed #dc2626',
+                              boxShadow: currentLayerColor.id === col.id ? '0 0 0 2px #ffffff' : 'none',
+                              cursor: isAvail ? 'pointer' : 'not-allowed',
+                              opacity: isAvail ? 1 : 0.35,
+                              transition: 'transform 0.15s ease',
+                              position: 'relative'
+                            }}
+                            title={`${col.name} ${!isAvail ? '(Agotado o Bloqueado)' : `(${col.stockGrams}g disponibles)`}`}
+                          />
+                        );
+                      })}
                     </div>
                   </div>
                 )}

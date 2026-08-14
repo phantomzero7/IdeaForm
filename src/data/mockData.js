@@ -21,14 +21,126 @@ export const CATEGORIES = [
 ];
 
 export const FILAMENT_COLORS = [
-  { id: 'col-coral', name: 'Coral Terracota', hex: '#C9685B', priceMultiplier: 1.0 },
-  { id: 'col-navy', name: 'Azul Océano', hex: '#21658A', priceMultiplier: 1.0 },
-  { id: 'col-gold', name: 'Mostaza Cálido / Oro', hex: '#B77B21', priceMultiplier: 1.1 },
-  { id: 'col-teal', name: 'Teal IdeaForm', hex: '#00828A', priceMultiplier: 1.0 },
-  { id: 'col-black', name: 'Carbón Mate', hex: '#1A1A1A', priceMultiplier: 1.0 },
-  { id: 'col-white', name: 'Blanco Puro', hex: '#FAEEEB', priceMultiplier: 1.0 },
-  { id: 'col-silver', name: 'Plata Titanio', hex: '#CBD5E1', priceMultiplier: 1.1 },
-  { id: 'col-orange', name: 'Naranja Fuego', hex: '#EA580C', priceMultiplier: 1.0 }
+  {
+    id: 'col-black',
+    name: 'Carbón Mate',
+    hex: '#1A1A1A',
+    type: 'PLA_SILK',
+    supplier: 'Polymaker',
+    stockGrams: 3500,
+    minAlertGrams: 500,
+    isBlocked: false,
+    isArchived: false,
+    priceMultiplier: 1.0
+  },
+  {
+    id: 'col-white',
+    name: 'Blanco Puro',
+    hex: '#FAEEEB',
+    type: 'PLA_SILK',
+    supplier: 'Polymaker',
+    stockGrams: 4200,
+    minAlertGrams: 500,
+    isBlocked: false,
+    isArchived: false,
+    priceMultiplier: 1.0
+  },
+  {
+    id: 'col-coral',
+    name: 'Coral Terracota',
+    hex: '#C9685B',
+    type: 'PLA_SILK',
+    supplier: 'IdeaForm Lab',
+    stockGrams: 1850,
+    minAlertGrams: 400,
+    isBlocked: false,
+    isArchived: false,
+    priceMultiplier: 1.0
+  },
+  {
+    id: 'col-navy',
+    name: 'Azul Océano',
+    hex: '#21658A',
+    type: 'PLA_SILK',
+    supplier: 'Sunlu',
+    stockGrams: 1200,
+    minAlertGrams: 400,
+    isBlocked: false,
+    isArchived: false,
+    priceMultiplier: 1.0
+  },
+  {
+    id: 'col-gold',
+    name: 'Mostaza Cálido / Oro',
+    hex: '#B77B21',
+    type: 'PLA_SILK',
+    supplier: 'eSUN',
+    stockGrams: 900,
+    minAlertGrams: 300,
+    isBlocked: false,
+    isArchived: false,
+    priceMultiplier: 1.1
+  },
+  {
+    id: 'col-teal',
+    name: 'Teal IdeaForm',
+    hex: '#00828A',
+    type: 'PLA_SILK',
+    supplier: 'IdeaForm Lab',
+    stockGrams: 1400,
+    minAlertGrams: 300,
+    isBlocked: false,
+    isArchived: false,
+    priceMultiplier: 1.0
+  },
+  {
+    id: 'col-orange',
+    name: 'Naranja Fuego',
+    hex: '#EA580C',
+    type: 'PLA_SILK',
+    supplier: 'Polymaker',
+    stockGrams: 850,
+    minAlertGrams: 300,
+    isBlocked: false,
+    isArchived: false,
+    priceMultiplier: 1.0
+  },
+  {
+    id: 'col-green',
+    name: 'Verde Bosque',
+    hex: '#059669',
+    type: 'PLA_SILK',
+    supplier: 'eSUN',
+    stockGrams: 650,
+    minAlertGrams: 300,
+    isBlocked: false,
+    isArchived: false,
+    priceMultiplier: 1.0
+  },
+  {
+    id: 'col-red',
+    name: 'Rojo Carmín',
+    hex: '#DC2626',
+    type: 'PLA_SILK',
+    supplier: 'Sunlu',
+    stockGrams: 0, // Out of stock to demonstrate automatic deactivation
+    minAlertGrams: 400,
+    isBlocked: false,
+    isArchived: false,
+    priceMultiplier: 1.0
+  },
+  {
+    id: 'col-silver',
+    name: 'Plata Titanio',
+    hex: '#CBD5E1',
+    type: 'PLA_SILK',
+    supplier: 'Polymaker',
+    stockGrams: 180, // Low stock to demonstrate low stock warning
+    minAlertGrams: 300,
+    isBlocked: false,
+    isArchived: false,
+    priceMultiplier: 1.1
+  }
 ];
 
 export const DEFAULT_COLOR_PRESETS = [
@@ -43,7 +155,7 @@ export const DEFAULT_COLOR_PRESETS = [
   {
     id: 'preset-2',
     name: 'Opción 2: Verde Esmeralda, Blanco & Rojo',
-    description: 'Combinación tricolor vibrante y contrastada',
+    description: 'Combinación tricolor vibrante (Desactivada si falta Rojo Carmín)',
     baseColor: { id: 'col-green', name: 'Verde Bosque', hex: '#059669' },
     accentColor: { id: 'col-white', name: 'Blanco Puro', hex: '#FAEEEB' },
     reliefColor: { id: 'col-red', name: 'Rojo Carmín', hex: '#DC2626' }

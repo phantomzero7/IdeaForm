@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { PRODUCTS, FILAMENT_MATERIALS, MOCK_ORDERS_KANBAN, MOCK_B2B_QUOTES, B2B_PRICE_TIERS } from '../data/mockData';
+import { PRODUCTS, FILAMENT_MATERIALS, FILAMENT_COLORS, MOCK_ORDERS_KANBAN, MOCK_B2B_QUOTES, B2B_PRICE_TIERS } from '../data/mockData';
 import { generateFolio } from '../utils/formatters';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { getRoleForEmail } from '../config/authorizedUsers';
@@ -33,11 +33,140 @@ export const AppProvider = ({ children }) => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState(null);
 
-  // Raw Materials (Filaments Stock in Grams)
+  // Raw Materials (Filaments Stock in Grams - Unified Store Stock)
   const [filamentInventory, setFilamentInventory] = useState(() => {
     const saved = localStorage.getItem('ideaform_filaments');
-    return saved ? JSON.parse(saved) : FILAMENT_MATERIALS;
+    return saved ? JSON.parse(saved) : FILAMENT_COLORS;
   });
+
+  const saveFilament = (newOrUpdatedFilament) => {
+    setFilamentInventory((prev) => {
+      const exists = prev.some((f) => f.id === newOrUpdatedFilament.id || (f.name.toLowerCase() === newOrUpdatedFilament.name.toLowerCase()));
+      let updated;
+      if (exists) {
+        updated = prev.map((f) => (f.id === newOrUpdatedFilament.id ? { ...f, ...newOrUpdatedFilament } : f));
+      } else {
+        const id = newOrUpdatedFilament.id || `col-${Date.now()}`;
+        updated = [...prev, { ...newOrUpdatedFilament, id }];
+      }
+      localStorage.setItem('ideaform_filaments', JSON.stringify(updated));
+      return updated;
+    });
+    showToast(`Filamento "${newOrUpdatedFilament.name}" guardado en inventario`, 'success');
+  };
+
+  const toggleBlockFilament = (filamentId) => {
+    setFilamentInventory((prev) => {
+      const updated = prev.map((f) => {
+        if (f.id === filamentId) {
+          const nextBlocked = !f.isBlocked;
+          showToast(`Filamento "${f.name}" ${nextBlocked ? 'bloqueado manualmente' : 'desbloqueado'}`, 'info');
+          return { ...f, isBlocked: nextBlocked };
+        }
+        return f;
+      });
+      localStorage.setItem('ideaform_filaments', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const archiveFilament = (filamentId) => {
+    setFilamentInventory((prev) => {
+      const updated = prev.map((f) => {
+        if (f.id === filamentId) {
+          showToast(`Filamento "${f.name}" archivado/retirado de la tienda`, 'warning');
+          return { ...f, isArchived: true };
+        }
+        return f;
+      });
+      localStorage.setItem('ideaform_filaments', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const unarchiveFilament = (filamentId) => {
+    setFilamentInventory((prev) => {
+      const updated = prev.map((f) => {
+        if (f.id === filamentId) {
+          showToast(`Filamento "${f.name}" restaurado a inventario activo`, 'success');
+          return { ...f, isArchived: false };
+        }
+        return f;
+      });
+      localStorage.setItem('ideaform_filaments', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const recordStockMovement = (filamentId, type, grams, reason = '') => {
+    setFilamentInventory((prev) => {
+      const updated = prev.map((f) => {
+        if (f.id === filamentId) {
+          const delta = type === 'ENTRADA' ? Math.abs(grams) : -Math.abs(grams);
+          const nextStock = Math.max(0, (f.stockGrams || 0) + delta);
+          
+          if (nextStock === 0) {
+            showToast(`⚠️ ¡Alerta! El filamento "${f.name}" se ha AGOTADO (0g). Las opciones ligadas se desactivaron.`, 'error');
+          } else if (nextStock <= (f.minAlertGrams || 300)) {
+            showToast(`⚠️ Filamento "${f.name}" en STOCK BAJO (${nextStock}g restantes).`, 'warning');
+          } else {
+            showToast(`Stock de "${f.name}" actualizado: ${nextStock}g (${type})`, 'success');
+          }
+
+          return { ...f, stockGrams: nextStock };
+        }
+        return f;
+      });
+      localStorage.setItem('ideaform_filaments', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  // Helper to check if a single color is available in inventory
+  const isColorAvailable = (hexOrId) => {
+    if (!hexOrId) return true;
+    const clean = String(hexOrId).toLowerCase();
+    const found = filamentInventory.find(
+      (f) => f.id.toLowerCase() === clean || f.hex.toLowerCase() === clean
+    );
+    if (!found) return true; // If not in inventory system, allow by default
+    return !found.isArchived && !found.isBlocked && (found.stockGrams || 0) > 0;
+  };
+
+  // Helper to check if an entire combo is available (All 3 colors must have stock > 0)
+  const isComboAvailable = (combo) => {
+    if (!combo) return { available: true, missingColors: [] };
+    const missing = [];
+
+    const baseHex = combo.baseColor?.hex || combo.baseColor;
+    const accentHex = combo.accentColor?.hex || combo.accentColor;
+    const reliefHex = combo.reliefColor?.hex || combo.reliefColor;
+
+    if (!isColorAvailable(baseHex)) {
+      missing.push(combo.baseColor?.name || 'Color Base');
+    }
+    if (!isColorAvailable(accentHex)) {
+      missing.push(combo.accentColor?.name || 'Color Acento');
+    }
+    if (!isColorAvailable(reliefHex)) {
+      missing.push(combo.reliefColor?.name || 'Color Relieve');
+    }
+
+    return {
+      available: missing.length === 0,
+      missingColors: missing
+    };
+  };
+
+  // Helper to get low stock or out of stock filaments for notifications
+  const getFilamentStockAlerts = () => {
+    const outOfStock = filamentInventory.filter((f) => !f.isArchived && (f.stockGrams || 0) <= 0);
+    const lowStock = filamentInventory.filter(
+      (f) => !f.isArchived && (f.stockGrams || 0) > 0 && (f.stockGrams || 0) <= (f.minAlertGrams || 300)
+    );
+    const blocked = filamentInventory.filter((f) => !f.isArchived && f.isBlocked);
+    return { outOfStock, lowStock, blocked };
+  };
 
   // Kanban Production Orders
   const [productionOrders, setProductionOrders] = useState(() => {
@@ -491,6 +620,14 @@ export const AppProvider = ({ children }) => {
         cartTotal,
         totalItemsCount,
         filamentInventory,
+        saveFilament,
+        toggleBlockFilament,
+        archiveFilament,
+        unarchiveFilament,
+        recordStockMovement,
+        isColorAvailable,
+        isComboAvailable,
+        getFilamentStockAlerts,
         updateFilamentStock,
         productionOrders,
         updateOrderStatus,

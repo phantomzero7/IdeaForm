@@ -78,6 +78,14 @@ const AdminDashboard = () => {
     updateOrderStatus,
     assignPrinter,
     filamentInventory,
+    saveFilament,
+    toggleBlockFilament,
+    archiveFilament,
+    unarchiveFilament,
+    recordStockMovement,
+    isColorAvailable,
+    isComboAvailable,
+    getFilamentStockAlerts,
     updateFilamentStock,
     b2bQuotes,
     saveB2BQuote,
@@ -115,21 +123,22 @@ const AdminDashboard = () => {
   });
 
   // 4. Filament Inventory Full Management State
-  const [inventoryList, setInventoryList] = useState(filamentInventory || FILAMENT_MATERIALS);
   const [isNewMaterialModalOpen, setIsNewMaterialModalOpen] = useState(false);
   const [newMaterialData, setNewMaterialData] = useState({
     name: '',
     type: 'PLA_SILK',
     hex: '#176B87',
     stockGrams: 1000,
+    minAlertGrams: 400,
     costPerKg: 450,
     supplier: 'Polymaker México',
-    isActive: true
+    isBlocked: false,
+    isArchived: false
   });
   const [kardexHistory, setKardexHistory] = useState([
-    { id: 'k-1', date: '13/08/2026', materialName: 'PLA Seda Turquesa', type: 'ENTRADA', grams: 2000, reason: 'Compra Proveedor Lote #941' },
-    { id: 'k-2', date: '13/08/2026', materialName: 'PLA Oro Imperial', type: 'SALIDA', grams: 180, reason: 'Producción Orden #IDF-84920' },
-    { id: 'k-3', date: '12/08/2026', materialName: 'PLA Plata Satinado', type: 'MERMA', grams: 45, reason: 'Ajuste de calibración de boquilla' }
+    { id: 'k-1', date: '13/08/2026', materialName: 'Carbón Mate', type: 'ENTRADA', grams: 2000, reason: 'Compra Proveedor Lote #941' },
+    { id: 'k-2', date: '13/08/2026', materialName: 'Rojo Carmín', type: 'SALIDA', grams: 180, reason: 'Producción Orden #IDF-84920' },
+    { id: 'k-3', date: '12/08/2026', materialName: 'Plata Titanio', type: 'MERMA', grams: 45, reason: 'Ajuste de calibración de boquilla' }
   ]);
   const [movementModal, setMovementModal] = useState({ isOpen: false, material: null, type: 'ENTRADA', grams: 1000, reason: '' });
 
@@ -310,8 +319,7 @@ const AdminDashboard = () => {
       id: `mat-${Date.now()}`,
       ...newMaterialData
     };
-    const updated = [...inventoryList, newMat];
-    setInventoryList(updated);
+    saveFilament(newMat);
     setIsNewMaterialModalOpen(false);
     setKardexHistory([
       {
@@ -320,28 +328,21 @@ const AdminDashboard = () => {
         materialName: newMat.name,
         type: 'ENTRADA',
         grams: newMat.stockGrams,
-        reason: `Alta inicial de nuevo material (${newMat.supplier})`
+        reason: `Alta inicial de nuevo filamento (${newMat.supplier})`
       },
       ...kardexHistory
     ]);
-    showToast(`Nuevo material "${newMat.name}" agregado al inventario`, 'success');
-  };
-
-  const handleToggleMaterialStatus = (id) => {
-    const updated = inventoryList.map((m) => (m.id === id ? { ...m, isActive: !m.isActive } : m));
-    setInventoryList(updated);
-    showToast('Estado de disponibilidad actualizado para clientes', 'info');
   };
 
   const handleApplyMovement = (e) => {
     e.preventDefault();
     const { material, type, grams, reason } = movementModal;
-    const delta = type === 'ENTRADA' ? Number(grams) : -Number(grams);
-
-    const updated = inventoryList.map((m) =>
-      m.id === material.id ? { ...m, stockGrams: Math.max(0, m.stockGrams + delta) } : m
+    recordStockMovement(
+      material.id,
+      type,
+      Number(grams),
+      reason || (type === 'ENTRADA' ? 'Reabastecimiento de carrete' : 'Salida de taller / Merma')
     );
-    setInventoryList(updated);
     setKardexHistory([
       {
         id: `k-${Date.now()}`,
@@ -354,7 +355,6 @@ const AdminDashboard = () => {
       ...kardexHistory
     ]);
     setMovementModal({ isOpen: false, material: null, type: 'ENTRADA', grams: 1000, reason: '' });
-    showToast(`Movimiento de ${type} (${grams}g) registrado en Kardex`, 'success');
   };
 
   // --- QUOTES MANAGEMENT & COMMUNICATION ---
@@ -585,7 +585,7 @@ const AdminDashboard = () => {
             }}
           >
             <Activity size={17} />
-            <span>2. Inventario de Filamentos ({inventoryList.length})</span>
+            <span>2. Inventario de Filamentos ({filamentInventory.length})</span>
           </button>
 
           <button
@@ -650,9 +650,65 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* MAIN CONTENT AREA */}
-      <div className="container" style={{ maxWidth: '1280px', margin: '0 auto', paddingTop: '2rem' }}>
+      <div className="container" style={{ maxWidth: '1280px', margin: '0 auto', paddingTop: '1.5rem', paddingBottom: '4rem' }}>
         
+        {/* Real-Time Stock & Filament Alert Notification Banner for Editor */}
+        {(() => {
+          const alerts = getFilamentStockAlerts();
+          const hasAlerts = alerts.outOfStock.length > 0 || alerts.lowStock.length > 0 || alerts.blocked.length > 0;
+          if (!hasAlerts) return null;
+
+          return (
+            <div
+              style={{
+                background: '#fff1f2',
+                border: '1px solid #fecaca',
+                borderRadius: 'var(--radius-lg)',
+                padding: '1rem 1.25rem',
+                marginBottom: '1.75rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '1rem',
+                flexWrap: 'wrap',
+                boxShadow: 'var(--shadow-sm)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <AlertTriangle color="#e11d48" size={22} />
+                <div style={{ fontSize: '0.85rem', color: '#9f1239' }}>
+                  <strong style={{ fontSize: '0.9rem' }}>Centro de Notificaciones del Editor:</strong>
+                  <div style={{ marginTop: '0.2rem', lineHeight: '1.4' }}>
+                    {alerts.outOfStock.length > 0 && (
+                      <span style={{ fontWeight: '800', color: '#be123c', marginRight: '0.75rem' }}>
+                        🔴 {alerts.outOfStock.length} Filamento(s) AGOTADOS ({alerts.outOfStock.map((f) => f.name).join(', ')}). Las opciones ligadas se desactivaron automáticamente.
+                      </span>
+                    )}
+                    {alerts.lowStock.length > 0 && (
+                      <span style={{ color: '#b45309', fontWeight: '700', marginRight: '0.75rem' }}>
+                        🟠 {alerts.lowStock.length} Filamento(s) en STOCK BAJO ({alerts.lowStock.map((f) => `${f.name}: ${f.stockGrams}g`).join(', ')}).
+                      </span>
+                    )}
+                    {alerts.blocked.length > 0 && (
+                      <span style={{ color: '#475569', fontWeight: '700' }}>
+                        🚫 {alerts.blocked.length} Filamento(s) Bloqueados ({alerts.blocked.map((f) => f.name).join(', ')}).
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setActiveTab('inventory')}
+                className="btn btn-sm"
+                style={{ background: '#e11d48', color: '#ffffff', border: 'none', fontWeight: '800', padding: '0.45rem 0.9rem' }}
+              >
+                Gestionar Stock
+              </button>
+            </div>
+          );
+        })()}
+
         {/* =========================================================================
             TAB 1: TABLERO KANBAN DE MANUFACTURA
            ========================================================================= */}
@@ -849,7 +905,7 @@ const AdminDashboard = () => {
         )}
 
         {/* =========================================================================
-            TAB 2: INVENTARIO DE FILAMENTOS
+            TAB 2: INVENTARIO DE FILAMENTOS & VINCULACIÓN CON OPCIONES
            ========================================================================= */}
         {activeTab === 'inventory' && (
           <div>
@@ -859,7 +915,7 @@ const AdminDashboard = () => {
                   Inventario de Filamentos & Insumos 3D
                 </h2>
                 <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0, marginTop: '0.2rem' }}>
-                  Control de stock en gramos, registro de entradas/salidas en Kardex y retiro de colores obsoletos.
+                  Todos los colores y combos de la plataforma están directamente vinculados a este stock en tiempo real.
                 </p>
               </div>
 
@@ -869,13 +925,16 @@ const AdminDashboard = () => {
                 style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
               >
                 <Plus size={16} />
-                <span>+ Agregar Nuevo Material</span>
+                <span>+ Registrar Nuevo Color / Filamento</span>
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
-              {inventoryList.map((mat) => {
-                const isLowStock = mat.stockGrams < 200;
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
+              {filamentInventory.map((mat) => {
+                const isOutOfStock = (mat.stockGrams || 0) <= 0;
+                const isLowStock = !isOutOfStock && (mat.stockGrams || 0) <= (mat.minAlertGrams || 300);
+                const isBlocked = mat.isBlocked;
+                const isArchived = mat.isArchived;
 
                 return (
                   <div
@@ -883,62 +942,82 @@ const AdminDashboard = () => {
                     className="card"
                     style={{
                       background: '#ffffff',
-                      border: isLowStock ? '2px solid #ef4444' : '1px solid #e2e8f0',
+                      border: isArchived ? '1.5px dashed #cbd5e1' : isBlocked ? '2px solid #94a3b8' : isOutOfStock ? '2px solid #ef4444' : isLowStock ? '2px solid #f59e0b' : '1px solid #e2e8f0',
                       borderRadius: 'var(--radius-lg)',
                       padding: '1.25rem',
                       display: 'flex',
                       flexDirection: 'column',
-                      justifyContent: 'space-between'
+                      justifyContent: 'space-between',
+                      opacity: isArchived ? 0.65 : 1
                     }}
                   >
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: mat.hex, border: '1px solid rgba(0,0,0,0.15)' }} />
+                          <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: mat.hex, border: '1.5px solid rgba(0,0,0,0.2)' }} />
                           <strong style={{ fontSize: '0.95rem', color: '#0F172A' }}>{mat.name}</strong>
                         </div>
 
-                        <span style={{ fontSize: '0.7rem', fontWeight: '800', padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-full)', background: mat.isActive !== false ? '#ecfdf5' : '#fee2e2', color: mat.isActive !== false ? '#059669' : '#dc2626' }}>
-                          {mat.isActive !== false ? 'Activo en Web' : 'Oculto / Retirado'}
+                        <span
+                          style={{
+                            fontSize: '0.7rem',
+                            fontWeight: '800',
+                            padding: '0.2rem 0.55rem',
+                            borderRadius: 'var(--radius-full)',
+                            background: isArchived ? '#f1f5f9' : isBlocked ? '#fef3c7' : isOutOfStock ? '#fee2e2' : isLowStock ? '#ffedd5' : '#ecfdf5',
+                            color: isArchived ? '#64748b' : isBlocked ? '#b45309' : isOutOfStock ? '#dc2626' : isLowStock ? '#c2410c' : '#059669'
+                          }}
+                        >
+                          {isArchived ? '📦 Archivado' : isBlocked ? '🚫 Bloqueado' : isOutOfStock ? '🔴 Agotado (0g)' : isLowStock ? '🟠 Stock Bajo' : '🟢 En Stock'}
                         </span>
                       </div>
 
-                      <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.75rem' }}>
-                        Tipo: <strong>{mat.type}</strong> • Prov: {mat.supplier || 'Polymaker'}
+                      <div style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: '0.75rem' }}>
+                        Tipo: <strong>{mat.type || 'PLA_SILK'}</strong> • Prov: {mat.supplier || 'Polymaker'} • HEX: <code style={{ fontSize: '0.75rem' }}>{mat.hex}</code>
                       </div>
 
                       <div style={{ marginBottom: '1rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '0.3rem' }}>
                           <span style={{ color: '#64748b' }}>Stock Disponible:</span>
-                          <strong style={{ color: isLowStock ? '#dc2626' : '#176B87' }}>{mat.stockGrams} g</strong>
+                          <strong style={{ color: isOutOfStock ? '#dc2626' : isLowStock ? '#c2410c' : '#176B87' }}>
+                            {mat.stockGrams || 0} gramos ({((mat.stockGrams || 0) / 1000).toFixed(2)} kg)
+                          </strong>
                         </div>
                         <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${Math.min(100, (mat.stockGrams / 1000) * 100)}%`, background: isLowStock ? '#ef4444' : '#176B87' }} />
+                          <div style={{ height: '100%', width: `${Math.min(100, ((mat.stockGrams || 0) / 3000) * 100)}%`, background: isOutOfStock ? '#ef4444' : isLowStock ? '#f59e0b' : '#176B87' }} />
                         </div>
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '0.4rem', borderTop: '1px solid #f1f5f9', paddingTop: '0.75rem' }}>
+                    <div style={{ display: 'flex', gap: '0.4rem', borderTop: '1px solid #f1f5f9', paddingTop: '0.75rem', flexWrap: 'wrap' }}>
                       <button
-                        onClick={() => setMovementModal({ isOpen: true, material: mat, type: 'ENTRADA', grams: 1000, reason: '' })}
-                        style={{ flex: 1, padding: '0.4rem', background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
+                        onClick={() => setMovementModal({ isOpen: true, material: mat, type: 'ENTRADA', grams: 1000, reason: 'Ingreso Lote de Bobinas' })}
+                        style={{ flex: 1, padding: '0.4rem 0.6rem', background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}
                       >
                         + Entrada
                       </button>
 
                       <button
-                        onClick={() => setMovementModal({ isOpen: true, material: mat, type: 'SALIDA', grams: 100, reason: '' })}
-                        style={{ flex: 1, padding: '0.4rem', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
+                        onClick={() => setMovementModal({ isOpen: true, material: mat, type: 'SALIDA', grams: 200, reason: 'Salida / Merma / Calibración' })}
+                        style={{ flex: 1, padding: '0.4rem 0.6rem', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}
                       >
-                        - Salida / Merma
+                        - Salida
                       </button>
 
                       <button
-                        title={mat.isActive !== false ? 'Retirar de opciones para clientes' : 'Reactivar en catálogo'}
-                        onClick={() => handleToggleMaterialStatus(mat.id)}
-                        style={{ padding: '0.4rem 0.6rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }}
+                        title={mat.isBlocked ? 'Reanudar disponibilidad en tienda' : 'Bloquear temporalmente en tienda'}
+                        onClick={() => toggleBlockFilament(mat.id)}
+                        style={{ padding: '0.4rem 0.65rem', background: mat.isBlocked ? '#fef3c7' : '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }}
                       >
-                        {mat.isActive !== false ? <Ban size={14} color="#dc2626" /> : <Check size={14} color="#059669" />}
+                        <Ban size={14} color={mat.isBlocked ? '#b45309' : '#dc2626'} />
+                      </button>
+
+                      <button
+                        title={mat.isArchived ? 'Restaurar filamento al catálogo' : 'Archivar / Filamento descontinuado'}
+                        onClick={() => (mat.isArchived ? unarchiveFilament(mat.id) : archiveFilament(mat.id))}
+                        style={{ padding: '0.4rem 0.65rem', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }}
+                      >
+                        <Archive size={14} color="#64748b" />
                       </button>
                     </div>
                   </div>
@@ -1584,49 +1663,237 @@ const AdminDashboard = () => {
 
                   {productFormData.colorMode === 'PRESETS' ? (
                     <div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.6rem' }}>
-                        El comprador solo podrá elegir entre las siguientes combinaciones configuradas:
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                          Configura las opciones fijas disponibles para el comprador:
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const activeFilaments = filamentInventory.filter((f) => !f.isArchived && !f.isBlocked && (f.stockGrams || 0) > 0);
+                            const base = activeFilaments[0] || filamentInventory[0];
+                            const accent = activeFilaments[1] || filamentInventory[1] || base;
+                            const relief = activeFilaments[2] || filamentInventory[2] || base;
+                            const newPreset = {
+                              id: `preset-${Date.now()}`,
+                              name: `Opción ${(productFormData.colorPresets || []).length + 1}: ${base.name}, ${accent.name} & ${relief.name}`,
+                              description: 'Combinación personalizada por IdeaForm',
+                              baseColor: { id: base.id, name: base.name, hex: base.hex },
+                              accentColor: { id: accent.id, name: accent.name, hex: accent.hex },
+                              reliefColor: { id: relief.id, name: relief.name, hex: relief.hex }
+                            };
+                            setProductFormData((prev) => ({
+                              ...prev,
+                              colorPresets: [...(prev.colorPresets || []), newPreset]
+                            }));
+                          }}
+                          style={{
+                            padding: '0.3rem 0.65rem',
+                            background: '#176B87',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '4px',
+                            fontSize: '0.72rem',
+                            fontWeight: '800',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          + Agregar Combo Fijo
+                        </button>
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '180px', overflowY: 'auto' }}>
-                        {(productFormData.colorPresets || []).map((preset, pIdx) => (
-                          <div
-                            key={preset.id || pIdx}
-                            onClick={() => {
-                              setProductFormData((prev) => ({
-                                ...prev,
-                                previewBaseColor: preset.baseColor.hex,
-                                previewAccentColor: preset.accentColor.hex,
-                                previewReliefColor: preset.reliefColor.hex
-                              }));
-                            }}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              background: '#ffffff',
-                              padding: '0.5rem 0.75rem',
-                              borderRadius: 'var(--radius-sm)',
-                              border: '1px solid #e2e8f0',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                              <div style={{ display: 'flex', gap: '3px' }}>
-                                <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: preset.baseColor.hex, border: '1px solid rgba(0,0,0,0.2)' }} title="Base" />
-                                <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: preset.accentColor.hex, border: '1px solid rgba(0,0,0,0.2)' }} title="Acento" />
-                                <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: preset.reliefColor.hex, border: '1px solid rgba(0,0,0,0.2)' }} title="Relieve" />
-                              </div>
-                              <span style={{ fontSize: '0.78rem', fontWeight: '700', color: '#0F172A' }}>
-                                {preset.name}
-                              </span>
-                            </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '260px', overflowY: 'auto' }}>
+                        {(productFormData.colorPresets || []).map((preset, pIdx) => {
+                          const availability = isComboAvailable(preset);
 
-                            <span style={{ fontSize: '0.7rem', color: '#176B87', fontWeight: '700' }}>
-                              👁️ Probar 3D
-                            </span>
-                          </div>
-                        ))}
+                          return (
+                            <div
+                              key={preset.id || pIdx}
+                              style={{
+                                background: '#ffffff',
+                                border: availability.available ? '1px solid #cbd5e1' : '1.5px solid #ef4444',
+                                borderRadius: 'var(--radius-md)',
+                                padding: '0.75rem',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '0.5rem'
+                              }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                                <input
+                                  type="text"
+                                  value={preset.name}
+                                  onChange={(e) => {
+                                    const nextName = e.target.value;
+                                    setProductFormData((prev) => ({
+                                      ...prev,
+                                      colorPresets: prev.colorPresets.map((p, idx) =>
+                                        idx === pIdx ? { ...p, name: nextName } : p
+                                      )
+                                    }));
+                                  }}
+                                  placeholder="Nombre del combo..."
+                                  style={{
+                                    flex: 1,
+                                    padding: '0.35rem 0.55rem',
+                                    fontSize: '0.8rem',
+                                    fontWeight: '800',
+                                    borderRadius: '4px',
+                                    border: '1px solid #cbd5e1',
+                                    color: '#0F172A'
+                                  }}
+                                />
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setProductFormData((prev) => ({
+                                      ...prev,
+                                      previewBaseColor: preset.baseColor.hex,
+                                      previewAccentColor: preset.accentColor.hex,
+                                      previewReliefColor: preset.reliefColor.hex
+                                    }));
+                                  }}
+                                  style={{
+                                    padding: '0.3rem 0.6rem',
+                                    background: '#e0f2fe',
+                                    color: '#0369a1',
+                                    border: '1px solid #bae6fd',
+                                    borderRadius: '4px',
+                                    fontSize: '0.7rem',
+                                    fontWeight: '800',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  👁️ Probar 3D
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setProductFormData((prev) => ({
+                                      ...prev,
+                                      colorPresets: prev.colorPresets.filter((_, idx) => idx !== pIdx)
+                                    }));
+                                  }}
+                                  style={{
+                                    padding: '0.3rem 0.5rem',
+                                    background: '#fee2e2',
+                                    color: '#dc2626',
+                                    border: '1px solid #fca5a5',
+                                    borderRadius: '4px',
+                                    fontSize: '0.7rem',
+                                    cursor: 'pointer'
+                                  }}
+                                  title="Eliminar combo"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+
+                              {/* 3 Colors Selector from Inventory */}
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.4rem' }}>
+                                <div>
+                                  <label style={{ fontSize: '0.68rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.15rem' }}>
+                                    1. Base / Fondo:
+                                  </label>
+                                  <select
+                                    value={preset.baseColor?.id || preset.baseColor?.hex}
+                                    onChange={(e) => {
+                                      const found = filamentInventory.find((f) => f.id === e.target.value || f.hex === e.target.value);
+                                      if (found) {
+                                        setProductFormData((prev) => ({
+                                          ...prev,
+                                          colorPresets: prev.colorPresets.map((p, idx) =>
+                                            idx === pIdx
+                                              ? { ...p, baseColor: { id: found.id, name: found.name, hex: found.hex } }
+                                              : p
+                                          )
+                                        }));
+                                      }
+                                    }}
+                                    style={{ width: '100%', padding: '0.35rem', fontSize: '0.72rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                                  >
+                                    {filamentInventory.map((f) => (
+                                      <option key={f.id} value={f.id}>
+                                        {f.name} ({f.stockGrams}g) {f.isBlocked ? '🚫' : (f.stockGrams || 0) === 0 ? '🔴' : ''}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label style={{ fontSize: '0.68rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.15rem' }}>
+                                    2. Acento / Bisel:
+                                  </label>
+                                  <select
+                                    value={preset.accentColor?.id || preset.accentColor?.hex}
+                                    onChange={(e) => {
+                                      const found = filamentInventory.find((f) => f.id === e.target.value || f.hex === e.target.value);
+                                      if (found) {
+                                        setProductFormData((prev) => ({
+                                          ...prev,
+                                          colorPresets: prev.colorPresets.map((p, idx) =>
+                                            idx === pIdx
+                                              ? { ...p, accentColor: { id: found.id, name: found.name, hex: found.hex } }
+                                              : p
+                                          )
+                                        }));
+                                      }
+                                    }}
+                                    style={{ width: '100%', padding: '0.35rem', fontSize: '0.72rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                                  >
+                                    {filamentInventory.map((f) => (
+                                      <option key={f.id} value={f.id}>
+                                        {f.name} ({f.stockGrams}g) {f.isBlocked ? '🚫' : (f.stockGrams || 0) === 0 ? '🔴' : ''}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label style={{ fontSize: '0.68rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.15rem' }}>
+                                    3. Relieve / Texto:
+                                  </label>
+                                  <select
+                                    value={preset.reliefColor?.id || preset.reliefColor?.hex}
+                                    onChange={(e) => {
+                                      const found = filamentInventory.find((f) => f.id === e.target.value || f.hex === e.target.value);
+                                      if (found) {
+                                        setProductFormData((prev) => ({
+                                          ...prev,
+                                          colorPresets: prev.colorPresets.map((p, idx) =>
+                                            idx === pIdx
+                                              ? { ...p, reliefColor: { id: found.id, name: found.name, hex: found.hex } }
+                                              : p
+                                          )
+                                        }));
+                                      }
+                                    }}
+                                    style={{ width: '100%', padding: '0.35rem', fontSize: '0.72rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                                  >
+                                    {filamentInventory.map((f) => (
+                                      <option key={f.id} value={f.id}>
+                                        {f.name} ({f.stockGrams}g) {f.isBlocked ? '🚫' : (f.stockGrams || 0) === 0 ? '🔴' : ''}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+
+                              {/* Status Badge */}
+                              <div style={{ fontSize: '0.68rem', fontWeight: '700' }}>
+                                {availability.available ? (
+                                  <span style={{ color: '#059669' }}>✓ 100% Disponible para venta en tienda</span>
+                                ) : (
+                                  <span style={{ color: '#dc2626' }}>
+                                    ⚠️ Desactivado automáticamente en la tienda (Falta: {availability.missingColors.join(', ')})
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   ) : (
@@ -2163,6 +2430,141 @@ const AdminDashboard = () => {
               </button>
               <button type="submit" className="btn btn-primary" style={{ fontWeight: '800' }}>
                 Aplicar al Kardex
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL 6: REGISTRO DE NUEVO FILAMENTO / COLOR
+         ========================================================================= */}
+      {isNewMaterialModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem'
+          }}
+          onClick={() => setIsNewMaterialModalOpen(false)}
+        >
+          <form
+            onSubmit={handleAddNewMaterial}
+            style={{
+              background: '#ffffff',
+              borderRadius: 'var(--radius-xl)',
+              width: '100%',
+              maxWidth: '520px',
+              padding: '2rem',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: '#0F172A' }}>
+                Registrar Nuevo Filamento en Stock
+              </h3>
+              <button type="button" onClick={() => setIsNewMaterialModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Nombre del Color / Filamento *</label>
+              <input
+                type="text"
+                required
+                placeholder="Ej. Naranja Mandarina Seda"
+                value={newMaterialData.name}
+                onChange={(e) => setNewMaterialData({ ...newMaterialData, name: e.target.value })}
+                style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Color HEX *</label>
+                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                  <input
+                    type="color"
+                    value={newMaterialData.hex}
+                    onChange={(e) => setNewMaterialData({ ...newMaterialData, hex: e.target.value })}
+                    style={{ width: '38px', height: '38px', borderRadius: '4px', border: '1px solid #cbd5e1', cursor: 'pointer', padding: 0 }}
+                  />
+                  <input
+                    type="text"
+                    required
+                    value={newMaterialData.hex}
+                    onChange={(e) => setNewMaterialData({ ...newMaterialData, hex: e.target.value })}
+                    style={{ flex: 1, padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Tipo de Polímero</label>
+                <select
+                  value={newMaterialData.type}
+                  onChange={(e) => setNewMaterialData({ ...newMaterialData, type: e.target.value })}
+                  style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                >
+                  <option value="PLA_SILK">PLA Seda (Silk)</option>
+                  <option value="PLA_PLUS">PLA+ Reforzado</option>
+                  <option value="PETG">PETG Alta Resistencia</option>
+                  <option value="TPU">TPU Flexible 95A</option>
+                  <option value="MATTE">PLA Mate Texturizado</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Stock Inicial (Gramos) *</label>
+                <input
+                  type="number"
+                  min="0"
+                  required
+                  value={newMaterialData.stockGrams}
+                  onChange={(e) => setNewMaterialData({ ...newMaterialData, stockGrams: Number(e.target.value) })}
+                  style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: '800' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Alerta Stock Bajo (Gramos)</label>
+                <input
+                  type="number"
+                  min="50"
+                  value={newMaterialData.minAlertGrams}
+                  onChange={(e) => setNewMaterialData({ ...newMaterialData, minAlertGrams: Number(e.target.value) })}
+                  style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Proveedor / Marca</label>
+              <input
+                type="text"
+                placeholder="Polymaker, eSUN, Sunlu..."
+                value={newMaterialData.supplier}
+                onChange={(e) => setNewMaterialData({ ...newMaterialData, supplier: e.target.value })}
+                style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setIsNewMaterialModalOpen(false)}>
+                Cancelar
+              </button>
+              <button type="submit" className="btn btn-primary" style={{ fontWeight: '800' }}>
+                Dar de Alta Filamento
               </button>
             </div>
           </form>
