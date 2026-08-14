@@ -123,7 +123,7 @@ const ThreeViewer = forwardRef(({
 
         if (isBrandLogo) {
           // --- 100% IDENTICAL OFFICIAL IDEAFORM VECTOR LOGO ON 3D RELIEF ---
-          const isLightBase = ['#ffffff', '#faeeeb', '#f1f5f9', '#f8fafc', '#e2e8f0', '#fdf2f0'].includes(activeBaseColor.toLowerCase());
+          const isLightBase = ['#ffffff', '#faeeeb', '#f1f5f9', '#f8fafc', '#e2e8f0', '#fdf2f0'].includes(String(activeBaseColor || '').toLowerCase());
           const bulbColor = isLightBase ? '#176B87' : '#00E5FF';
           const ideaColor = isLightBase ? '#0F172A' : '#FFFFFF';
           const formColor = isLightBase ? '#176B87' : '#00E5FF';
@@ -315,7 +315,7 @@ const ThreeViewer = forwardRef(({
     // --- CASE A: CUSTOM UPLOADED 3D FILE ---
     if (custom3DFileUrl) {
       setLoading3D(true);
-      const isSTL = custom3DFileType === 'stl' || custom3DFileUrl.toLowerCase().includes('.stl');
+      const isSTL = custom3DFileType === 'stl' || (custom3DFileUrl && String(custom3DFileUrl).toLowerCase().includes('.stl'));
 
       if (isSTL) {
         const loader = new STLLoader();

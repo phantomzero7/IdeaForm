@@ -53,7 +53,7 @@ export const AppProvider = ({ children }) => {
 
   const saveFilament = (newOrUpdatedFilament) => {
     setFilamentInventory((prev) => {
-      const exists = prev.some((f) => f.id === newOrUpdatedFilament.id || (f.name.toLowerCase() === newOrUpdatedFilament.name.toLowerCase()));
+      const exists = prev.some((f) => f.id === newOrUpdatedFilament.id || (f?.name && newOrUpdatedFilament?.name && f.name.toLowerCase() === newOrUpdatedFilament.name.toLowerCase()));
       let updated;
       if (exists) {
         updated = prev.map((f) => (f.id === newOrUpdatedFilament.id ? { ...f, ...newOrUpdatedFilament } : f));
@@ -138,8 +138,9 @@ export const AppProvider = ({ children }) => {
   const isColorAvailable = (hexOrId) => {
     if (!hexOrId) return true;
     const clean = String(hexOrId).toLowerCase();
-    const found = filamentInventory.find(
-      (f) => f.id.toLowerCase() === clean || f.hex.toLowerCase() === clean
+    const inv = Array.isArray(filamentInventory) ? filamentInventory : [];
+    const found = inv.find(
+      (f) => (f && f.id && String(f.id).toLowerCase() === clean) || (f && f.hex && String(f.hex).toLowerCase() === clean)
     );
     if (!found) return true; // If not in inventory system, allow by default
     return !found.isArchived && !found.isBlocked && (found.stockGrams || 0) > 0;
@@ -150,17 +151,17 @@ export const AppProvider = ({ children }) => {
     if (!combo) return { available: true, missingColors: [] };
     const missing = [];
 
-    const baseHex = combo.baseColor?.hex || combo.baseColor;
-    const accentHex = combo.accentColor?.hex || combo.accentColor;
-    const reliefHex = combo.reliefColor?.hex || combo.reliefColor;
+    const baseHex = combo.baseColor?.hex || (typeof combo.baseColor === 'string' ? combo.baseColor : null);
+    const accentHex = combo.accentColor?.hex || (typeof combo.accentColor === 'string' ? combo.accentColor : null);
+    const reliefHex = combo.reliefColor?.hex || (typeof combo.reliefColor === 'string' ? combo.reliefColor : null);
 
-    if (!isColorAvailable(baseHex)) {
+    if (baseHex && !isColorAvailable(baseHex)) {
       missing.push(combo.baseColor?.name || 'Color Base');
     }
-    if (!isColorAvailable(accentHex)) {
+    if (accentHex && !isColorAvailable(accentHex)) {
       missing.push(combo.accentColor?.name || 'Color Acento');
     }
-    if (!isColorAvailable(reliefHex)) {
+    if (reliefHex && !isColorAvailable(reliefHex)) {
       missing.push(combo.reliefColor?.name || 'Color Relieve');
     }
 

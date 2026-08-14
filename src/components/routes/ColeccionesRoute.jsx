@@ -37,12 +37,13 @@ const toColorObj = (c, defaultName = 'Color') => {
     return {
       id: c.id || `col-${c.hex}`,
       name: c.name || defaultName,
-      hex: c.hex,
+      hex: String(c.hex),
       priceMultiplier: c.priceMultiplier || 1.0
     };
   }
-  if (typeof c === 'string') {
-    const found = FILAMENT_COLORS.find((f) => f.hex.toLowerCase() === c.toLowerCase() || f.id.toLowerCase() === c.toLowerCase());
+  if (typeof c === 'string' && c) {
+    const clean = c.toLowerCase();
+    const found = FILAMENT_COLORS.find((f) => (f?.hex && String(f.hex).toLowerCase() === clean) || (f?.id && String(f.id).toLowerCase() === clean));
     if (found) return found;
     return { id: `col-${c}`, name: defaultName, hex: c, priceMultiplier: 1.0 };
   }

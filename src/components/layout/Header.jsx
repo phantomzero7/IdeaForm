@@ -13,9 +13,9 @@ const Header = () => {
 
   const searchResults = searchQuery.trim()
     ? PRODUCTS.filter((p) =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.categoryName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()))
+        (p?.name && p.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (p?.categoryName && p.categoryName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (Array.isArray(p?.tags) && p.tags.some((t) => typeof t === 'string' && t.toLowerCase().includes(searchQuery.toLowerCase())))
       ).slice(0, 5)
     : [];
 
