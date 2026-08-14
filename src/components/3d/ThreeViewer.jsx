@@ -11,7 +11,7 @@ const ThreeViewer = forwardRef(({
   selectedColor = '#176B87',
   baseColor = null,
   accentColor = '#D4AF37',
-  textColor = '#FFFFFF',
+  textColor = null,
   reliefColor = null,
   materialType = 'PLA_SILK',
   customText = 'IDEAFORM',
@@ -28,11 +28,12 @@ const ThreeViewer = forwardRef(({
   const meshGroupRef = useRef(null);
   const animFrameId = useRef(null);
 
-  // References to keep textures and materials for instant, fluid color updates without rebuilding
+  // References for live material and texture updates without destroying the WebGL context or scene
   const materialsRef = useRef({
     mainMat: null,
     accentMat: null,
     steelMat: null,
+    reliefMat: null,
     canvasTexture: null,
     canvasElem: null,
     canvasCtx: null
@@ -68,8 +69,8 @@ const ThreeViewer = forwardRef(({
     }
   }));
 
-  // Function to draw text/logo texture onto the canvas
-  const updateCanvasTexture = useCallback(() => {
+  // Function to draw high-res 2048x1024 text/logo texture
+  const drawCanvas = useCallback(() => {
     let canvas = materialsRef.current.canvasElem;
     let ctx = materialsRef.current.canvasCtx;
 
@@ -86,25 +87,25 @@ const ThreeViewer = forwardRef(({
     ctx.fillStyle = activeBaseColor;
     ctx.fillRect(0, 0, 2048, 1024);
 
-    // 2. Multi-layer inner chamfer / accent border
+    // 2. Multi-layer accent border
     ctx.strokeStyle = activeAccentColor;
-    ctx.lineWidth = 28;
+    ctx.lineWidth = 32;
     ctx.lineJoin = 'round';
-    ctx.strokeRect(40, 40, 1968, 944);
+    ctx.strokeRect(48, 48, 1952, 928);
 
     // Subtle inner accent line
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
     ctx.lineWidth = 8;
-    ctx.strokeRect(80, 80, 1888, 864);
+    ctx.strokeRect(88, 88, 1872, 848);
 
     if (!noEngraving) {
       ctx.save();
       
-      // Embossed 3D Drop Shadow Effect
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-      ctx.shadowBlur = 16;
-      ctx.shadowOffsetX = 6;
-      ctx.shadowOffsetY = 8;
+      // Embossed 3D Drop Shadow
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+      ctx.shadowBlur = 18;
+      ctx.shadowOffsetX = 8;
+      ctx.shadowOffsetY = 10;
 
       if (logoImage) {
         const img = new Image();
@@ -120,13 +121,12 @@ const ThreeViewer = forwardRef(({
         const isDefault = !customText || customText.trim().toUpperCase() === 'IDEAFORM';
 
         if (isDefault) {
-          // Draw official vector bulb + IdeaForm text
+          // Bulb dome & rays
           ctx.strokeStyle = activeAccentColor;
-          ctx.lineWidth = 26;
+          ctx.lineWidth = 28;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
 
-          // Bulb dome
           ctx.beginPath();
           ctx.arc(580, 512, 140, 0, Math.PI * 2);
           ctx.stroke();
@@ -134,7 +134,7 @@ const ThreeViewer = forwardRef(({
           // Dot
           ctx.fillStyle = activeAccentColor;
           ctx.beginPath();
-          ctx.arc(530, 450, 22, 0, Math.PI * 2);
+          ctx.arc(530, 450, 24, 0, Math.PI * 2);
           ctx.fill();
 
           // Typography
@@ -147,10 +147,10 @@ const ThreeViewer = forwardRef(({
           ctx.fillStyle = activeAccentColor;
           ctx.fillText('Form', 1300, 520);
         } else {
-          // Custom embossed text - dynamically scaled & centered perfectly
+          // Custom embossed text in activeTextColor
           const displayStr = customText.toUpperCase();
           const charLen = Math.max(displayStr.length, 1);
-          const fontSize = Math.min(220, Math.floor(1700 / (charLen * 0.65)));
+          const fontSize = Math.min(240, Math.floor(1800 / (charLen * 0.65)));
 
           let cleanFont = fontFamily;
           if (cleanFont.includes('Poppins')) cleanFont = 'Poppins, sans-serif';
@@ -181,12 +181,12 @@ const ThreeViewer = forwardRef(({
     return materialsRef.current.canvasTexture;
   }, [activeBaseColor, activeAccentColor, activeTextColor, customText, fontFamily, logoImage, noEngraving]);
 
-  // Build / Rebuild Geometry when modelType changes, preserving current rotation!
+  // Build Geometry (only runs when modelType, custom3DFileUrl, or custom3DFileType changes)
   const buildGeometry = useCallback(() => {
     if (!meshGroupRef.current) return;
     const group = meshGroupRef.current;
 
-    // Preserve existing rotation so it doesn't snap or restart!
+    // Preserve rotation across rebuilds
     const currentRotX = group.rotation.x;
     const currentRotY = group.rotation.y;
     const currentRotZ = group.rotation.z;
@@ -204,7 +204,7 @@ const ThreeViewer = forwardRef(({
       group.remove(obj);
     }
 
-    // Material 1: Body / Base
+    // Main Material
     const mainMaterial = new THREE.MeshPhysicalMaterial({
       color: new THREE.Color(activeBaseColor),
       roughness: 0.22,
@@ -214,7 +214,7 @@ const ThreeViewer = forwardRef(({
     });
     materialsRef.current.mainMat = mainMaterial;
 
-    // Material 2: Accent (Trim, Borders, Stand)
+    // Accent Material
     const accentMat = new THREE.MeshStandardMaterial({
       color: new THREE.Color(activeAccentColor),
       roughness: 0.25,
@@ -222,7 +222,7 @@ const ThreeViewer = forwardRef(({
     });
     materialsRef.current.accentMat = accentMat;
 
-    // Material 3: Metallic Steel / Ring
+    // Steel Ring Material
     const steelMaterial = new THREE.MeshStandardMaterial({
       color: 0xdde3ea,
       metalness: 0.95,
@@ -256,7 +256,10 @@ const ThreeViewer = forwardRef(({
             setLoading3D(false);
           },
           undefined,
-          () => setLoading3D(false)
+          (err) => {
+            console.error('STL Load Error:', err);
+            setLoading3D(false);
+          }
         );
       } else {
         const loader = new GLTFLoader();
@@ -285,23 +288,34 @@ const ThreeViewer = forwardRef(({
             setLoading3D(false);
           },
           undefined,
-          () => setLoading3D(false)
+          (err) => {
+            console.error('GLTF Load Error:', err);
+            setLoading3D(false);
+          }
         );
       }
       return;
     }
 
     // --- CASE B: PARAMETRIC 3D MODELS ---
-    const textTexture = updateCanvasTexture();
+    const textTexture = drawCanvas();
 
-    // 1. KEYCHAIN / MOCHILA TAG (Elevated 3D View with Top Face Text)
+    const reliefFaceMat = new THREE.MeshPhysicalMaterial({
+      map: textTexture,
+      roughness: 0.2,
+      metalness: 0.25,
+      clearcoat: 0.5
+    });
+    materialsRef.current.reliefMat = reliefFaceMat;
+
+    // 1. KEYCHAIN / TAG (Top Face +Y gets reliefFaceMat)
     if (modelType === 'keychain') {
       const plateGeo = new THREE.BoxGeometry(4.6, 0.45, 2.3);
       
       const plateMaterials = [
         mainMaterial, // +X right
         mainMaterial, // -X left
-        new THREE.MeshPhysicalMaterial({ map: textTexture, roughness: 0.2, metalness: 0.2 }), // +Y TOP SURFACE
+        reliefFaceMat, // +Y TOP SURFACE
         mainMaterial, // -Y bottom
         mainMaterial, // +Z front
         mainMaterial  // -Z back
@@ -339,7 +353,7 @@ const ThreeViewer = forwardRef(({
         mainMaterial,
         mainMaterial,
         mainMaterial,
-        new THREE.MeshPhysicalMaterial({ map: textTexture, roughness: 0.15, metalness: 0.2 }),
+        reliefFaceMat,
         mainMaterial
       ];
       const mainMesh = new THREE.Mesh(columnGeo, columnMat);
@@ -418,7 +432,7 @@ const ThreeViewer = forwardRef(({
       });
     }
 
-    // 5. CUP / CYLINDER
+    // 5. CUP
     else if (modelType === 'cup') {
       const cupGeo = new THREE.CylinderGeometry(1.6, 1.4, 3.2, 36, 1, true);
       const cupMesh = new THREE.Mesh(cupGeo, mainMaterial);
@@ -455,11 +469,15 @@ const ThreeViewer = forwardRef(({
       group.add(trayMesh);
     }
 
-    // Restore rotation
     group.rotation.set(currentRotX, currentRotY, currentRotZ);
-  }, [modelType, custom3DFileUrl, custom3DFileType, activeBaseColor, activeAccentColor, updateCanvasTexture]);
+  }, [modelType, custom3DFileUrl, custom3DFileType]);
 
-  // Instant update of material colors and texture without destroying geometry (100% fluid)
+  // Re-build geometry when modelType or custom 3D file changes
+  useEffect(() => {
+    buildGeometry();
+  }, [buildGeometry]);
+
+  // Instant in-place color & relief texture updates (No geometry rebuild, 0 lag!)
   useEffect(() => {
     if (materialsRef.current.mainMat) {
       materialsRef.current.mainMat.color.set(activeBaseColor);
@@ -467,10 +485,13 @@ const ThreeViewer = forwardRef(({
     if (materialsRef.current.accentMat) {
       materialsRef.current.accentMat.color.set(activeAccentColor);
     }
-    updateCanvasTexture();
-  }, [activeBaseColor, activeAccentColor, activeTextColor, customText, fontFamily, logoImage, updateCanvasTexture]);
+    drawCanvas();
+    if (materialsRef.current.canvasTexture) {
+      materialsRef.current.canvasTexture.needsUpdate = true;
+    }
+  }, [activeBaseColor, activeAccentColor, activeTextColor, customText, fontFamily, logoImage, drawCanvas]);
 
-  // Three.js Scene Setup Loop
+  // Three.js Scene Setup Loop (Runs ONCE on mount)
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
@@ -481,7 +502,6 @@ const ThreeViewer = forwardRef(({
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
-    // Isometric / elevated 3D camera
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
     camera.position.set(0, 3.5, 5.0);
     camera.lookAt(0, 0, 0);
@@ -510,7 +530,6 @@ const ThreeViewer = forwardRef(({
     scene.add(dirLight2);
 
     const group = new THREE.Group();
-    // Default pleasant elevated angle
     group.rotation.set(0.45, -0.35, 0);
     meshGroupRef.current = group;
     scene.add(group);
@@ -578,7 +597,7 @@ const ThreeViewer = forwardRef(({
         mount.removeChild(renderer.domElement);
       }
     };
-  }, [buildGeometry]);
+  }, []);
 
   return (
     <div
@@ -592,7 +611,7 @@ const ThreeViewer = forwardRef(({
       }}
     >
       {loading3D && (
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20 }}>
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20 }}>
           <span style={{ fontSize: '0.85rem', fontWeight: '700', color: '#176B87' }}>Cargando modelo 3D...</span>
         </div>
       )}

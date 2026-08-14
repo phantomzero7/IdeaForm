@@ -1301,7 +1301,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* =========================================================================
-          MODAL 5: ALTA / EDICIÓN CON CARGA DIRECTA 2D Y 3D
+          MODAL 5: ALTA / EDICIÓN CON CARGA DIRECTA 2D Y 3D Y TESTER DE RELIEVE
          ========================================================================= */}
       {isProductModalOpen && (
         <div
@@ -1323,7 +1323,7 @@ const AdminDashboard = () => {
               background: '#ffffff',
               borderRadius: 'var(--radius-xl)',
               width: '100%',
-              maxWidth: '960px',
+              maxWidth: '980px',
               maxHeight: '90vh',
               overflowY: 'auto',
               padding: '2rem',
@@ -1337,7 +1337,7 @@ const AdminDashboard = () => {
                   {editingProduct ? `Editar Producto: ${editingProduct.name}` : 'Cargar & Publicar Nuevo Producto'}
                 </h3>
                 <p style={{ color: '#64748b', fontSize: '0.82rem', margin: 0, marginTop: '0.2rem' }}>
-                  Sube tus fotos 2D o archivos 3D directamente desde tu equipo sin tocar código.
+                  Sube fotos 2D o modelos 3D (.GLB, .GLTF, .STL) y configura los colores por zonas.
                 </p>
               </div>
               <button onClick={() => setIsProductModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
@@ -1345,9 +1345,9 @@ const AdminDashboard = () => {
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem', alignItems: 'start' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: '2rem', alignItems: 'start' }}>
               
-              {/* Left Form: Product Data & Zones */}
+              {/* Left Form: Product Data & Uploads */}
               <form onSubmit={handleSaveProduct}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                   <div>
@@ -1409,12 +1409,12 @@ const AdminDashboard = () => {
                       style={{ width: '100%', padding: '0.65rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
                     >
                       <option value="sphere">Esfera Decorativa / Navideña</option>
-                      <option value="keychain">Llavero Bicapa</option>
+                      <option value="keychain">Llavero / Tag Bicapa</option>
                       <option value="car">Auto a Escala</option>
                       <option value="cup">Taza / Cilindro</option>
                       <option value="planter">Maceta Geométrica</option>
                       <option value="trophy">Trofeo Ejecutivo</option>
-                      <option value="custom_file">📁 Archivo 3D Propio (.GLB / .STL)</option>
+                      <option value="custom_file">📁 Modelo 3D Subido (.GLB/.STL)</option>
                     </select>
                   </div>
 
@@ -1431,39 +1431,103 @@ const AdminDashboard = () => {
                   </div>
                 </div>
 
-                {/* Direct 3D Model File Uploader */}
-                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px dashed #94a3b8', marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.4rem' }}>
-                    <FileUp size={16} color="#176B87" />
-                    <strong style={{ fontSize: '0.82rem', color: '#0F172A' }}>
-                      Cargar Archivo 3D Directo (.GLB / .GLTF / .STL)
-                    </strong>
+                {/* 2D Image Upload & Live Thumbnail Box */}
+                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <ImageIcon size={16} color="#176B87" />
+                      <strong style={{ fontSize: '0.82rem', color: '#0F172A' }}>
+                        Imagen 2D / Render Fotográfico
+                      </strong>
+                    </div>
+
+                    {productFormData.image2D && (
+                      <span style={{ fontSize: '0.7rem', fontWeight: '800', padding: '0.15rem 0.5rem', borderRadius: '4px', background: '#ecfdf5', color: '#059669' }}>
+                        ✓ Imagen Cargada
+                      </span>
+                    )}
                   </div>
-                  <input
-                    type="file"
-                    accept=".glb,.gltf,.stl"
-                    onChange={handle3DModelFileChange}
-                    style={{ fontSize: '0.82rem', width: '100%' }}
-                  />
-                  <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.25rem' }}>
-                    Soporta modelos 3D exportados de Blender, Fusion 360, Tinkercad o STL.
-                  </div>
+
+                  {productFormData.image2D ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: '#ffffff', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid #e2e8f0' }}>
+                      <img
+                        src={productFormData.image2D}
+                        alt="Preview 2D"
+                        style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: '700', color: '#0F172A' }}>Vista Previa en Tienda Activa</div>
+                        <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Se mostrará en la tarjeta de producto</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setProductFormData({ ...productFormData, image2D: null })}
+                        style={{ padding: '0.35rem 0.65rem', background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
+                      >
+                        Quitar
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handle2DImageChange}
+                        style={{ fontSize: '0.82rem', width: '100%' }}
+                      />
+                      <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.25rem' }}>
+                        Formatos soportados: .PNG, .JPG, .WEBP (hasta 25 MB)
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Direct 2D Image Uploader */}
-                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px dashed #94a3b8', marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.4rem' }}>
-                    <ImageIcon size={16} color="#176B87" />
-                    <strong style={{ fontSize: '0.82rem', color: '#0F172A' }}>
-                      Cargar Imagen 2D / Render Fotográfico (.PNG / .JPG)
-                    </strong>
+                {/* 3D Model File Uploader & Status Box */}
+                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid #cbd5e1', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <FileUp size={16} color="#176B87" />
+                      <strong style={{ fontSize: '0.82rem', color: '#0F172A' }}>
+                        Archivo 3D Personalizado (.GLB / .GLTF / .STL)
+                      </strong>
+                    </div>
+
+                    {productFormData.custom3DFileUrl && (
+                      <span style={{ fontSize: '0.7rem', fontWeight: '800', padding: '0.15rem 0.5rem', borderRadius: '4px', background: '#e0f2fe', color: '#0369a1' }}>
+                        ✓ Modelo 3D Activo
+                      </span>
+                    )}
                   </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handle2DImageChange}
-                    style={{ fontSize: '0.82rem', width: '100%' }}
-                  />
+
+                  {productFormData.custom3DFileUrl ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid #e2e8f0' }}>
+                      <div>
+                        <div style={{ fontSize: '0.82rem', fontWeight: '700', color: '#0F172A' }}>
+                          Archivo 3D: {(productFormData.custom3DFileType || '3D').toUpperCase()}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Renderizándose en vivo en el visor derecho</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setProductFormData({ ...productFormData, modelType: 'keychain', custom3DFileUrl: null, custom3DFileType: null })}
+                        style={{ padding: '0.35rem 0.65rem', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
+                      >
+                        Revertir a Estándar
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <input
+                        type="file"
+                        accept=".glb,.gltf,.stl"
+                        onChange={handle3DModelFileChange}
+                        style={{ fontSize: '0.82rem', width: '100%' }}
+                      />
+                      <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.25rem' }}>
+                        Sube archivos 3D exportados de Fusion 360, Blender o Tinkercad.
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Multi-Color Zones Configuration */}
@@ -1471,7 +1535,7 @@ const AdminDashboard = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem' }}>
                     <Palette size={16} color="#176B87" />
                     <strong style={{ fontSize: '0.85rem', color: '#0F172A' }}>
-                      Zonas Personalizables por el Cliente
+                      Zonas Personalizables por el Comprador
                     </strong>
                   </div>
 
@@ -1482,7 +1546,7 @@ const AdminDashboard = () => {
                         checked={productFormData.allowBaseColor}
                         onChange={(e) => setProductFormData({ ...productFormData, allowBaseColor: e.target.checked })}
                       />
-                      <span><strong>Zona 1: Color Base / Cuerpo Principal</strong></span>
+                      <span><strong>Zona 1: Color Base / Cuerpo Principal</strong> (Permitido para el cliente)</span>
                     </label>
 
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8rem', cursor: 'pointer' }}>
@@ -1491,7 +1555,7 @@ const AdminDashboard = () => {
                         checked={productFormData.allowAccentColor}
                         onChange={(e) => setProductFormData({ ...productFormData, allowAccentColor: e.target.checked })}
                       />
-                      <span><strong>Zona 2: Color de Acentos / Detalles</strong></span>
+                      <span><strong>Zona 2: Color de Acentos / Bisel / Detalles</strong> (Permitido para el cliente)</span>
                     </label>
 
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8rem', cursor: 'pointer' }}>
@@ -1500,7 +1564,7 @@ const AdminDashboard = () => {
                         checked={productFormData.allowReliefColor}
                         onChange={(e) => setProductFormData({ ...productFormData, allowReliefColor: e.target.checked })}
                       />
-                      <span><strong>Zona 3: Relieve 3D de Texto o Logotipo</strong></span>
+                      <span><strong>Zona 3: Color de Relieve / Texto 3D</strong> (Permitido para el cliente)</span>
                     </label>
                   </div>
                 </div>
@@ -1516,13 +1580,13 @@ const AdminDashboard = () => {
               </form>
 
               {/* Right: Live Interactive 3D Model Tester */}
-              <div style={{ background: '#f1f5f9', borderRadius: 'var(--radius-lg)', padding: '1rem', border: '1px solid #cbd5e1' }}>
-                <div style={{ fontSize: '0.82rem', fontWeight: '800', color: '#176B87', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <Sparkles size={14} />
+              <div style={{ background: '#f1f5f9', borderRadius: 'var(--radius-lg)', padding: '1.25rem', border: '1px solid #cbd5e1' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#176B87', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <Sparkles size={16} />
                   <span>Previsualizador 3D en Vivo</span>
                 </div>
 
-                <div style={{ height: '320px', background: '#ffffff', borderRadius: 'var(--radius-md)', overflow: 'hidden', position: 'relative' }}>
+                <div style={{ height: '320px', background: '#ffffff', borderRadius: 'var(--radius-md)', overflow: 'hidden', position: 'relative', border: '1px solid #e2e8f0' }}>
                   <ThreeViewer
                     modelType={productFormData.modelType}
                     custom3DFileUrl={productFormData.custom3DFileUrl}
@@ -1530,40 +1594,50 @@ const AdminDashboard = () => {
                     baseColor={productFormData.previewBaseColor}
                     accentColor={productFormData.previewAccentColor}
                     reliefColor={productFormData.previewReliefColor}
+                    textColor={productFormData.previewReliefColor}
                     customText="MUESTRA 3D"
                   />
                 </div>
 
                 {/* Color Swatches Tester for the Admin */}
-                <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.75rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>Color Base:</span>
-                    <input
-                      type="color"
-                      value={productFormData.previewBaseColor}
-                      onChange={(e) => setProductFormData({ ...productFormData, previewBaseColor: e.target.value })}
-                      style={{ border: 'none', width: '28px', height: '24px', cursor: 'pointer' }}
-                    />
+                <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.78rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff', padding: '0.4rem 0.75rem', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                    <span style={{ fontWeight: '700', color: '#334155' }}>Color de Base / Fondo:</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <input
+                        type="color"
+                        value={productFormData.previewBaseColor}
+                        onChange={(e) => setProductFormData({ ...productFormData, previewBaseColor: e.target.value })}
+                        style={{ border: 'none', width: '28px', height: '24px', cursor: 'pointer', borderRadius: '4px' }}
+                      />
+                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>{productFormData.previewBaseColor}</span>
+                    </div>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>Color Acento:</span>
-                    <input
-                      type="color"
-                      value={productFormData.previewAccentColor}
-                      onChange={(e) => setProductFormData({ ...productFormData, previewAccentColor: e.target.value })}
-                      style={{ border: 'none', width: '28px', height: '24px', cursor: 'pointer' }}
-                    />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff', padding: '0.4rem 0.75rem', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                    <span style={{ fontWeight: '700', color: '#334155' }}>Color de Acento / Bisel:</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <input
+                        type="color"
+                        value={productFormData.previewAccentColor}
+                        onChange={(e) => setProductFormData({ ...productFormData, previewAccentColor: e.target.value })}
+                        style={{ border: 'none', width: '28px', height: '24px', cursor: 'pointer', borderRadius: '4px' }}
+                      />
+                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>{productFormData.previewAccentColor}</span>
+                    </div>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>Color Relieve:</span>
-                    <input
-                      type="color"
-                      value={productFormData.previewReliefColor}
-                      onChange={(e) => setProductFormData({ ...productFormData, previewReliefColor: e.target.value })}
-                      style={{ border: 'none', width: '28px', height: '24px', cursor: 'pointer' }}
-                    />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff', padding: '0.4rem 0.75rem', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                    <span style={{ fontWeight: '700', color: '#334155' }}>Color de Relieve / Texto 3D:</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <input
+                        type="color"
+                        value={productFormData.previewReliefColor}
+                        onChange={(e) => setProductFormData({ ...productFormData, previewReliefColor: e.target.value })}
+                        style={{ border: 'none', width: '28px', height: '24px', cursor: 'pointer', borderRadius: '4px' }}
+                      />
+                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>{productFormData.previewReliefColor}</span>
+                    </div>
                   </div>
                 </div>
               </div>
