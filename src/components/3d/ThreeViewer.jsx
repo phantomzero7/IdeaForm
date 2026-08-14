@@ -122,19 +122,21 @@ const ThreeViewer = forwardRef(({
         const isBrandLogo = !customText || customText.trim().toUpperCase() === 'IDEAFORM';
 
         if (isBrandLogo) {
-          // --- OFFICIAL IDEAFORM BRAND LOGO ON 3D RELIEF ---
+          // --- FULL OFFICIAL IDEAFORM BRAND LOGO ON 3D RELIEF ---
           const isLightBase = ['#ffffff', '#faeeeb', '#f1f5f9', '#f8fafc', '#e2e8f0', '#fdf2f0'].includes(activeBaseColor.toLowerCase());
           const bulbColor = isLightBase ? '#176B87' : '#00E5FF';
           const ideaColor = isLightBase ? '#0F172A' : '#FFFFFF';
           const formColor = isLightBase ? '#176B87' : '#00E5FF';
+          const taglineColor = isLightBase ? '#526071' : '#cbd5e1';
 
-          const drawBulbLogo = (cx, cy, scale = 1.45) => {
+          // 1. Draw Vector Brand Logo with exact Tagline
+          const drawBulbLogo = (cx, cy, scale = 1.38) => {
             ctx.save();
             ctx.translate(cx, cy);
             ctx.scale(scale, scale);
 
             // 3D Extrusion Shadow (+8px offset)
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.65)';
             ctx.lineWidth = 26;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
@@ -204,24 +206,37 @@ const ThreeViewer = forwardRef(({
             ctx.restore();
           };
 
-          drawBulbLogo(480, 512, 1.45);
+          drawBulbLogo(410, 500, 1.4);
 
-          // Brand Typography "IdeaForm"
-          ctx.font = `900 240px 'Space Grotesk', sans-serif`;
+          // Brand Typography: "IdeaForm"
+          ctx.font = `900 230px 'Space Grotesk', sans-serif`;
           ctx.textAlign = 'left';
           ctx.textBaseline = 'middle';
 
           // Shadow
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-          ctx.fillText('Idea', 768, 522);
-          ctx.fillText('Form', 1288, 522);
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+          ctx.fillText('Idea', 688, 452);
+          ctx.fillText('Form', 1198, 452);
 
-          // Text Fill: "Idea" in Charcoal/White, "Form" in Official Teal
+          // Text Fill
           ctx.fillStyle = ideaColor;
-          ctx.fillText('Idea', 760, 512);
+          ctx.fillText('Idea', 680, 444);
 
           ctx.fillStyle = formColor;
-          ctx.fillText('Form', 1280, 512);
+          ctx.fillText('Form', 1190, 444);
+
+          // Full Tagline: "Ideas que toman forma."
+          ctx.font = `600 115px 'Plus Jakarta Sans', 'Inter', sans-serif`;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+
+          // Tagline Shadow
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+          ctx.fillText('Ideas que toman forma.', 684, 628);
+
+          // Tagline Fill
+          ctx.fillStyle = taglineColor;
+          ctx.fillText('Ideas que toman forma.', 680, 624);
         } else {
           // --- CUSTOMER CUSTOM ENGRAVING IN FULL-SIZE PROMINENT RELIEF ---
           const displayStr = customText.trim().toUpperCase();
