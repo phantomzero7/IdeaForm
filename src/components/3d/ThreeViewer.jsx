@@ -110,73 +110,38 @@ const ThreeViewer = forwardRef(({
           }
         };
       } else {
-        const isDefault = !customText || customText.trim().toUpperCase() === 'IDEAFORM';
+        // Render customer custom text prominently in 3D relief (activeTextColor)
+        const displayStr = (customText && customText.trim()) ? customText.trim().toUpperCase() : 'IDEAFORM';
+        const charLen = Math.max(displayStr.length, 1);
+        const fontSize = Math.min(270, Math.max(90, Math.floor(1800 / (charLen * 0.62))));
 
-        if (isDefault) {
-          // Bulb dome & rays
-          ctx.strokeStyle = activeAccentColor;
-          ctx.lineWidth = 32;
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-
-          ctx.beginPath();
-          ctx.arc(560, 512, 150, 0, Math.PI * 2);
-          ctx.stroke();
-
-          // Dot
-          ctx.fillStyle = activeAccentColor;
-          ctx.beginPath();
-          ctx.arc(510, 440, 26, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Typography
-          ctx.font = `800 210px 'Space Grotesk', sans-serif`;
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'middle';
-
-          // Shadow
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-          ctx.fillText('Idea', 824, 526);
-          ctx.fillText('Form', 1284, 526);
-
-          // Vivid Fill in activeTextColor & activeAccentColor
-          ctx.fillStyle = activeTextColor;
-          ctx.fillText('Idea', 820, 520);
-
-          ctx.fillStyle = activeAccentColor;
-          ctx.fillText('Form', 1280, 520);
-        } else {
-          // Dynamic text in activeTextColor
-          const displayStr = customText.toUpperCase();
-          const charLen = Math.max(displayStr.length, 1);
-          const fontSize = Math.min(250, Math.floor(1850 / (charLen * 0.65)));
-
-          let cleanFont = fontFamily;
-          if (cleanFont.includes('Poppins')) cleanFont = 'Poppins, sans-serif';
-          else if (cleanFont.includes('Tech')) cleanFont = `'Space Grotesk', monospace`;
-          else if (cleanFont.includes('Serif')) cleanFont = `'Playfair Display', serif`;
-          else if (cleanFont.includes('Cursiva')) cleanFont = `'Dancing Script', cursive`;
-          else cleanFont = 'sans-serif';
-
-          ctx.font = `900 ${fontSize}px ${cleanFont}`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-
-          // Layer 1: Dark 3D Bottom Extrusion Shadow
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
-          ctx.fillText(displayStr, 1028, 520);
-          ctx.fillText(displayStr, 1026, 518);
-          ctx.fillText(displayStr, 1024, 516);
-
-          // Layer 2: Subtle Outer Contrast Stroke
-          ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
-          ctx.lineWidth = 14;
-          ctx.strokeText(displayStr, 1024, 512);
-
-          // Layer 3: Solid Vivid Face Fill in activeTextColor
-          ctx.fillStyle = activeTextColor;
-          ctx.fillText(displayStr, 1024, 512);
+        let cleanFont = 'Poppins, sans-serif';
+        if (fontFamily) {
+          if (fontFamily.includes('Space') || fontFamily.includes('Tech')) cleanFont = `'Space Grotesk', monospace`;
+          else if (fontFamily.includes('Playfair') || fontFamily.includes('Serif')) cleanFont = `'Playfair Display', serif`;
+          else if (fontFamily.includes('Dancing') || fontFamily.includes('Cursiva')) cleanFont = `'Dancing Script', cursive`;
+          else if (fontFamily.includes('Poppins')) cleanFont = `'Poppins', sans-serif`;
+          else cleanFont = `'${fontFamily}', sans-serif`;
         }
+
+        ctx.font = `900 ${fontSize}px ${cleanFont}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Layer 1: Dark 3D Bottom Extrusion Shadow (Simulates physical height)
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillText(displayStr, 1028, 524);
+        ctx.fillText(displayStr, 1026, 520);
+        ctx.fillText(displayStr, 1024, 516);
+
+        // Layer 2: Outer Contrast Bevel Stroke
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+        ctx.lineWidth = 16;
+        ctx.strokeText(displayStr, 1024, 512);
+
+        // Layer 3: Solid Vivid Face Fill in activeTextColor (Filamento de Relieve)
+        ctx.fillStyle = activeTextColor;
+        ctx.fillText(displayStr, 1024, 512);
       }
     }
 
@@ -397,6 +362,13 @@ const ThreeViewer = forwardRef(({
       bandMesh.rotation.x = Math.PI / 2;
       group.add(bandMesh);
 
+      // 3D Custom Text Relief Plate on Sphere
+      const plateGeo = new THREE.BoxGeometry(2.0, 0.8, 0.1);
+      const plateMaterials = [mainMaterial, mainMaterial, mainMaterial, mainMaterial, reliefFaceMat, mainMaterial];
+      const textPlate = new THREE.Mesh(plateGeo, plateMaterials);
+      textPlate.position.set(0, 0, 1.8);
+      group.add(textPlate);
+
       const capGeo = new THREE.CylinderGeometry(0.35, 0.45, 0.35, 24);
       const capMesh = new THREE.Mesh(capGeo, steelMaterial);
       capMesh.position.y = 1.95;
@@ -419,6 +391,13 @@ const ThreeViewer = forwardRef(({
       const cabinMesh = new THREE.Mesh(cabinGeo, accentMat);
       cabinMesh.position.set(-0.2, 1.0, 0);
       group.add(cabinMesh);
+
+      // 3D Custom Text Roof Plate
+      const roofPlateGeo = new THREE.BoxGeometry(2.1, 0.08, 1.4);
+      const roofMaterials = [mainMaterial, mainMaterial, reliefFaceMat, mainMaterial, mainMaterial, mainMaterial];
+      const roofMesh = new THREE.Mesh(roofPlateGeo, roofMaterials);
+      roofMesh.position.set(-0.2, 1.48, 0);
+      group.add(roofMesh);
 
       const wheelGeo = new THREE.CylinderGeometry(0.55, 0.55, 0.35, 24);
       const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.6 });
@@ -454,6 +433,13 @@ const ThreeViewer = forwardRef(({
       botMesh.position.y = -1.5;
       group.add(botMesh);
 
+      // 3D Custom Text Relief Front Badge on Cup
+      const cupPlateGeo = new THREE.BoxGeometry(1.8, 0.9, 0.1);
+      const cupPlateMaterials = [mainMaterial, mainMaterial, mainMaterial, mainMaterial, reliefFaceMat, mainMaterial];
+      const cupPlateMesh = new THREE.Mesh(cupPlateGeo, cupPlateMaterials);
+      cupPlateMesh.position.set(0, 0, 1.55);
+      group.add(cupPlateMesh);
+
       const topRimGeo = new THREE.TorusGeometry(1.6, 0.08, 16, 36);
       const topRimMesh = new THREE.Mesh(topRimGeo, accentMat);
       topRimMesh.rotation.x = Math.PI / 2;
@@ -473,6 +459,13 @@ const ThreeViewer = forwardRef(({
       const planterMesh = new THREE.Mesh(planterGeo, mainMaterial);
       planterMesh.castShadow = true;
       group.add(planterMesh);
+
+      // 3D Custom Text Relief Front Badge on Planter
+      const planterPlateGeo = new THREE.BoxGeometry(1.8, 0.85, 0.1);
+      const planterPlateMaterials = [mainMaterial, mainMaterial, mainMaterial, mainMaterial, reliefFaceMat, mainMaterial];
+      const planterPlateMesh = new THREE.Mesh(planterPlateGeo, planterPlateMaterials);
+      planterPlateMesh.position.set(0, 0, 1.6);
+      group.add(planterPlateMesh);
 
       const trayGeo = new THREE.TorusGeometry(1.85, 0.1, 16, 6);
       const trayMesh = new THREE.Mesh(trayGeo, accentMat);
@@ -504,6 +497,21 @@ const ThreeViewer = forwardRef(({
       materialsRef.current.reliefMat.needsUpdate = true;
     }
   }, [activeBaseColor, activeAccentColor, activeTextColor, customText, fontFamily, logoImage, drawCanvas]);
+
+  // Re-draw text when Google Fonts finish loading asynchronously
+  useEffect(() => {
+    if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => {
+        drawCanvas();
+        if (materialsRef.current.canvasTexture) {
+          materialsRef.current.canvasTexture.needsUpdate = true;
+        }
+        if (materialsRef.current.reliefMat) {
+          materialsRef.current.reliefMat.needsUpdate = true;
+        }
+      });
+    }
+  }, [drawCanvas, fontFamily]);
 
   // Three.js Scene Setup Loop (Runs ONCE on mount)
   useEffect(() => {

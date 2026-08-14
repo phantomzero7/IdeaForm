@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
-import { PRODUCTS, SUBCOLLECTIONS, FILAMENT_COLORS } from '../../data/mockData';
+import { PRODUCTS, SUBCOLLECTIONS, FILAMENT_COLORS, DEFAULT_COLOR_PRESETS } from '../../data/mockData';
 import ThreeViewer from '../3d/ThreeViewer';
 import { formatCurrency, formatGrams } from '../../utils/formatters';
 import {
@@ -20,7 +20,8 @@ import {
   ShieldCheck,
   Truck,
   Palette,
-  Layers
+  Layers,
+  Check
 } from 'lucide-react';
 
 const FONTS_LIST = [
@@ -29,6 +30,12 @@ const FONTS_LIST = [
   { id: 'Playfair Display', name: 'Serif Elegante' },
   { id: 'Dancing Script', name: 'Cursiva Signature' }
 ];
+
+const toColorObj = (c, defaultName = 'Color') => {
+  if (c && typeof c === 'object' && c.hex) return c;
+  if (typeof c === 'string') return { id: `col-${c}`, name: defaultName, hex: c };
+  return { id: 'col-default', name: defaultName, hex: '#176B87' };
+};
 
 const ColeccionesRoute = () => {
   const { navigateTo, addToCart, showToast, products, filamentInventory, isColorAvailable, isComboAvailable } = useApp();
@@ -71,13 +78,21 @@ const ColeccionesRoute = () => {
     : availableProducts.filter((p) => p.subcollection === selectedSubcollection && p.isActive !== false);
 
   // Price calculations
-  const unitPrice = selectedProduct ? selectedProduct.basePrice * (selectedBaseColor.priceMultiplier || 1.0) : 85;
+  const unitPrice = selectedProduct ? selectedProduct.basePrice * (selectedBaseColor?.priceMultiplier || 1.0) : 85;
   const giftBoxPrice = includeGiftBox ? 35.00 : 0;
   const subtotal = (unitPrice + giftBoxPrice) * quantity;
 
   // Handle Product Selection
   const handleSelectProduct = (product) => {
     setSelectedProduct(product);
+    if (product.colorPresets && product.colorPresets.length > 0) {
+      const firstAvail = product.colorPresets.find((p) => isComboAvailable(p).available) || product.colorPresets[0];
+      if (firstAvail) {
+        setSelectedBaseColor(toColorObj(firstAvail.baseColor, 'Color Base'));
+        setSelectedAccentColor(toColorObj(firstAvail.accentColor, 'Color Acento'));
+        setSelectedReliefColor(toColorObj(firstAvail.reliefColor, 'Color Relieve'));
+      }
+    }
     if (product.isCustomizable) {
       setActiveStep(3); // Go to Personaliza step
     } else {
@@ -596,11 +611,16 @@ const ColeccionesRoute = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                       {(selectedProduct.colorPresets || DEFAULT_COLOR_PRESETS).map((combo, cIdx) => {
                         const availability = isComboAvailable(combo);
+                        const getHex = (c) => (c?.hex || c || '').toLowerCase();
+                        const baseHex = combo.baseColor?.hex || combo.baseColor || '#176B87';
+                        const accentHex = combo.accentColor?.hex || combo.accentColor || '#D4AF37';
+                        const reliefHex = combo.reliefColor?.hex || combo.reliefColor || '#FFFFFF';
+
                         const isComboSelected =
                           availability.available &&
-                          selectedBaseColor.hex.toLowerCase() === combo.baseColor.hex.toLowerCase() &&
-                          selectedAccentColor.hex.toLowerCase() === combo.accentColor.hex.toLowerCase() &&
-                          selectedReliefColor.hex.toLowerCase() === combo.reliefColor.hex.toLowerCase();
+                          getHex(selectedBaseColor) === getHex(baseHex) &&
+                          getHex(selectedAccentColor) === getHex(accentHex) &&
+                          getHex(selectedReliefColor) === getHex(reliefHex);
 
                         return (
                           <div
@@ -610,9 +630,9 @@ const ColeccionesRoute = () => {
                                 showToast(`Esta combinación está agotada (Falta: ${availability.missingColors.join(', ')})`, 'error');
                                 return;
                               }
-                              setSelectedBaseColor(combo.baseColor);
-                              setSelectedAccentColor(combo.accentColor);
-                              setSelectedReliefColor(combo.reliefColor);
+                              setSelectedBaseColor(toColorObj(combo.baseColor, 'Base'));
+                              setSelectedAccentColor(toColorObj(combo.accentColor, 'Acento'));
+                              setSelectedReliefColor(toColorObj(combo.reliefColor, 'Letras'));
                             }}
                             style={{
                               display: 'flex',
@@ -632,15 +652,15 @@ const ColeccionesRoute = () => {
                               {/* 3 Layer Mini Swatches */}
                               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                                  <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: combo.baseColor.hex, border: '1.5px solid rgba(0,0,0,0.2)' }} />
+                                  <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: baseHex, border: '1.5px solid rgba(0,0,0,0.2)' }} />
                                   <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>Base</span>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                                  <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: combo.accentColor.hex, border: '1.5px solid rgba(0,0,0,0.2)' }} />
+                                  <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: accentHex, border: '1.5px solid rgba(0,0,0,0.2)' }} />
                                   <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>Acento</span>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                                  <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: combo.reliefColor.hex, border: '1.5px solid rgba(0,0,0,0.2)' }} />
+                                  <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: reliefHex, border: '1.5px solid rgba(0,0,0,0.2)' }} />
                                   <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>Letras</span>
                                 </div>
                               </div>
