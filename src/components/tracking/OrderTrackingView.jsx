@@ -106,6 +106,37 @@ const OrderTrackingView = () => {
               <span>Buscar</span>
             </button>
           </form>
+
+          {/* Quick Recent Orders Chips (Continuity with Profile & Cart) */}
+          {productionOrders && productionOrders.length > 0 && (
+            <div style={{ marginTop: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-tertiary)' }}>Tus folios recientes:</span>
+              {productionOrders.slice(0, 4).map((ord) => (
+                <button
+                  key={ord.id}
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery(ord.orderNumber);
+                    setActiveOrder(ord);
+                  }}
+                  style={{
+                    background: activeOrder?.orderNumber === ord.orderNumber ? 'var(--color-primary)' : '#f1f5f9',
+                    color: activeOrder?.orderNumber === ord.orderNumber ? '#ffffff' : '#334155',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: 'var(--radius-full)',
+                    padding: '0.25rem 0.65rem',
+                    fontSize: '0.75rem',
+                    fontWeight: '800',
+                    fontFamily: 'var(--font-mono)',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  #{ord.orderNumber}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

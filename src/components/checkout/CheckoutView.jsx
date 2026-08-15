@@ -31,33 +31,55 @@ const CheckoutView = () => {
     createOrder,
     navigateTo,
     showToast,
-    user
+    user,
+    savedPaymentMethods,
+    savedDesigns
   } = useApp();
 
   const [paymentMethod, setPaymentMethod] = useState('card'); // card | spei | oxxo
+  const [selectedSavedCardId, setSelectedSavedCardId] = useState(
+    savedPaymentMethods?.find((c) => c.isDefault)?.id || savedPaymentMethods?.[0]?.id || null
+  );
   const [selectedCarrierId, setSelectedCarrierId] = useState('dhl_express');
 
   // Shipping details
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName] = useState(user?.lastName || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [phone, setPhone] = useState('612 123 4567');
-  const [street, setStreet] = useState('Av. Álvaro Obregón 1420');
-  const [colony, setColony] = useState('Centro');
+  const [phone, setPhone] = useState('612 140 3409');
+  const [street, setStreet] = useState('Av. Álvaro Obregón 1420, Int 4');
+  const [colony, setColony] = useState('Zona Central');
   const [city, setCity] = useState('La Paz');
   const [state, setState] = useState('Baja California Sur');
   const [postalCode, setPostalCode] = useState('23000');
 
   // Fiscal CFDI 4.0 details
   const [wantsInvoice, setWantsInvoice] = useState(false);
-  const [rfc, setRfc] = useState('');
-  const [razonSocial, setRazonSocial] = useState('');
-  const [regimenFiscal, setRegimenFiscal] = useState('601');
-  const [usoCFDI, setUsoCFDI] = useState('G01');
+  const [rfc, setRfc] = useState('XAXX010101000');
+  const [razonSocial, setRazonSocial] = useState(user ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Cliente Particular');
+  const [regimenFiscal, setRegimenFiscal] = useState('612');
+  const [usoCFDI, setUsoCFDI] = useState('G03');
   const [cpFiscal, setCpFiscal] = useState('23000');
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [createdOrderFolio, setCreatedOrderFolio] = useState(null);
+
+  // 1-Click Fill from Saved Address
+  const handleSelectSavedAddress = (addr) => {
+    if (!addr) return;
+    if (addr.recipientName) {
+      const parts = addr.recipientName.split(' ');
+      setFirstName(parts[0] || '');
+      setLastName(parts.slice(1).join(' ') || '');
+    }
+    if (addr.phone) setPhone(addr.phone);
+    if (addr.street) setStreet(addr.street);
+    if (addr.colonia) setColony(addr.colonia);
+    if (addr.city) setCity(addr.city);
+    if (addr.state) setState(addr.state);
+    if (addr.postalCode) setPostalCode(addr.postalCode);
+    showToast(`📍 Dirección de ${addr.recipientName} seleccionada`, 'success');
+  };
 
   // Autocomplete City/State when Mexican Postal Code changes
   const handlePostalCodeChange = (e) => {
@@ -209,6 +231,66 @@ const CheckoutView = () => {
               <Truck size={20} color="var(--color-primary)" />
               <h2 style={{ fontSize: '1.2rem', fontWeight: '800' }}>1. Dirección de Entrega en México</h2>
             </div>
+
+            {/* Quick 1-Click Saved Addresses Picker (Amazon Style) */}
+            {user && (
+              <div style={{ marginBottom: '1.25rem', background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#0F5F6D', display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.45rem' }}>
+                  <Sparkles size={13} />
+                  <span>Tus direcciones guardadas (1-Click):</span>
+                </span>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectSavedAddress({
+                      recipientName: `${user.firstName} ${user.lastName || ''}`.trim(),
+                      phone: '612 140 3409',
+                      street: 'Av. Álvaro Obregón 1420, Int 4',
+                      colonia: 'Zona Central',
+                      city: 'La Paz',
+                      state: 'Baja California Sur',
+                      postalCode: '23000'
+                    })}
+                    style={{
+                      background: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: 'var(--radius-full)',
+                      padding: '0.3rem 0.75rem',
+                      fontSize: '0.75rem',
+                      fontWeight: '700',
+                      color: '#334155',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🏠 Casa ({user.firstName})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectSavedAddress({
+                      recipientName: 'Oficina Corporativa IdeaForm',
+                      phone: '55 9876 5432',
+                      street: 'Insurgentes Sur 1602, Piso 8',
+                      colonia: 'Crédito Constructor',
+                      city: 'Benito Juárez',
+                      state: 'Ciudad de México',
+                      postalCode: '03940'
+                    })}
+                    style={{
+                      background: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: 'var(--radius-full)',
+                      padding: '0.3rem 0.75rem',
+                      fontSize: '0.75rem',
+                      fontWeight: '700',
+                      color: '#334155',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🏢 Oficina Corporativa
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
               <div>
@@ -447,6 +529,52 @@ const CheckoutView = () => {
                 <span style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)' }}>En efectivo</span>
               </button>
             </div>
+
+            {/* Saved Cards Selector (Amazon 1-Click Buy) */}
+            {paymentMethod === 'card' && savedPaymentMethods && savedPaymentMethods.length > 0 && (
+              <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid #e2e8f0', marginBottom: '0.5rem' }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: '800', color: '#0F5F6D', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Lock size={13} />
+                  <span>Pagar con Tarjeta Guardada (Compra Rápida 1-Click):</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {savedPaymentMethods.map((card) => (
+                    <label
+                      key={card.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '0.65rem 0.85rem',
+                        borderRadius: 'var(--radius-md)',
+                        border: selectedSavedCardId === card.id ? '2px solid var(--color-primary)' : '1px solid #cbd5e1',
+                        background: selectedSavedCardId === card.id ? '#ffffff' : '#f8fafc',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                        <input
+                          type="radio"
+                          name="savedCard"
+                          checked={selectedSavedCardId === card.id}
+                          onChange={() => setSelectedSavedCardId(card.id)}
+                          style={{ accentColor: 'var(--color-primary)' }}
+                        />
+                        <div>
+                          <strong style={{ fontSize: '0.85rem', color: '#0f172a' }}>{card.cardBrand} •••• {card.last4}</strong>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>{card.bankName} • Expira: {card.expiryMonth}/{card.expiryYear}</div>
+                        </div>
+                      </div>
+                      {card.isDefault && (
+                        <span style={{ fontSize: '0.68rem', fontWeight: '800', background: 'rgba(15, 95, 109, 0.1)', color: 'var(--color-primary)', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)' }}>
+                          Predeterminada
+                        </span>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

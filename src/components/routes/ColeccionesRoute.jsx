@@ -51,7 +51,18 @@ const toColorObj = (c, defaultName = 'Color') => {
 };
 
 const ColeccionesRoute = () => {
-  const { navigateTo, addToCart, showToast, products, filamentInventory, isColorAvailable, isComboAvailable } = useApp();
+  const {
+    navigateTo,
+    addToCart,
+    showToast,
+    products,
+    filamentInventory,
+    isColorAvailable,
+    isComboAvailable,
+    saveCustomDesign,
+    user,
+    setIsAuthModalOpen
+  } = useApp();
   const viewerRef = useRef(null);
 
   const availableProducts = products || PRODUCTS;
@@ -995,12 +1006,55 @@ const ColeccionesRoute = () => {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <button className="btn btn-secondary btn-sm" onClick={() => setActiveStep(3)}>
-                    ← Editar Grabado o Colores
-                  </button>
-                  <button className="btn btn-colecciones btn-sm" style={{ flex: 1 }} onClick={() => setActiveStep(5)}>
-                    Avanzar a Paso 5 →
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button className="btn btn-secondary btn-sm" onClick={() => setActiveStep(3)}>
+                      ← Editar Grabado
+                    </button>
+                    <button className="btn btn-colecciones btn-sm" style={{ flex: 1, fontWeight: '800' }} onClick={() => setActiveStep(5)}>
+                      Avanzar a Paso 5 →
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!user) {
+                        setIsAuthModalOpen(true);
+                        showToast('Inicia sesión para guardar este diseño en tu cuenta 🎨', 'info');
+                        return;
+                      }
+                      saveCustomDesign({
+                        name: `${selectedProduct.name} (${customText || 'IdeaForm'})`,
+                        modelType: selectedProduct.modelType || 'keychain',
+                        customText: customText,
+                        baseColor: safeBaseColor.hex,
+                        accentColor: safeAccentColor.hex,
+                        reliefColor: safeReliefColor.hex,
+                        materialType: 'PLA_SILK',
+                        estimatedPrice: selectedProduct.basePrice || 85.00
+                      });
+                    }}
+                    style={{
+                      background: 'rgba(169, 77, 67, 0.08)',
+                      border: '1px dashed #A94D43',
+                      color: '#A94D43',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '0.45rem 0.75rem',
+                      fontSize: '0.8rem',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.4rem',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(169, 77, 67, 0.15)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(169, 77, 67, 0.08)')}
+                  >
+                    <Sparkles size={14} />
+                    <span>Guardar en "Mis Diseños 3D" de tu Perfil</span>
                   </button>
                 </div>
               </div>
