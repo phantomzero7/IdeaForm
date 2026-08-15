@@ -298,7 +298,7 @@ const ColeccionesRoute = () => {
               <p style={{ color: 'var(--text-secondary)' }}>Elige la categoría de artículos que deseas explorar.</p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginBottom: '3rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '1.25rem', marginBottom: '3rem' }}>
               {SUBCOLLECTIONS.filter((s) => s.id !== 'all').map((sub) => {
                 const isSelected = selectedSubcollection === sub.id;
 
@@ -380,7 +380,7 @@ const ColeccionesRoute = () => {
             </div>
 
             {/* Products Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
               {filteredProducts.map((product) => (
                 <div
                   key={product.id}

@@ -266,7 +266,7 @@ const EmpresasRoute = () => {
               <p style={{ color: 'var(--text-secondary)' }}>Selecciona tu meta para mostrarte las soluciones con mayores beneficios.</p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
               {OBJECTIVES.map((obj) => {
                 const IconComponent = obj.icon;
                 const isSelected = selectedObjective.id === obj.id;
@@ -365,7 +365,7 @@ const EmpresasRoute = () => {
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1.5rem' }}>
               {B2B_PRODUCTS.map((prod) => (
                 <div
                   key={prod.id}
@@ -373,67 +373,80 @@ const EmpresasRoute = () => {
                   style={{
                     background: '#FFFFFF',
                     border: '1px solid #D5E4ED',
-                    borderRadius: 'var(--radius-lg)',
-                    padding: '1.75rem',
+                    borderRadius: 'var(--radius-xl)',
+                    padding: '1.5rem',
                     display: 'flex',
                     flexDirection: 'column',
-                    justifyContent: 'space-between'
+                    justifyContent: 'space-between',
+                    transition: 'all 0.2s ease'
                   }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-4px)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
                 >
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                       <span className="badge" style={{ background: '#EDF4F8', color: '#104F75', border: '1px solid #D5E4ED' }}>
-                        {prod.categoryName}
+                        {prod.categoryName || 'Corporativo'}
                       </span>
                       <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>
                         Descuentos por Mayoreo
                       </span>
                     </div>
 
-                    <div
-                      style={{
-                        height: '180px',
-                        background: 'linear-gradient(135deg, #EDF4F8 0%, #D5E4ED 100%)',
-                        borderRadius: 'var(--radius-md)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginBottom: '1rem'
-                      }}
-                    >
-                      <Building2 size={44} color="#21658A" style={{ opacity: 0.85 }} />
-                      <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#104F75', marginTop: '0.5rem' }}>
-                        Inserción de Logo 3D
+                    <div style={{ position: 'relative', width: '100%', height: '180px', borderRadius: 'var(--radius-lg)', overflow: 'hidden', background: '#EDF4F8', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {prod.image ? (
+                        <img src={prod.image} alt={prod.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <Building2 size={48} color="#21658A" style={{ opacity: 0.8 }} />
+                      )}
+
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: '0.75rem',
+                          right: '0.75rem',
+                          background: '#104F75',
+                          color: '#ffffff',
+                          padding: '0.2rem 0.55rem',
+                          borderRadius: 'var(--radius-full)',
+                          fontSize: '0.7rem',
+                          fontWeight: '800',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.3rem'
+                        }}
+                      >
+                        <ShieldCheck size={11} />
+                        <span>B2B SAT CFDI</span>
                       </span>
                     </div>
 
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#104F75', marginBottom: '0.35rem' }}>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#104F75', marginBottom: '0.35rem' }}>
                       {prod.name}
                     </h3>
-                    <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '1rem' }}>
-                      {prod.description}
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: '1.4', marginBottom: '1rem' }}>
+                      {prod.desc || prod.description}
                     </p>
                   </div>
 
                   <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1rem', borderTop: '1px solid #D5E4ED', paddingTop: '0.75rem' }}>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)' }}>Precio Unitario Base:</span>
-                      <span style={{ fontSize: '1.3rem', fontWeight: '800', color: '#104F75' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderTop: '1px solid #D5E4ED', paddingTop: '0.75rem' }}>
+                      <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Por unidad (volumen)</span>
+                      <strong style={{ fontSize: '1.25rem', color: '#104F75', fontWeight: '800' }}>
                         {formatCurrency(prod.basePrice)}
-                      </span>
+                      </strong>
                     </div>
 
                     <button
                       className="btn btn-empresas"
-                      style={{ width: '100%', padding: '0.65rem' }}
+                      style={{ width: '100%', fontWeight: '800' }}
                       onClick={() => {
                         setSelectedProduct(prod);
                         setActiveStep(3);
                       }}
                     >
-                      <Sparkles size={15} />
-                      <span>Paso 3: Personalizar & Subir Logo</span>
+                      <span>Personalizar y Cotizar</span>
+                      <ArrowRight size={16} />
                     </button>
                   </div>
                 </div>
@@ -653,7 +666,7 @@ const EmpresasRoute = () => {
 
         {/* PASO 4: CALCULADORA DE VOLUMEN & FORMULARIO FISCAL */}
         {activeStep === 4 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1.15fr) minmax(300px, 0.85fr)', gap: '2rem', alignItems: 'start' }}>
+          <div className="customizer-split-responsive" style={{ alignItems: 'start' }}>
             
             {/* Left: Fiscal Form */}
             <div style={{ background: '#FFFFFF', border: '1px solid #D5E4ED', borderRadius: 'var(--radius-xl)', padding: '2.25rem' }}>

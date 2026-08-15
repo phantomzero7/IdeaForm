@@ -128,7 +128,7 @@ const B2BCalculator = () => {
       </div>
 
       {/* Main Two-Column Layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1.2fr) minmax(300px, 1fr)', gap: '2rem' }} className="b2b-split">
+      <div className="customizer-split-responsive" style={{ gap: '2rem' }}>
         
         {/* LEFT COLUMN: Configurador de Lote B2B */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>

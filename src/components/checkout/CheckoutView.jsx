@@ -198,7 +198,7 @@ const CheckoutView = () => {
         </p>
       </div>
 
-      <form onSubmit={handleCompleteOrder} style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1.3fr) minmax(300px, 0.7fr)', gap: '2rem' }} className="checkout-split">
+      <form onSubmit={handleCompleteOrder} className="customizer-split-responsive" style={{ gap: '2rem' }}>
         
         {/* Left: Shipping, Carrier & Payment Form */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>

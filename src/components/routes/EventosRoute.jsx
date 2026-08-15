@@ -170,7 +170,7 @@ const EventosRoute = () => {
               </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
               {EVENT_TYPES.map((evt) => {
                 const IconComponent = evt.icon;
                 const isSelected = selectedEventType.id === evt.id;
@@ -333,7 +333,7 @@ const EventosRoute = () => {
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1.5rem' }}>
               {EVENT_PRODUCTS.map((prod) => (
                 <div
                   key={prod.id}

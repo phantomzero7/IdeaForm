@@ -67,7 +67,8 @@ html {
   scroll-behavior: smooth;
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
-  max-width: 100vw;
+  width: 100%;
+  max-width: 100%;
   overflow-x: hidden;
 }
 
@@ -77,13 +78,17 @@ body {
   color: var(--text-primary);
   line-height: 1.5;
   overflow-x: hidden;
-  max-width: 100vw;
+  width: 100%;
+  max-width: 100%;
   min-height: 100vh;
+  position: relative;
 }
 
 #root {
-  max-width: 100vw;
+  width: 100%;
+  max-width: 100%;
   overflow-x: hidden;
+  position: relative;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -93,19 +98,19 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 h1 {
-  font-size: clamp(2rem, 3.5vw + 1rem, 3.2rem);
+  font-size: clamp(1.85rem, 3.5vw + 1rem, 3.2rem);
   font-weight: 800;
   line-height: 1.15;
 }
 
 h2 {
-  font-size: clamp(1.5rem, 2.5vw + 0.5rem, 2.2rem);
+  font-size: clamp(1.4rem, 2.5vw + 0.5rem, 2.2rem);
   font-weight: 700;
   line-height: 1.25;
 }
 
 h3 {
-  font-size: clamp(1.15rem, 1.8vw + 0.3rem, 1.45rem);
+  font-size: clamp(1.1rem, 1.8vw + 0.3rem, 1.45rem);
   font-weight: 600;
   line-height: 1.3;
 }
@@ -132,8 +137,9 @@ button, input, select, textarea {
   max-width: 1280px;
   margin-left: auto;
   margin-right: auto;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+  box-sizing: border-box;
 }
 
 /* Global Buttons */
@@ -446,16 +452,23 @@ button, input, select, textarea {
 /* 1. Responsive Customizer Grids */
 .customizer-split-responsive {
   display: grid;
-  grid-template-columns: minmax(340px, 1.2fr) minmax(300px, 0.8fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
   gap: 2rem;
   align-items: start;
 }
 
 .step4-preview-responsive {
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
   gap: 2rem;
   align-items: start;
+}
+
+.hero-split-responsive {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 2.5rem;
+  align-items: center;
 }
 
 /* 2. Responsive 3D Stage Container */
@@ -502,6 +515,11 @@ button, input, select, textarea {
   .step4-preview-responsive {
     grid-template-columns: 1fr !important;
     gap: 1.25rem !important;
+  }
+
+  .hero-split-responsive {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
   }
 
   .stage-3d-box {
