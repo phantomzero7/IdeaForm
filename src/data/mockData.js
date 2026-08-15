@@ -936,3 +936,88 @@ export const DEFAULT_BOT_INTENTS = [
     isActive: true
   }
 ];
+
+export const DEFAULT_SAVED_DESIGNS = [
+  {
+    id: 'des-001',
+    name: 'Llavero Tag Boda Ana & Carlos',
+    modelType: 'keychain',
+    customText: 'A & C 2026',
+    baseColor: '#FFFFFF',
+    accentColor: '#C9685B',
+    reliefColor: '#1A1A1A',
+    materialType: 'PLA_SILK',
+    previewImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
+    createdAt: '2026-08-10',
+    estimatedPrice: 85.00
+  },
+  {
+    id: 'des-002',
+    name: 'HexaStation Escritorio Consultorio',
+    modelType: 'desk-organizer',
+    customText: 'DR. FREGOSO',
+    baseColor: '#21658A',
+    accentColor: '#0F172A',
+    reliefColor: '#FFFFFF',
+    materialType: 'PLA_MATTE',
+    previewImage: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600&auto=format&fit=crop&q=80',
+    createdAt: '2026-08-12',
+    estimatedPrice: 280.00
+  }
+];
+
+export const DEFAULT_PAYMENT_METHODS = [
+  {
+    id: 'pm-01',
+    cardBrand: 'VISA',
+    last4: '4242',
+    holderName: 'Carlos Fregoso',
+    expiryMonth: '11',
+    expiryYear: '28',
+    bankName: 'BBVA México',
+    isDefault: true,
+    cardColor: 'linear-gradient(135deg, #0F5F6D 0%, #176B87 100%)'
+  },
+  {
+    id: 'pm-02',
+    cardBrand: 'MASTERCARD',
+    last4: '8821',
+    holderName: 'Carlos Fregoso',
+    expiryMonth: '05',
+    expiryYear: '27',
+    bankName: 'Santander',
+    isDefault: false,
+    cardColor: 'linear-gradient(135deg, #0F172A 0%, #334155 100%)'
+  }
+];
+
+export const DEFAULT_WARRANTY_CLAIMS = [
+  {
+    id: 'gar-01',
+    folio: 'GAR-7402',
+    orderNumber: 'IDF-84920',
+    productName: 'Llavero Tag 3D (x2)',
+    claimType: 'IMPRESSION_DEFECT',
+    title: 'Detalle en el relieve de letras',
+    description: 'La letra C del nombre frontal presenta una ligera rebaba de impresión.',
+    status: 'IN_REPRINT', // OPEN | IN_REVIEW | IN_REPRINT | RESOLVED
+    statusLabel: '⚙️ Reimpresión en Taller Autorizada',
+    statusColor: '#2563eb',
+    date: '2026-08-14',
+    resolution: 'Pieza de reemplazo puesta en cola de impresión Bambu Lab X1C sin costo. Guía DHL nueva asignada: IDF-DHL-9920.'
+  }
+];
+
+export const DEFAULT_USER_REVIEWS = [
+  {
+    id: 'rev-01',
+    orderNumber: 'IDF-84922',
+    productName: 'Lámpara Litofanía DecoGlow',
+    rating: 5,
+    title: '¡Superó mis expectativas!',
+    comment: 'El relieve 3D con la foto y la fecha de nuestra boda se ve increíble cuando se enciende. La textura es muy fina.',
+    date: '2026-08-13',
+    verifiedPurchase: true
+  }
+];
+

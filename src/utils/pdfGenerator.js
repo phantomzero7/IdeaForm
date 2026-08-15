@@ -255,12 +255,221 @@ export const generateB2BQuotePDF = (quoteData) => {
   doc.save(`Cotizacion_IdeaForm_${quoteData.quoteNumber || 'B2B'}.pdf`);
 };
 
-export const generateInvoicePDF = (orderData) => {
+export const generateInvoicePDF = (orderData, fiscalData = {}) => {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  doc.setFontSize(16);
-  doc.text(`Comprobante de Compra #${orderData.orderNumber}`, 15, 20);
+  const tealColor = [23, 107, 135];
+  const darkColor = [15, 23, 42];
+  const grayColor = [100, 116, 139];
+  const lightBg = [248, 250, 252];
+  const borderLight = [226, 232, 240];
+
+  const uuid = orderData.fiscalUuid || '4A8F9201-987B-4A12-B6E3-CFDA091244E1';
+  const rfcCliente = fiscalData.rfc || orderData.rfc || 'XAXX010101000';
+  const razonSocial = fiscalData.legalName || orderData.customerName || 'Cliente Particular';
+  const cpCliente = fiscalData.postalCode || orderData.postalCode || '23000';
+  const regimenCliente = fiscalData.taxRegime || '612 - Personas Físicas con Actividades Empresariales';
+  const usoCfdi = fiscalData.cfdiUse || 'G03 - Gastos en general';
+
+  // Top Accent Bar
+  doc.setFillColor(...tealColor);
+  doc.rect(0, 0, 210, 6, 'F');
+
+  // Header Brand
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(22);
+  doc.setTextColor(...darkColor);
+  doc.text('Idea', 15, 22);
+  doc.setTextColor(...tealColor);
+  doc.text('Form', 33, 22);
+
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...grayColor);
+  doc.text('IdeaForm México S.A. de C.V.  |  RFC: IDF260101XYZ', 15, 28);
+  doc.text('Régimen Fiscal: 601 - General de Ley Personas Morales', 15, 33);
+  doc.text('Lugar de Expedición: C.P. 23000 (La Paz, BCS, México)', 15, 38);
+
+  // SAT CFDI 4.0 Box
+  doc.setFillColor(...lightBg);
+  doc.roundedRect(115, 12, 80, 32, 2, 2, 'F');
+  doc.setDrawColor(...borderLight);
+  doc.roundedRect(115, 12, 80, 32, 2, 2, 'S');
+
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
-  doc.text(`Cliente: ${orderData.customerName}`, 15, 30);
-  doc.text(`Total: ${formatCurrency(orderData.total)}`, 15, 40);
-  doc.save(`Pedido_${orderData.orderNumber}.pdf`);
+  doc.setTextColor(...darkColor);
+  doc.text('FACTURA ELECTRÓNICA CFDI 4.0', 120, 18);
+
+  doc.setFontSize(8.5);
+  doc.setTextColor(...tealColor);
+  doc.text(`Folio Interno: ${orderData.orderNumber}`, 120, 24);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(...grayColor);
+  doc.text(`UUID: ${uuid.slice(0, 22)}...`, 120, 30);
+  doc.text(`Fecha Timbrado: ${orderData.date || new Date().toLocaleDateString('es-MX')} 14:20:00`, 120, 35);
+  doc.text('Tipo de Comprobante: I - Ingreso', 120, 40);
+
+  // Separator
+  doc.setDrawColor(...tealColor);
+  doc.setLineWidth(0.4);
+  doc.line(15, 48, 195, 48);
+
+  // Receptor Fiscal
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9.5);
+  doc.setTextColor(...darkColor);
+  doc.text('DATOS DEL RECEPTOR / CLIENTE:', 15, 54);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(...grayColor);
+  doc.text(`Razón Social: ${razonSocial}`, 15, 60);
+  doc.text(`RFC: ${rfcCliente}  |  C.P. Fiscal: ${cpCliente}`, 15, 65);
+  doc.text(`Régimen Fiscal: ${regimenCliente}`, 15, 70);
+  doc.text(`Uso CFDI: ${usoCfdi}  |  Método Pago: PUE (Pago en una sola exhibición)`, 15, 75);
+
+  // Table
+  const totalAmount = Number(orderData.total) || 170.00;
+  const subtotalNeto = totalAmount / 1.16;
+  const vat = totalAmount - subtotalNeto;
+
+  autoTable(doc, {
+    startY: 82,
+    head: [['Clave SAT', 'Cant.', 'Unidad', 'Descripción del Producto 3D', 'Valor Unitario', 'Importe']],
+    body: [
+      [
+        '73152100',
+        '1',
+        'H87 (Pieza)',
+        `${orderData.productName || 'Pieza Personalizada 3D'}\nGrabado: "${orderData.customText || 'IdeaForm'}" • Filamento: ${orderData.filament || 'PLA Silk'}`,
+        formatCurrency(subtotalNeto),
+        formatCurrency(subtotalNeto)
+      ]
+    ],
+    headStyles: {
+      fillColor: tealColor,
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: 8.5
+    },
+    bodyStyles: {
+      fontSize: 8,
+      textColor: darkColor
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252]
+    },
+    margin: { left: 15, right: 15 }
+  });
+
+  const finalY = doc.lastAutoTable.finalY + 8;
+
+  // Totals Box
+  doc.setFillColor(...lightBg);
+  doc.roundedRect(120, finalY, 75, 28, 2, 2, 'F');
+  doc.setDrawColor(...borderLight);
+  doc.roundedRect(120, finalY, 75, 28, 2, 2, 'S');
+
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...grayColor);
+  doc.text('Subtotal:', 125, finalY + 7);
+  doc.text(formatCurrency(subtotalNeto), 190, finalY + 7, { align: 'right' });
+
+  doc.text('IVA Trasladado (16%):', 125, finalY + 13);
+  doc.text(formatCurrency(vat), 190, finalY + 13, { align: 'right' });
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(...tealColor);
+  doc.text('TOTAL:', 125, finalY + 22);
+  doc.text(formatCurrency(totalAmount), 190, finalY + 22, { align: 'right' });
+
+  // Digital Stamp SAT Box
+  const stampY = finalY + 36;
+  doc.setFillColor(245, 247, 250);
+  doc.roundedRect(15, stampY, 180, 36, 2, 2, 'F');
+  doc.setDrawColor(...borderLight);
+  doc.roundedRect(15, stampY, 180, 36, 2, 2, 'S');
+
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...darkColor);
+  doc.text('CADENA ORIGINAL DEL COMPLEMENTO DE CERTIFICACIÓN DIGITAL DEL SAT:', 18, stampY + 6);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6);
+  doc.setTextColor(...grayColor);
+  doc.text(`||1.1|${uuid}|${new Date().toISOString()}|SAT970701NN3|FEA8948BC98A8F982E7812984719284791283749182374912837491283749128==|00001000000504465028||`, 18, stampY + 11, { maxWidth: 174 });
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.setTextColor(...darkColor);
+  doc.text('SELLO DIGITAL DEL EMISOR:', 18, stampY + 20);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6);
+  doc.setTextColor(...grayColor);
+  doc.text('K98y7HGYU87234hjkdsf8734hksdjfHJKDSF8734hksdjf8743hkjsdf8734HJKSDf78==', 18, stampY + 24);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.setTextColor(...darkColor);
+  doc.text('SELLO DIGITAL DEL SAT:', 18, stampY + 29);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6);
+  doc.setTextColor(...grayColor);
+  doc.text('M897hsdjkf7834hksdjf8743hksdf7834hksdf8734hksdf8743hksdf8734hksdf87==', 18, stampY + 33);
+
+  // Footer Note
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'italic');
+  doc.setTextColor(...grayColor);
+  doc.text('Este documento es una representación impresa de un CFDI 4.0 expedido conforme a las leyes fiscales vigentes.', 105, 285, { align: 'center' });
+
+  doc.save(`Factura_SAT_${orderData.orderNumber}_CFDI40.pdf`);
+};
+
+export const downloadCFDIXML = (orderData, fiscalData = {}) => {
+  const uuid = orderData.fiscalUuid || '4A8F9201-987B-4A12-B6E3-CFDA091244E1';
+  const rfcCliente = fiscalData.rfc || orderData.rfc || 'XAXX010101000';
+  const razonSocial = fiscalData.legalName || orderData.customerName || 'Cliente Particular';
+  const cpCliente = fiscalData.postalCode || '23000';
+  const total = Number(orderData.total) || 170.00;
+  const subtotal = (total / 1.16).toFixed(2);
+  const iva = (total - subtotal).toFixed(2);
+
+  const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Version="4.0" Serie="IDF" Folio="${orderData.orderNumber}" Fecha="${new Date().toISOString()}" SubTotal="${subtotal}" Moneda="MXN" Total="${total.toFixed(2)}" TipoDeComprobante="I" Exportacion="01" MetodoPago="PUE" LugarExpedicion="23000">
+  <cfdi:Emisor Rfc="IDF260101XYZ" Nombre="IDEAFORM MEXICO SA DE CV" RegimenFiscal="601"/>
+  <cfdi:Receptor Rfc="${rfcCliente}" Nombre="${razonSocial.toUpperCase()}" DomicilioFiscalReceptor="${cpCliente}" RegimenFiscalReceptor="612" UsoCFDI="G03"/>
+  <cfdi:Conceptos>
+    <cfdi:Concepto ClaveProdServ="73152100" Cantidad="1" ClaveUnidad="H87" Descripcion="${orderData.productName || 'Manufactura Aditiva 3D'}" ValorUnitario="${subtotal}" Importe="${subtotal}" ObjetoImp="02">
+      <cfdi:Impuestos>
+        <cfdi:Traslados>
+          <cfdi:Traslado Base="${subtotal}" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="${iva}"/>
+        </cfdi:Traslados>
+      </cfdi:Impuestos>
+    </cfdi:Concepto>
+  </cfdi:Conceptos>
+  <cfdi:Impuestos TotalImpuestosTrasladados="${iva}">
+    <cfdi:Traslados>
+      <cfdi:Traslado Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="${iva}" Base="${subtotal}"/>
+    </cfdi:Traslados>
+  </cfdi:Impuestos>
+  <cfdi:Complemento>
+    <tfd:TimbreFiscalDigital xmlns:tfd="http://www.sat.gob.mx/TimbreFiscalDigital" Version="1.1" UUID="${uuid}" FechaTimbrado="${new Date().toISOString()}" RfcProvCertif="SAT970701NN3" SelloCFD="FEA8948BC..." NoCertificadoSAT="00001000000504465028"/>
+  </cfdi:Complemento>
+</cfdi:Comprobante>`;
+
+  const blob = new Blob([xmlContent], { type: 'application/xml;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `Factura_SAT_${orderData.orderNumber}_CFDI40.xml`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };

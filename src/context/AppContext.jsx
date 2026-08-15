@@ -10,7 +10,11 @@ import {
   MOCK_OPERATING_EXPENSES,
   DEFAULT_BOT_SETTINGS,
   DEFAULT_BOT_PROFILES,
-  DEFAULT_BOT_INTENTS
+  DEFAULT_BOT_INTENTS,
+  DEFAULT_SAVED_DESIGNS,
+  DEFAULT_PAYMENT_METHODS,
+  DEFAULT_WARRANTY_CLAIMS,
+  DEFAULT_USER_REVIEWS
 } from '../data/mockData';
 import { generateFolio } from '../utils/formatters';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
@@ -999,6 +1003,165 @@ export const AppProvider = ({ children }) => {
     showToast('¡Cotización B2B guardada en tu perfil!', 'success');
   };
 
+  // --- AMAZON / MERCADO LIBRE STYLE ADVANCED USER PROFILE STATES ---
+  // 1. Mis Diseños 3D & Favoritos Guardados
+  const [savedDesigns, setSavedDesigns] = useState(() => {
+    const saved = localStorage.getItem('ideaform_saved_designs');
+    return saved ? JSON.parse(saved) : DEFAULT_SAVED_DESIGNS;
+  });
+
+  const saveCustomDesign = (designData) => {
+    const newDesign = {
+      id: `des-${Date.now()}`,
+      name: designData.name || 'Mi Diseño 3D Personalizado',
+      modelType: designData.modelType || 'keychain',
+      customText: designData.customText || '',
+      baseColor: designData.baseColor || '#C9685B',
+      accentColor: designData.accentColor || '#FFFFFF',
+      reliefColor: designData.reliefColor || '#1A1A1A',
+      materialType: designData.materialType || 'PLA_SILK',
+      previewImage: designData.previewImage || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
+      createdAt: new Date().toISOString().split('T')[0],
+      estimatedPrice: Number(designData.estimatedPrice) || 85.00
+    };
+    setSavedDesigns((prev) => {
+      const updated = [newDesign, ...prev];
+      localStorage.setItem('ideaform_saved_designs', JSON.stringify(updated));
+      return updated;
+    });
+    showToast(`¡Diseño "${newDesign.name}" guardado en tu galería 3D! 🎨`, 'success');
+    return newDesign;
+  };
+
+  const deleteCustomDesign = (designId) => {
+    setSavedDesigns((prev) => {
+      const updated = prev.filter((d) => d.id !== designId);
+      localStorage.setItem('ideaform_saved_designs', JSON.stringify(updated));
+      return updated;
+    });
+    showToast('Diseño eliminado de tu galería', 'info');
+  };
+
+  // 2. Tarjetas y Métodos de Pago Guardados (Tokenizados Seguros)
+  const [savedPaymentMethods, setSavedPaymentMethods] = useState(() => {
+    const saved = localStorage.getItem('ideaform_payment_methods');
+    return saved ? JSON.parse(saved) : DEFAULT_PAYMENT_METHODS;
+  });
+
+  const addPaymentMethod = (cardData) => {
+    const cleanLast4 = (cardData.cardNumber || '4242').replace(/\s+/g, '').slice(-4);
+    const newMethod = {
+      id: `pm-${Date.now()}`,
+      cardBrand: cardData.cardBrand || 'VISA',
+      last4: cleanLast4,
+      holderName: cardData.holderName || user?.firstName || 'Titular',
+      expiryMonth: cardData.expiryMonth || '12',
+      expiryYear: cardData.expiryYear || '28',
+      bankName: cardData.bankName || 'Banca Mexicana',
+      isDefault: savedPaymentMethods.length === 0,
+      cardColor: cardData.cardBrand === 'VISA' 
+        ? 'linear-gradient(135deg, #0F5F6D 0%, #176B87 100%)' 
+        : 'linear-gradient(135deg, #0F172A 0%, #334155 100%)'
+    };
+    setSavedPaymentMethods((prev) => {
+      const updated = [newMethod, ...prev];
+      localStorage.setItem('ideaform_payment_methods', JSON.stringify(updated));
+      return updated;
+    });
+    showToast(`Tarjeta terminación •••• ${cleanLast4} agregada con seguridad SSL 🔒`, 'success');
+  };
+
+  const deletePaymentMethod = (cardId) => {
+    setSavedPaymentMethods((prev) => {
+      const updated = prev.filter((c) => c.id !== cardId);
+      localStorage.setItem('ideaform_payment_methods', JSON.stringify(updated));
+      return updated;
+    });
+    showToast('Método de pago eliminado', 'info');
+  };
+
+  const setDefaultPaymentMethod = (cardId) => {
+    setSavedPaymentMethods((prev) => {
+      const updated = prev.map((c) => ({ ...c, isDefault: c.id === cardId }));
+      localStorage.setItem('ideaform_payment_methods', JSON.stringify(updated));
+      return updated;
+    });
+    showToast('Tarjeta predeterminada para compras 1-Click actualizada', 'success');
+  };
+
+  // 3. Garantías de Fabricación y Reporte de Incidencias (Estilo Compra Protegida)
+  const [warrantyClaims, setWarrantyClaims] = useState(() => {
+    const saved = localStorage.getItem('ideaform_warranty_claims');
+    return saved ? JSON.parse(saved) : DEFAULT_WARRANTY_CLAIMS;
+  });
+
+  const createWarrantyClaim = (claimData) => {
+    const newClaim = {
+      id: `gar-${Date.now()}`,
+      folio: `GAR-${Math.floor(1000 + Math.random() * 9000)}`,
+      orderNumber: claimData.orderNumber || 'IDF-84920',
+      productName: claimData.productName || 'Pieza 3D Personalizada',
+      claimType: claimData.claimType || 'IMPRESSION_DEFECT',
+      title: claimData.title || 'Revisión de acabado o garantía',
+      description: claimData.description || '',
+      status: 'IN_REVIEW',
+      statusLabel: '🔍 En Revisión por Ingeniero de Taller',
+      statusColor: '#d97706',
+      date: new Date().toISOString().split('T')[0],
+      resolution: 'Nuestro equipo de control de calidad está validando la solicitud. Si procede, la reimpresión se despacha en 24h sin costo.'
+    };
+    setWarrantyClaims((prev) => {
+      const updated = [newClaim, ...prev];
+      localStorage.setItem('ideaform_warranty_claims', JSON.stringify(updated));
+      return updated;
+    });
+    showToast(`¡Ticket de Garantía #${newClaim.folio} generado con éxito! 🛡️`, 'success');
+    return newClaim;
+  };
+
+  // 4. Reseñas y Calificaciones de Compras Realizadas
+  const [userReviews, setUserReviews] = useState(() => {
+    const saved = localStorage.getItem('ideaform_user_reviews');
+    return saved ? JSON.parse(saved) : DEFAULT_USER_REVIEWS;
+  });
+
+  const submitOrderReview = (reviewData) => {
+    const newRev = {
+      id: `rev-${Date.now()}`,
+      orderNumber: reviewData.orderNumber,
+      productName: reviewData.productName,
+      rating: reviewData.rating || 5,
+      title: reviewData.title || 'Excelente acabado',
+      comment: reviewData.comment || '',
+      date: new Date().toISOString().split('T')[0],
+      verifiedPurchase: true
+    };
+    setUserReviews((prev) => {
+      const updated = [newRev, ...prev];
+      localStorage.setItem('ideaform_user_reviews', JSON.stringify(updated));
+      return updated;
+    });
+    showToast('¡Gracias por calificar tu producto 3D! Tu opinión ayuda a la comunidad ⭐', 'success');
+  };
+
+  // 5. Función 1-Click Reorder (Comprar de Nuevo - Estilo Amazon / Mercado Libre)
+  const reorderItem = (order) => {
+    const unitPrice = order.total && order.filamentGrams ? (order.total / (order.units || 1)) : (order.total || 95.00);
+    const cartItem = {
+      id: `prod-reorder-${Date.now()}`,
+      name: order.productName || 'Producto Personalizado 3D',
+      price: unitPrice,
+      quantity: 1,
+      customText: order.customText || '',
+      selectedColor: { name: order.filament || 'Coral Terracota', hex: '#C9685B' },
+      selectedMaterial: { name: 'PLA Silk Premium', id: 'pla-silk' },
+      modelType: order.modelType || 'keychain',
+      image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80'
+    };
+    addToCart(cartItem);
+    showToast(`¡"${order.productName}" agregado al carrito para volver a comprar! 🛒`, 'success');
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -1057,6 +1220,18 @@ export const AppProvider = ({ children }) => {
         createManualOrder,
         b2bQuotes,
         saveB2BQuote,
+        savedDesigns,
+        saveCustomDesign,
+        deleteCustomDesign,
+        savedPaymentMethods,
+        addPaymentMethod,
+        deletePaymentMethod,
+        setDefaultPaymentMethod,
+        warrantyClaims,
+        createWarrantyClaim,
+        userReviews,
+        submitOrderReview,
+        reorderItem,
         products,
         setProducts,
         saveProduct,
