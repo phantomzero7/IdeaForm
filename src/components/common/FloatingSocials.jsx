@@ -408,46 +408,52 @@ const FloatingSocials = () => {
             position: 'fixed',
             right: '1.25rem',
             bottom: '7.5rem',
-            width: '370px',
+            width: '380px',
             maxWidth: 'calc(100vw - 2.5rem)',
-            height: '540px',
+            height: '560px',
             maxHeight: 'calc(100vh - 9rem)',
             background: '#ffffff',
-            borderRadius: 'var(--radius-xl)',
-            border: '1px solid #cbd5e1',
-            boxShadow: '0 20px 48px rgba(0, 0, 0, 0.22)',
+            borderRadius: '24px',
+            border: '1px solid rgba(15, 95, 109, 0.25)',
+            boxShadow: '0 24px 54px rgba(9, 14, 23, 0.28), 0 0 0 1px rgba(0, 229, 255, 0.15)',
             display: 'flex',
             flexDirection: 'column',
             zIndex: 1000,
             overflow: 'hidden',
-            animation: 'fadeInUp 0.25s ease-out'
+            animation: 'fadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
           }}
         >
-          {/* Chatbot Header with Robot Mascot */}
+          {/* Chatbot Header with Fully Rounded Corners and Stylized Title Pill */}
           <div
             style={{
-              background: 'linear-gradient(135deg, #0F172A 0%, #176B87 100%)',
+              background: 'linear-gradient(135deg, #090e17 0%, #0F172A 50%, #0F5F6D 100%)',
               color: '#ffffff',
-              padding: '0.85rem 1.15rem',
+              padding: '0.95rem 1.15rem',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              borderBottom: '1px solid rgba(255,255,255,0.1)'
+              borderTopLeftRadius: '23px',
+              borderTopRightRadius: '23px',
+              borderBottom: '2px solid rgba(0, 229, 255, 0.3)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.25)',
+              position: 'relative'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              {/* Glowing Avatar */}
               <div
                 style={{
-                  width: '42px',
-                  height: '42px',
+                  width: '44px',
+                  height: '44px',
                   borderRadius: '50%',
-                  background: 'rgba(255,255,255,0.12)',
-                  border: '1.5px solid #00e5ff',
-                  padding: '2px',
+                  background: 'radial-gradient(circle, rgba(0,229,255,0.2) 0%, rgba(15,23,42,0.8) 100%)',
+                  border: '2px solid #00e5ff',
+                  padding: '3px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 0 10px rgba(0, 229, 255, 0.3)'
+                  boxShadow: '0 0 14px rgba(0, 229, 255, 0.45)',
+                  flexShrink: 0
                 }}
               >
                 <img
@@ -458,23 +464,64 @@ const FloatingSocials = () => {
               </div>
 
               <div>
-                <div style={{ fontWeight: '800', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <span>{botSettings?.botName || 'IdeaForm Bot'}</span>
-                  <span style={{ fontSize: '0.62rem', background: '#10b981', color: '#fff', padding: '0.1rem 0.45rem', borderRadius: 'var(--radius-full)', fontWeight: '800' }}>
-                    EN VIVO
+                {/* Title Capsule Pill */}
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    backdropFilter: 'blur(8px)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    padding: '0.2rem 0.65rem',
+                    borderRadius: 'var(--radius-full)',
+                    marginBottom: '0.2rem'
+                  }}
+                >
+                  <span style={{ fontWeight: '800', fontSize: '0.85rem', color: '#ffffff', letterSpacing: '-0.01em' }}>
+                    {botSettings?.botName || 'IdeaForm Bot'}
+                  </span>
+                  <span
+                    style={{
+                      width: '7px',
+                      height: '7px',
+                      borderRadius: '50%',
+                      background: '#10b981',
+                      boxShadow: '0 0 6px #10b981'
+                    }}
+                  />
+                  <span style={{ fontSize: '0.62rem', fontWeight: '800', color: '#6ee7b7', letterSpacing: '0.04em' }}>
+                    LIVE
                   </span>
                 </div>
-                <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
-                  Asistente & Taller 3D Inteligente
+
+                <div style={{ fontSize: '0.72rem', color: '#94a3b8', paddingLeft: '0.2rem' }}>
+                  Asistente Oficial & Taller 3D
                 </div>
               </div>
             </div>
 
+            {/* Stylized Rounded Close Button */}
             <button
               onClick={() => setIsChatOpen(false)}
-              style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', padding: '0.2rem' }}
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.18)',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.22)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
+              title="Cerrar asistente"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
 
@@ -622,7 +669,7 @@ const FloatingSocials = () => {
           </div>
 
           {/* Quick Guided Options Pills (Loaded dynamically from botIntents) */}
-          <div style={{ background: '#ffffff', padding: '0.5rem 0.75rem', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '0.4rem', overflowX: 'auto' }}>
+          <div style={{ background: '#ffffff', padding: '0.6rem 0.85rem', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '0.45rem', overflowX: 'auto', scrollbarWidth: 'none' }}>
             {activeIntents.map((intent) => (
               <button
                 key={intent.id}
@@ -631,12 +678,21 @@ const FloatingSocials = () => {
                   background: '#f1f5f9',
                   border: '1px solid #e2e8f0',
                   borderRadius: 'var(--radius-full)',
-                  padding: '0.25rem 0.6rem',
-                  fontSize: '0.7rem',
+                  padding: '0.3rem 0.75rem',
+                  fontSize: '0.72rem',
                   fontWeight: '700',
-                  color: '#475569',
+                  color: '#334155',
                   cursor: 'pointer',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#e2e8f0';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#f1f5f9';
+                  e.currentTarget.style.transform = 'translateY(0)';
                 }}
               >
                 {intent.chipLabel || intent.title}
@@ -646,18 +702,31 @@ const FloatingSocials = () => {
             <button
               onClick={() => handleTransferToWhatsApp('HABLAR_CON_ASESOR')}
               style={{
-                background: '#dcfce7',
-                border: '1px solid #bbf7d0',
+                background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
+                border: '1px solid #86efac',
                 borderRadius: 'var(--radius-full)',
-                padding: '0.25rem 0.6rem',
-                fontSize: '0.7rem',
+                padding: '0.3rem 0.75rem',
+                fontSize: '0.72rem',
                 fontWeight: '800',
-                color: '#15803d',
+                color: '#166534',
                 cursor: 'pointer',
-                whiteSpace: 'nowrap'
+                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 2px 6px rgba(34, 197, 94, 0.25)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
               }}
             >
-              💬 WhatsApp
+              <MessageCircle size={12} />
+              <span>WhatsApp</span>
             </button>
           </div>
 
@@ -665,12 +734,14 @@ const FloatingSocials = () => {
           <form
             onSubmit={handleSendMessage}
             style={{
-              padding: '0.65rem 0.75rem',
+              padding: '0.75rem 0.85rem',
               background: '#ffffff',
               borderTop: '1px solid #f1f5f9',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem'
+              gap: '0.5rem',
+              borderBottomLeftRadius: '23px',
+              borderBottomRightRadius: '23px'
             }}
           >
             <input
@@ -680,28 +751,42 @@ const FloatingSocials = () => {
               onChange={(e) => setInputText(e.target.value)}
               style={{
                 flex: 1,
-                border: '1px solid #cbd5e1',
+                border: '1.5px solid #e2e8f0',
                 borderRadius: 'var(--radius-full)',
-                padding: '0.45rem 0.85rem',
+                padding: '0.55rem 0.95rem',
                 fontSize: '0.82rem',
-                outline: 'none'
+                outline: 'none',
+                transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                background: '#f8fafc'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#0F5F6D';
+                e.target.style.boxShadow = '0 0 0 3px rgba(15, 95, 109, 0.15)';
+                e.target.style.background = '#ffffff';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#e2e8f0';
+                e.target.style.boxShadow = 'none';
+                e.target.style.background = '#f8fafc';
               }}
             />
             <button
               type="submit"
               disabled={!inputText.trim()}
               style={{
-                background: inputText.trim() ? '#176B87' : '#cbd5e1',
+                background: inputText.trim() ? 'linear-gradient(135deg, #0F5F6D 0%, #176B87 100%)' : '#cbd5e1',
                 color: '#ffffff',
                 border: 'none',
                 borderRadius: '50%',
-                width: '34px',
-                height: '34px',
+                width: '36px',
+                height: '36px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: inputText.trim() ? 'pointer' : 'default',
-                transition: 'background 0.15s ease'
+                transition: 'all 0.15s ease',
+                boxShadow: inputText.trim() ? '0 2px 8px rgba(15, 95, 109, 0.35)' : 'none',
+                flexShrink: 0
               }}
             >
               <Send size={15} />
