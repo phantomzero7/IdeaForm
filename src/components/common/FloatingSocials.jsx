@@ -403,39 +403,41 @@ const FloatingSocials = () => {
         <div
           role="dialog"
           aria-label="Asistente Virtual IdeaForm 3D"
-          className="card card-elevated floating-chat-card"
+          className="floating-chat-card"
           style={{
             position: 'fixed',
             right: '1.25rem',
-            bottom: '7.5rem',
-            width: '380px',
+            bottom: '7.25rem',
+            width: '360px',
             maxWidth: 'calc(100vw - 2.5rem)',
-            height: '560px',
-            maxHeight: 'calc(100vh - 9rem)',
+            height: '520px',
+            maxHeight: 'calc(100vh - 8.5rem)',
             background: '#ffffff',
-            borderRadius: '24px',
-            border: '1px solid rgba(15, 95, 109, 0.25)',
-            boxShadow: '0 24px 54px rgba(9, 14, 23, 0.28), 0 0 0 1px rgba(0, 229, 255, 0.15)',
+            borderRadius: '20px',
+            border: '1px solid rgba(15, 95, 109, 0.22)',
+            boxShadow: '0 20px 48px rgba(9, 14, 23, 0.25), 0 0 0 1px rgba(0, 229, 255, 0.12)',
             display: 'flex',
             flexDirection: 'column',
             zIndex: 1000,
             overflow: 'hidden',
-            animation: 'fadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+            padding: 0,
+            margin: 0,
+            animation: 'fadeInUp 0.22s cubic-bezier(0.16, 1, 0.3, 1)'
           }}
         >
-          {/* Chatbot Header with Fully Rounded Corners and Stylized Title Pill */}
+          {/* Chatbot Header with Integrated Rounded Top Corners */}
           <div
             style={{
               background: 'linear-gradient(135deg, #090e17 0%, #0F172A 50%, #0F5F6D 100%)',
               color: '#ffffff',
-              padding: '0.95rem 1.15rem',
+              padding: '0.85rem 1rem',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              borderTopLeftRadius: '23px',
-              borderTopRightRadius: '23px',
+              borderTopLeftRadius: '19px',
+              borderTopRightRadius: '19px',
               borderBottom: '2px solid rgba(0, 229, 255, 0.3)',
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.25)',
+              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
               position: 'relative'
             }}
           >

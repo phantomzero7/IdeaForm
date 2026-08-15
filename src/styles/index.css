@@ -573,8 +573,20 @@ button, input, select, textarea {
     height: 84vh !important;
     max-height: 88vh !important;
     border-radius: 20px 20px 0 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
     margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: 0 -10px 35px rgba(0, 0, 0, 0.28) !important;
   }
+}
+
+/* Floating Chat Card Unified Frame */
+.floating-chat-card {
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
 }
 
 /* 7. Responsive Newsletter */
