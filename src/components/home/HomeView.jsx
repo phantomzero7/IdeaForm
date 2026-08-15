@@ -351,7 +351,7 @@ const HomeView = () => {
           <div
             className="card"
             style={{
-              padding: '2.5rem',
+              padding: '2rem 1.25rem',
               background: 'linear-gradient(135deg, rgba(15, 95, 109, 0.06) 0%, rgba(32, 163, 158, 0.08) 100%)',
               border: '1px solid rgba(15, 95, 109, 0.2)',
               borderRadius: 'var(--radius-xl)',
@@ -359,14 +359,18 @@ const HomeView = () => {
             }}
           >
             <Mail size={32} color="var(--color-primary)" style={{ margin: '0 auto 0.75rem auto' }} />
-            <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#1A1A1A', marginBottom: '0.4rem' }}>
+            <h3 style={{ fontSize: '1.3rem', fontWeight: '800', color: '#1A1A1A', marginBottom: '0.4rem' }}>
               Sé el primero en conocer novedades y promociones especiales
             </h3>
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
               Suscríbete y recibe un 10% de descuento en tu primer pedido con código <strong>IDEAFORM10</strong>.
             </p>
 
-            <form onSubmit={handleNewsletterSubmit} style={{ display: 'flex', gap: '0.5rem', maxWidth: '480px', margin: '0 auto' }}>
+            <form
+              onSubmit={handleNewsletterSubmit}
+              className="newsletter-form-responsive"
+              style={{ maxWidth: '480px', margin: '0 auto' }}
+            >
               <input
                 type="email"
                 required
@@ -379,10 +383,11 @@ const HomeView = () => {
                   borderRadius: 'var(--radius-md)',
                   border: '1px solid var(--border-light)',
                   fontSize: '0.9rem',
-                  outline: 'none'
+                  outline: 'none',
+                  minWidth: 0
                 }}
               />
-              <button type="submit" className="btn btn-primary" style={{ padding: '0.75rem 1.25rem' }}>
+              <button type="submit" className="btn btn-primary" style={{ padding: '0.75rem 1.25rem', whiteSpace: 'nowrap' }}>
                 <span>Suscribirme</span>
                 <Send size={16} />
               </button>
