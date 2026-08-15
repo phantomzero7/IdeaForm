@@ -670,66 +670,85 @@ const FloatingSocials = () => {
             <div ref={chatBottomRef} />
           </div>
 
-          {/* Quick Guided Options Pills (Loaded dynamically from botIntents) */}
-          <div style={{ background: '#ffffff', padding: '0.6rem 0.85rem', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '0.45rem', overflowX: 'auto', scrollbarWidth: 'none' }}>
-            {activeIntents.map((intent) => (
+          {/* Quick Guided Options Grid (100% Visible, No Hidden Horizontal Scroll) */}
+          <div style={{ background: '#f8fafc', padding: '0.55rem 0.75rem', borderTop: '1px solid #f1f5f9' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+              <span style={{ fontSize: '0.65rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                <Sparkles size={11} color="#0F5F6D" />
+                <span>¿En qué te podemos ayudar?</span>
+              </span>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.35rem' }}>
+              {activeIntents.map((intent) => (
+                <button
+                  key={intent.id}
+                  onClick={() => handleSelectIntent(intent)}
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '0.42rem 0.55rem',
+                    fontSize: '0.72rem',
+                    fontWeight: '700',
+                    color: '#1e293b',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    transition: 'all 0.15s ease',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#0F5F6D';
+                    e.currentTarget.style.background = '#f0f9ff';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#cbd5e1';
+                    e.currentTarget.style.background = '#ffffff';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {intent.chipLabel || intent.title}
+                  </span>
+                </button>
+              ))}
+
               <button
-                key={intent.id}
-                onClick={() => handleSelectIntent(intent)}
+                onClick={() => handleTransferToWhatsApp('HABLAR_CON_ASESOR')}
                 style={{
-                  background: '#f1f5f9',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: 'var(--radius-full)',
-                  padding: '0.3rem 0.75rem',
+                  background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
+                  border: '1px solid #86efac',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '0.42rem 0.55rem',
                   fontSize: '0.72rem',
-                  fontWeight: '700',
-                  color: '#334155',
+                  fontWeight: '800',
+                  color: '#166534',
                   cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  transition: 'all 0.15s ease'
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.35rem',
+                  gridColumn: activeIntents.length % 2 !== 0 ? 'span 1' : 'span 2',
+                  transition: 'all 0.15s ease',
+                  boxShadow: '0 1px 3px rgba(22, 101, 52, 0.1)'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#e2e8f0';
                   e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 3px 8px rgba(34, 197, 94, 0.25)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#f1f5f9';
                   e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(22, 101, 52, 0.1)';
                 }}
               >
-                {intent.chipLabel || intent.title}
+                <MessageCircle size={13} color="#166534" />
+                <span>Hablar con Asesor en WhatsApp</span>
               </button>
-            ))}
-
-            <button
-              onClick={() => handleTransferToWhatsApp('HABLAR_CON_ASESOR')}
-              style={{
-                background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
-                border: '1px solid #86efac',
-                borderRadius: 'var(--radius-full)',
-                padding: '0.3rem 0.75rem',
-                fontSize: '0.72rem',
-                fontWeight: '800',
-                color: '#166534',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.25rem',
-                transition: 'all 0.15s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 2px 6px rgba(34, 197, 94, 0.25)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            >
-              <MessageCircle size={12} />
-              <span>WhatsApp</span>
-            </button>
+            </div>
           </div>
 
           {/* Chat Input Bar */}
