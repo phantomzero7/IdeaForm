@@ -1863,6 +1863,8 @@ const AdminDashboard = () => {
                     modelType: 'sphere',
                     custom3DFileUrl: null,
                     custom3DFileType: null,
+                    custom3DFileName: null,
+                    colorPresets: DEFAULT_COLOR_PRESETS,
                     filamentGrams: 60,
                     printTimeMins: 120,
                     allowBaseColor: true,
@@ -1927,6 +1929,10 @@ const AdminDashboard = () => {
                         setEditingProduct(prod);
                         setProductFormData({
                           ...prod,
+                          custom3DFileUrl: prod.custom3DFileUrl || null,
+                          custom3DFileType: prod.custom3DFileType || null,
+                          custom3DFileName: prod.custom3DFileName || null,
+                          colorPresets: prod.colorPresets || DEFAULT_COLOR_PRESETS,
                           previewBaseColor: prod.previewBaseColor || '#FFFFFF',
                           previewAccentColor: prod.previewAccentColor || '#176B87',
                           previewReliefColor: prod.previewReliefColor || '#0F172A'
@@ -3684,15 +3690,18 @@ const AdminDashboard = () => {
                             const file = e.target.files[0];
                             if (!file) return;
                             const ext = file.name.split('.').pop().toLowerCase();
-                            const url = URL.createObjectURL(file);
-                            setProductFormData({
-                              ...productFormData,
-                              custom3DFileUrl: url,
-                              custom3DFileType: ext,
-                              custom3DFileName: file.name,
-                              modelType: 'custom_file'
-                            });
-                            showToast(`✅ Archivo 3D cargado: ${file.name}`, 'success');
+                            const reader = new FileReader();
+                            reader.onload = (loadEvt) => {
+                              setProductFormData((prev) => ({
+                                ...prev,
+                                custom3DFileUrl: loadEvt.target.result,
+                                custom3DFileType: ext,
+                                custom3DFileName: file.name,
+                                modelType: 'custom_file'
+                              }));
+                              showToast(`✅ Archivo 3D "${file.name}" cargado en tiempo real`, 'success');
+                            };
+                            reader.readAsDataURL(file);
                           }}
                         />
                       </label>
@@ -3715,15 +3724,18 @@ const AdminDashboard = () => {
                             const file = e.target.files[0];
                             if (!file) return;
                             const ext = file.name.split('.').pop().toLowerCase();
-                            const url = URL.createObjectURL(file);
-                            setProductFormData({
-                              ...productFormData,
-                              custom3DFileUrl: url,
-                              custom3DFileType: ext,
-                              custom3DFileName: file.name,
-                              modelType: 'custom_file'
-                            });
-                            showToast(`✅ Archivo 3D cargado: ${file.name}`, 'success');
+                            const reader = new FileReader();
+                            reader.onload = (loadEvt) => {
+                              setProductFormData((prev) => ({
+                                ...prev,
+                                custom3DFileUrl: loadEvt.target.result,
+                                custom3DFileType: ext,
+                                custom3DFileName: file.name,
+                                modelType: 'custom_file'
+                              }));
+                              showToast(`✅ Archivo 3D "${file.name}" cargado en tiempo real`, 'success');
+                            };
+                            reader.readAsDataURL(file);
                           }}
                         />
                       </label>
@@ -3731,33 +3743,132 @@ const AdminDashboard = () => {
                   )}
                 </div>
 
-                <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#0F172A', marginBottom: '0.4rem' }}>
-                    COLORES LIGADOS AL STOCK DISPONIBLE
+                {/* --- 1-CLICK COLOR PRESETS CONFIGURATOR --- */}
+                <div style={{ background: '#f8fafc', padding: '0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <Palette size={14} color="#176B87" />
+                      <span>CONFIGURAR COMBOS DE COLOR 1-CLICK</span>
+                    </div>
+                    <span style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                      Opciones listas para el cliente
+                    </span>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                    {filamentInventory.filter((f) => !f.isArchived).map((fil) => (
-                      <button
-                        key={fil.id}
-                        type="button"
-                        onClick={() => setProductFormData({ ...productFormData, previewBaseColor: fil.hex })}
+
+                  {/* Quick Color Presets List */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                    {((productFormData.colorPresets && productFormData.colorPresets.length > 0) ? productFormData.colorPresets : DEFAULT_COLOR_PRESETS).map((preset, pIdx) => (
+                      <div
+                        key={preset.id || pIdx}
                         style={{
+                          background: '#ffffff',
+                          padding: '0.6rem 0.75rem',
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid #cbd5e1',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '0.35rem',
-                          padding: '0.3rem 0.5rem',
-                          borderRadius: '4px',
-                          border: productFormData.previewBaseColor === fil.hex ? '2px solid #176B87' : '1px solid #cbd5e1',
-                          background: '#ffffff',
-                          fontSize: '0.7rem',
-                          fontWeight: '700',
-                          cursor: 'pointer'
+                          justifyContent: 'space-between',
+                          gap: '0.5rem'
                         }}
                       >
-                        <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: fil.hex, border: '1px solid #cbd5e1' }} />
-                        <span>{fil.name} ({fil.stockGrams}g)</span>
-                      </button>
+                        <div>
+                          <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#0f172a' }}>{preset.name}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.2rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.68rem', color: '#64748b' }}>
+                              <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: preset.baseColor?.hex || preset.baseColor || '#000000', border: '1px solid #cbd5e1' }} />
+                              <span>Base</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.68rem', color: '#64748b' }}>
+                              <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: preset.accentColor?.hex || preset.accentColor || '#D4AF37', border: '1px solid #cbd5e1' }} />
+                              <span>Acento</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.68rem', color: '#64748b' }}>
+                              <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: preset.reliefColor?.hex || preset.reliefColor || '#FFFFFF', border: '1px solid #cbd5e1' }} />
+                              <span>Relieve</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const bHex = preset.baseColor?.hex || preset.baseColor || '#1A1A1A';
+                            const aHex = preset.accentColor?.hex || preset.accentColor || '#EA580C';
+                            const rHex = preset.reliefColor?.hex || preset.reliefColor || '#FAEEEB';
+                            setProductFormData({
+                              ...productFormData,
+                              previewBaseColor: bHex,
+                              previewAccentColor: aHex,
+                              previewReliefColor: rHex
+                            });
+                            showToast(`🎨 Vista 3D actualizada: ${preset.name}`, 'info');
+                          }}
+                          style={{
+                            background: 'rgba(23, 107, 135, 0.08)',
+                            color: '#176B87',
+                            border: '1px solid rgba(23, 107, 135, 0.25)',
+                            borderRadius: '4px',
+                            padding: '0.3rem 0.6rem',
+                            fontSize: '0.7rem',
+                            fontWeight: '800',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.25rem'
+                          }}
+                        >
+                          <Sparkles size={12} />
+                          <span>Probar 1-Click</span>
+                        </button>
+                      </div>
                     ))}
+                  </div>
+
+                  {/* Active 3-Layer Live Color Selectors */}
+                  <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '0.65rem' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: '800', color: '#475569', marginBottom: '0.4rem' }}>
+                      COLORES ACTIVOS EN VISTA PREVIA (STOCK REAL):
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+                      <div>
+                        <label style={{ fontSize: '0.68rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Capa 1: Base</label>
+                        <select
+                          value={productFormData.previewBaseColor}
+                          onChange={(e) => setProductFormData({ ...productFormData, previewBaseColor: e.target.value })}
+                          style={{ width: '100%', padding: '0.35rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.75rem', fontWeight: '700' }}
+                        >
+                          {filamentInventory.filter((f) => !f.isArchived).map((fil) => (
+                            <option key={fil.id} value={fil.hex}>{fil.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.68rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Capa 2: Acento</label>
+                        <select
+                          value={productFormData.previewAccentColor}
+                          onChange={(e) => setProductFormData({ ...productFormData, previewAccentColor: e.target.value })}
+                          style={{ width: '100%', padding: '0.35rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.75rem', fontWeight: '700' }}
+                        >
+                          {filamentInventory.filter((f) => !f.isArchived).map((fil) => (
+                            <option key={fil.id} value={fil.hex}>{fil.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.68rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Capa 3: Relieve 3D</label>
+                        <select
+                          value={productFormData.previewReliefColor}
+                          onChange={(e) => setProductFormData({ ...productFormData, previewReliefColor: e.target.value })}
+                          style={{ width: '100%', padding: '0.35rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.75rem', fontWeight: '700' }}
+                        >
+                          {filamentInventory.filter((f) => !f.isArchived).map((fil) => (
+                            <option key={fil.id} value={fil.hex}>{fil.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -3781,7 +3892,7 @@ const AdminDashboard = () => {
                   </div>
                   {productFormData.custom3DFileUrl ? (
                     <span style={{ fontSize: '0.68rem', fontWeight: '800', background: '#ecfdf5', color: '#059669', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)' }}>
-                      📐 Modelo 3D Personalizado
+                      📐 Modelo 3D Personalizado (.3MF/.STL/.GLB)
                     </span>
                   ) : (
                     <span style={{ fontSize: '0.68rem', fontWeight: '800', background: '#e0f2fe', color: '#0369a1', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)' }}>
@@ -3790,7 +3901,7 @@ const AdminDashboard = () => {
                   )}
                 </div>
 
-                <div style={{ height: '320px', background: '#ffffff', borderRadius: 'var(--radius-md)', overflow: 'hidden', position: 'relative', border: '1px solid #e2e8f0' }}>
+                <div style={{ height: '340px', background: '#ffffff', borderRadius: 'var(--radius-md)', overflow: 'hidden', position: 'relative', border: '1px solid #e2e8f0' }}>
                   <ThreeViewer
                     modelType={productFormData.modelType}
                     custom3DFileUrl={productFormData.custom3DFileUrl}

@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { ThreeMFLoader } from 'three/examples/jsm/loaders/3MFLoader.js';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { RotateCw, Sparkles, Layers } from 'lucide-react';
 import IdeaFormLogo from '../common/IdeaFormLogo';
 
@@ -373,6 +374,37 @@ const ThreeViewer = forwardRef(({
           undefined,
           (err) => {
             console.error('3MF Load Error:', err);
+            setLoading3D(false);
+          }
+        );
+      } else if (custom3DFileType === 'obj' || (custom3DFileUrl && String(custom3DFileUrl).toLowerCase().includes('.obj'))) {
+        const loader = new OBJLoader();
+        loader.load(
+          custom3DFileUrl,
+          (object) => {
+            object.traverse((child) => {
+              if (child.isMesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+                child.material = mainMaterial;
+              }
+            });
+
+            const box = new THREE.Box3().setFromObject(object);
+            const size = box.getSize(new THREE.Vector3());
+            const center = box.getCenter(new THREE.Vector3());
+            object.position.sub(center);
+
+            const maxDim = Math.max(size.x, size.y, size.z) || 1;
+            const scale = 4.0 / maxDim;
+            object.scale.set(scale, scale, scale);
+
+            group.add(object);
+            setLoading3D(false);
+          },
+          undefined,
+          (err) => {
+            console.error('OBJ Load Error:', err);
             setLoading3D(false);
           }
         );
