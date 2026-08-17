@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef, us
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
+import { ThreeMFLoader } from 'three/examples/jsm/loaders/3MFLoader.js';
 import { RotateCw, Sparkles, Layers } from 'lucide-react';
 import IdeaFormLogo from '../common/IdeaFormLogo';
 
@@ -312,10 +313,11 @@ const ThreeViewer = forwardRef(({
     });
     materialsRef.current.steelMat = steelMaterial;
 
-    // --- CASE A: CUSTOM UPLOADED 3D FILE ---
+    // --- CASE A: CUSTOM UPLOADED 3D FILE (.STL, .3MF, .GLB, .GLTF, .OBJ) ---
     if (custom3DFileUrl) {
       setLoading3D(true);
       const isSTL = custom3DFileType === 'stl' || (custom3DFileUrl && String(custom3DFileUrl).toLowerCase().includes('.stl'));
+      const is3MF = custom3DFileType === '3mf' || (custom3DFileUrl && String(custom3DFileUrl).toLowerCase().includes('.3mf'));
 
       if (isSTL) {
         const loader = new STLLoader();
@@ -340,6 +342,37 @@ const ThreeViewer = forwardRef(({
           undefined,
           (err) => {
             console.error('STL Load Error:', err);
+            setLoading3D(false);
+          }
+        );
+      } else if (is3MF) {
+        const loader = new ThreeMFLoader();
+        loader.load(
+          custom3DFileUrl,
+          (object) => {
+            object.traverse((child) => {
+              if (child.isMesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+                child.material = mainMaterial;
+              }
+            });
+
+            const box = new THREE.Box3().setFromObject(object);
+            const size = box.getSize(new THREE.Vector3());
+            const center = box.getCenter(new THREE.Vector3());
+            object.position.sub(center);
+
+            const maxDim = Math.max(size.x, size.y, size.z) || 1;
+            const scale = 4.0 / maxDim;
+            object.scale.set(scale, scale, scale);
+
+            group.add(object);
+            setLoading3D(false);
+          },
+          undefined,
+          (err) => {
+            console.error('3MF Load Error:', err);
             setLoading3D(false);
           }
         );

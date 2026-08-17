@@ -3627,16 +3627,16 @@ const AdminDashboard = () => {
                     <option value="car">Vehículo / Modelo Articulado</option>
                     <option value="cup">Taza / Portalápices de Escritorio</option>
                     <option value="planter">Maceta Hexagonal con Relieve</option>
-                    <option value="custom_file">📁 Archivo 3D Personalizado (.STL / .GLB / .GLTF)</option>
+                    <option value="custom_file">📁 Archivo 3D Personalizado (.3MF / .STL / .GLB / .GLTF)</option>
                   </select>
                 </div>
 
-                {/* --- 3D FILE UPLOAD ZONE (.STL, .OBJ, .GLB, .GLTF) --- */}
+                {/* --- 3D FILE UPLOAD ZONE (.3MF, .STL, .OBJ, .GLB, .GLTF) --- */}
                 <div style={{ background: '#f8fafc', padding: '0.85rem', borderRadius: 'var(--radius-md)', border: '1.5px dashed #176B87' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
                     <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#176B87', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                       <FileUp size={15} />
-                      <span>SUBIR ARCHIVO 3D (.STL, .OBJ, .GLB, .GLTF)</span>
+                      <span>SUBIR ARCHIVO 3D (.3MF, .STL, .OBJ, .GLB, .GLTF)</span>
                     </label>
                     {productFormData.custom3DFileUrl && (
                       <button
@@ -3678,7 +3678,7 @@ const AdminDashboard = () => {
                         Cambiar
                         <input
                           type="file"
-                          accept=".stl,.glb,.gltf,.obj"
+                          accept=".3mf,.stl,.glb,.gltf,.obj"
                           style={{ display: 'none' }}
                           onChange={(e) => {
                             const file = e.target.files[0];
@@ -3705,11 +3705,11 @@ const AdminDashboard = () => {
                           Haz clic para seleccionar o arrastra tu archivo 3D
                         </span>
                         <span style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '0.15rem' }}>
-                          Formatos admitidos: <strong>.STL</strong>, <strong>.GLB</strong>, <strong>.GLTF</strong>, <strong>.OBJ</strong> (Máx. 50MB)
+                          Formatos admitidos: <strong>.3MF</strong> (Bambu/Prusa), <strong>.STL</strong>, <strong>.GLB</strong>, <strong>.GLTF</strong>, <strong>.OBJ</strong> (Máx. 50MB)
                         </span>
                         <input
                           type="file"
-                          accept=".stl,.glb,.gltf,.obj"
+                          accept=".3mf,.stl,.glb,.gltf,.obj"
                           style={{ display: 'none' }}
                           onChange={(e) => {
                             const file = e.target.files[0];
