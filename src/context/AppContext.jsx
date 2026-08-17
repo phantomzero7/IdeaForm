@@ -324,10 +324,15 @@ export const AppProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : MOCK_B2B_QUOTES;
   });
 
-  // Products Catalog (Persisted in localStorage for client self-management)
+  // Products Catalog (Persisted safely in localStorage for client self-management)
   const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem('ideaform_products');
-    return saved ? JSON.parse(saved) : PRODUCTS;
+    try {
+      const saved = localStorage.getItem('ideaform_products');
+      return saved ? JSON.parse(saved) : PRODUCTS;
+    } catch (e) {
+      console.warn('Could not read products from localStorage:', e);
+      return PRODUCTS;
+    }
   });
 
   const saveProduct = (newOrUpdatedProduct) => {
@@ -339,7 +344,18 @@ export const AppProvider = ({ children }) => {
       } else {
         updated = [newOrUpdatedProduct, ...prev];
       }
-      localStorage.setItem('ideaform_products', JSON.stringify(updated));
+      try {
+        // Sanitize large base64 data URLs for localStorage to stay well below 5MB browser quota
+        const safeToStore = updated.map((p) => {
+          if (p.custom3DFileUrl && typeof p.custom3DFileUrl === 'string' && p.custom3DFileUrl.length > 200000) {
+            return { ...p, custom3DFileUrl: null, custom3DFileCached: true };
+          }
+          return p;
+        });
+        localStorage.setItem('ideaform_products', JSON.stringify(safeToStore));
+      } catch (err) {
+        console.warn('localStorage quota warning when saving product:', err);
+      }
       return updated;
     });
   };
@@ -347,7 +363,11 @@ export const AppProvider = ({ children }) => {
   const deleteProduct = (id) => {
     setProducts((prev) => {
       const updated = prev.filter((p) => p.id !== id);
-      localStorage.setItem('ideaform_products', JSON.stringify(updated));
+      try {
+        localStorage.setItem('ideaform_products', JSON.stringify(updated));
+      } catch (err) {
+        console.warn('localStorage error on delete:', err);
+      }
       return updated;
     });
   };

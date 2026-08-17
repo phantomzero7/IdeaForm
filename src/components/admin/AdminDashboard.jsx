@@ -3690,18 +3690,15 @@ const AdminDashboard = () => {
                             const file = e.target.files[0];
                             if (!file) return;
                             const ext = file.name.split('.').pop().toLowerCase();
-                            const reader = new FileReader();
-                            reader.onload = (loadEvt) => {
-                              setProductFormData((prev) => ({
-                                ...prev,
-                                custom3DFileUrl: loadEvt.target.result,
-                                custom3DFileType: ext,
-                                custom3DFileName: file.name,
-                                modelType: 'custom_file'
-                              }));
-                              showToast(`✅ Archivo 3D "${file.name}" cargado en tiempo real`, 'success');
-                            };
-                            reader.readAsDataURL(file);
+                            const objUrl = URL.createObjectURL(file);
+                            setProductFormData((prev) => ({
+                              ...prev,
+                              custom3DFileUrl: objUrl,
+                              custom3DFileType: ext,
+                              custom3DFileName: file.name,
+                              modelType: 'custom_file'
+                            }));
+                            showToast(`✅ Archivo 3D "${file.name}" cargado en 3D Live`, 'success');
                           }}
                         />
                       </label>
@@ -3724,18 +3721,15 @@ const AdminDashboard = () => {
                             const file = e.target.files[0];
                             if (!file) return;
                             const ext = file.name.split('.').pop().toLowerCase();
-                            const reader = new FileReader();
-                            reader.onload = (loadEvt) => {
-                              setProductFormData((prev) => ({
-                                ...prev,
-                                custom3DFileUrl: loadEvt.target.result,
-                                custom3DFileType: ext,
-                                custom3DFileName: file.name,
-                                modelType: 'custom_file'
-                              }));
-                              showToast(`✅ Archivo 3D "${file.name}" cargado en tiempo real`, 'success');
-                            };
-                            reader.readAsDataURL(file);
+                            const objUrl = URL.createObjectURL(file);
+                            setProductFormData((prev) => ({
+                              ...prev,
+                              custom3DFileUrl: objUrl,
+                              custom3DFileType: ext,
+                              custom3DFileName: file.name,
+                              modelType: 'custom_file'
+                            }));
+                            showToast(`✅ Archivo 3D "${file.name}" cargado en 3D Live`, 'success');
                           }}
                         />
                       </label>

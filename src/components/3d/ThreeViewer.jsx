@@ -319,6 +319,37 @@ const ThreeViewer = forwardRef(({
       setLoading3D(true);
       const isSTL = custom3DFileType === 'stl' || (custom3DFileUrl && String(custom3DFileUrl).toLowerCase().includes('.stl'));
       const is3MF = custom3DFileType === '3mf' || (custom3DFileUrl && String(custom3DFileUrl).toLowerCase().includes('.3mf'));
+      const isOBJ = custom3DFileType === 'obj' || (custom3DFileUrl && String(custom3DFileUrl).toLowerCase().includes('.obj'));
+
+      const finalizeCustomModel = (model3D) => {
+        try {
+          model3D.traverse((child) => {
+            if (child.isMesh) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+              if (child.geometry) {
+                child.geometry.computeVertexNormals();
+              }
+              child.material = mainMaterial;
+            }
+          });
+
+          const box = new THREE.Box3().setFromObject(model3D);
+          const size = box.getSize(new THREE.Vector3());
+          const center = box.getCenter(new THREE.Vector3());
+          model3D.position.sub(center);
+
+          const maxDim = Math.max(size.x, size.y, size.z) || 1;
+          const scale = 3.6 / maxDim;
+          model3D.scale.set(scale, scale, scale);
+
+          group.add(model3D);
+        } catch (e) {
+          console.warn('Error post-processing 3D model:', e);
+        } finally {
+          setLoading3D(false);
+        }
+      };
 
       if (isSTL) {
         const loader = new STLLoader();
@@ -328,83 +359,42 @@ const ThreeViewer = forwardRef(({
             geometry.computeVertexNormals();
             geometry.center();
             const mesh = new THREE.Mesh(geometry, mainMaterial);
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
-
-            const box = new THREE.Box3().setFromObject(mesh);
-            const size = box.getSize(new THREE.Vector3());
-            const maxDim = Math.max(size.x, size.y, size.z) || 1;
-            const scale = 4.0 / maxDim;
-            mesh.scale.set(scale, scale, scale);
-
-            group.add(mesh);
-            setLoading3D(false);
+            finalizeCustomModel(mesh);
           },
           undefined,
           (err) => {
-            console.error('STL Load Error:', err);
+            console.warn('STL Load Error:', err);
             setLoading3D(false);
           }
         );
       } else if (is3MF) {
-        const loader = new ThreeMFLoader();
-        loader.load(
-          custom3DFileUrl,
-          (object) => {
-            object.traverse((child) => {
-              if (child.isMesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-                child.material = mainMaterial;
-              }
-            });
-
-            const box = new THREE.Box3().setFromObject(object);
-            const size = box.getSize(new THREE.Vector3());
-            const center = box.getCenter(new THREE.Vector3());
-            object.position.sub(center);
-
-            const maxDim = Math.max(size.x, size.y, size.z) || 1;
-            const scale = 4.0 / maxDim;
-            object.scale.set(scale, scale, scale);
-
-            group.add(object);
-            setLoading3D(false);
-          },
-          undefined,
-          (err) => {
-            console.error('3MF Load Error:', err);
-            setLoading3D(false);
-          }
-        );
-      } else if (custom3DFileType === 'obj' || (custom3DFileUrl && String(custom3DFileUrl).toLowerCase().includes('.obj'))) {
+        try {
+          const loader = new ThreeMFLoader();
+          loader.load(
+            custom3DFileUrl,
+            (object) => {
+              finalizeCustomModel(object);
+            },
+            undefined,
+            (err) => {
+              console.warn('3MF Load Error:', err);
+              setLoading3D(false);
+            }
+          );
+        } catch (loaderErr) {
+          console.warn('ThreeMFLoader init error:', loaderErr);
+          setLoading3D(false);
+        }
+      } else if (isOBJ) {
         const loader = new OBJLoader();
         loader.load(
           custom3DFileUrl,
           (object) => {
-            object.traverse((child) => {
-              if (child.isMesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-                child.material = mainMaterial;
-              }
-            });
-
-            const box = new THREE.Box3().setFromObject(object);
-            const size = box.getSize(new THREE.Vector3());
-            const center = box.getCenter(new THREE.Vector3());
-            object.position.sub(center);
-
-            const maxDim = Math.max(size.x, size.y, size.z) || 1;
-            const scale = 4.0 / maxDim;
-            object.scale.set(scale, scale, scale);
-
-            group.add(object);
-            setLoading3D(false);
+            finalizeCustomModel(object);
           },
           undefined,
           (err) => {
-            console.error('OBJ Load Error:', err);
+            console.warn('OBJ Load Error:', err);
             setLoading3D(false);
           }
         );
@@ -413,30 +403,11 @@ const ThreeViewer = forwardRef(({
         loader.load(
           custom3DFileUrl,
           (gltf) => {
-            const model = gltf.scene;
-            model.traverse((child) => {
-              if (child.isMesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-                child.material = mainMaterial;
-              }
-            });
-
-            const box = new THREE.Box3().setFromObject(model);
-            const size = box.getSize(new THREE.Vector3());
-            const center = box.getCenter(new THREE.Vector3());
-            model.position.sub(center);
-
-            const maxDim = Math.max(size.x, size.y, size.z) || 1;
-            const scale = 4.0 / maxDim;
-            model.scale.set(scale, scale, scale);
-
-            group.add(model);
-            setLoading3D(false);
+            finalizeCustomModel(gltf.scene || gltf);
           },
           undefined,
           (err) => {
-            console.error('GLTF Load Error:', err);
+            console.warn('GLTF Load Error:', err);
             setLoading3D(false);
           }
         );
@@ -717,6 +688,14 @@ const ThreeViewer = forwardRef(({
     }
     if (materialsRef.current.accentMat) {
       materialsRef.current.accentMat.color.set(activeAccentColor);
+    }
+    if (meshGroupRef.current) {
+      meshGroupRef.current.traverse((child) => {
+        if (child.isMesh && child.material && child.material.color) {
+          child.material.color.set(activeBaseColor);
+          child.material.needsUpdate = true;
+        }
+      });
     }
     drawCanvas();
     if (materialsRef.current.canvasTexture) {
