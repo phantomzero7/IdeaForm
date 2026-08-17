@@ -464,6 +464,8 @@ const EmpresasRoute = () => {
               <ThreeViewer
                 ref={viewerRef}
                 modelType={selectedProduct.modelType || 'trophy'}
+                custom3DFileUrl={selectedProduct.custom3DFileUrl}
+                custom3DFileType={selectedProduct.custom3DFileType}
                 selectedColor={selectedColor?.hex || selectedColor || '#21658A'}
                 materialType="PLA_SILK"
                 customText={customizationType === 'text' ? customBrandText : customizationType === 'none' ? '' : 'IDEAFORM'}

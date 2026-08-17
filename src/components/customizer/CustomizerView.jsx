@@ -284,6 +284,8 @@ const CustomizerView = () => {
                 <ThreeViewer
                   ref={viewerRef}
                   modelType={modelType}
+                  custom3DFileUrl={selectedProduct?.custom3DFileUrl}
+                  custom3DFileType={selectedProduct?.custom3DFileType}
                   selectedColor={selectedColor?.hex || selectedColor || '#00828A'}
                   materialType={selectedMaterial?.typeCode || selectedMaterial?.id || 'PLA_SILK'}
                   customText={customText}

@@ -3614,7 +3614,7 @@ const AdminDashboard = () => {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>
-                    GEOMETRÍA / MODELO 3D
+                    GEOMETRÍA BASE / MODELO 3D
                   </label>
                   <select
                     value={productFormData.modelType}
@@ -3627,7 +3627,108 @@ const AdminDashboard = () => {
                     <option value="car">Vehículo / Modelo Articulado</option>
                     <option value="cup">Taza / Portalápices de Escritorio</option>
                     <option value="planter">Maceta Hexagonal con Relieve</option>
+                    <option value="custom_file">📁 Archivo 3D Personalizado (.STL / .GLB / .GLTF)</option>
                   </select>
+                </div>
+
+                {/* --- 3D FILE UPLOAD ZONE (.STL, .OBJ, .GLB, .GLTF) --- */}
+                <div style={{ background: '#f8fafc', padding: '0.85rem', borderRadius: 'var(--radius-md)', border: '1.5px dashed #176B87' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#176B87', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <FileUp size={15} />
+                      <span>SUBIR ARCHIVO 3D (.STL, .OBJ, .GLB, .GLTF)</span>
+                    </label>
+                    {productFormData.custom3DFileUrl && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProductFormData({
+                            ...productFormData,
+                            custom3DFileUrl: null,
+                            custom3DFileType: null,
+                            custom3DFileName: null,
+                            modelType: 'keychain'
+                          });
+                          showToast('Archivo 3D personalizado eliminado', 'info');
+                        }}
+                        style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.7rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                      >
+                        <Trash2 size={12} />
+                        <span>Quitar Archivo</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {productFormData.custom3DFileUrl ? (
+                    <div style={{ background: '#ffffff', padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid #10b981', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Box size={16} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '0.78rem', fontWeight: '800', color: '#0f172a' }}>
+                            {productFormData.custom3DFileName || 'Modelo_3D_Cargado'}
+                          </div>
+                          <div style={{ fontSize: '0.68rem', color: '#059669', fontWeight: '700' }}>
+                            ✅ Formato: .{productFormData.custom3DFileType?.toUpperCase() || '3D'} • Activo en 3D Live
+                          </div>
+                        </div>
+                      </div>
+                      <label style={{ cursor: 'pointer', background: '#f1f5f9', padding: '0.3rem 0.6rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '700', color: '#334155' }}>
+                        Cambiar
+                        <input
+                          type="file"
+                          accept=".stl,.glb,.gltf,.obj"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (!file) return;
+                            const ext = file.name.split('.').pop().toLowerCase();
+                            const url = URL.createObjectURL(file);
+                            setProductFormData({
+                              ...productFormData,
+                              custom3DFileUrl: url,
+                              custom3DFileType: ext,
+                              custom3DFileName: file.name,
+                              modelType: 'custom_file'
+                            });
+                            showToast(`✅ Archivo 3D cargado: ${file.name}`, 'success');
+                          }}
+                        />
+                      </label>
+                    </div>
+                  ) : (
+                    <div>
+                      <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0.85rem', background: '#ffffff', borderRadius: 'var(--radius-sm)', border: '1px solid #cbd5e1', cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s ease' }}>
+                        <Upload size={20} color="#176B87" style={{ marginBottom: '0.3rem' }} />
+                        <span style={{ fontSize: '0.78rem', fontWeight: '700', color: '#0F172A' }}>
+                          Haz clic para seleccionar o arrastra tu archivo 3D
+                        </span>
+                        <span style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '0.15rem' }}>
+                          Formatos admitidos: <strong>.STL</strong>, <strong>.GLB</strong>, <strong>.GLTF</strong>, <strong>.OBJ</strong> (Máx. 50MB)
+                        </span>
+                        <input
+                          type="file"
+                          accept=".stl,.glb,.gltf,.obj"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (!file) return;
+                            const ext = file.name.split('.').pop().toLowerCase();
+                            const url = URL.createObjectURL(file);
+                            setProductFormData({
+                              ...productFormData,
+                              custom3DFileUrl: url,
+                              custom3DFileType: ext,
+                              custom3DFileName: file.name,
+                              modelType: 'custom_file'
+                            });
+                            showToast(`✅ Archivo 3D cargado: ${file.name}`, 'success');
+                          }}
+                        />
+                      </label>
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid #e2e8f0' }}>
@@ -3671,16 +3772,29 @@ const AdminDashboard = () => {
               </form>
 
               <div style={{ background: '#f1f5f9', borderRadius: 'var(--radius-lg)', padding: '1.25rem', border: '1px solid #cbd5e1' }}>
-                <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                  <IdeaFormLogo size="small" showTagline={false} />
-                  <span style={{ fontSize: '0.65rem', color: '#176B87', fontWeight: '800', paddingLeft: '0.4rem', borderLeft: '1.5px solid #cbd5e1', letterSpacing: '0.05em' }}>
-                    3D LIVE
-                  </span>
+                <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                    <IdeaFormLogo size="small" showTagline={false} />
+                    <span style={{ fontSize: '0.65rem', color: '#176B87', fontWeight: '800', paddingLeft: '0.4rem', borderLeft: '1.5px solid #cbd5e1', letterSpacing: '0.05em' }}>
+                      3D LIVE PREVIEW
+                    </span>
+                  </div>
+                  {productFormData.custom3DFileUrl ? (
+                    <span style={{ fontSize: '0.68rem', fontWeight: '800', background: '#ecfdf5', color: '#059669', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)' }}>
+                      📐 Modelo 3D Personalizado
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '0.68rem', fontWeight: '800', background: '#e0f2fe', color: '#0369a1', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)' }}>
+                      🔷 Geometría: {productFormData.modelType}
+                    </span>
+                  )}
                 </div>
 
                 <div style={{ height: '320px', background: '#ffffff', borderRadius: 'var(--radius-md)', overflow: 'hidden', position: 'relative', border: '1px solid #e2e8f0' }}>
                   <ThreeViewer
                     modelType={productFormData.modelType}
+                    custom3DFileUrl={productFormData.custom3DFileUrl}
+                    custom3DFileType={productFormData.custom3DFileType}
                     baseColor={productFormData.previewBaseColor}
                     accentColor={productFormData.previewAccentColor}
                     reliefColor={productFormData.previewReliefColor}

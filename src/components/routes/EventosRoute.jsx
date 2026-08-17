@@ -415,6 +415,8 @@ const EventosRoute = () => {
               <ThreeViewer
                 ref={viewerRef}
                 modelType={selectedProduct.modelType || 'lamp'}
+                custom3DFileUrl={selectedProduct.custom3DFileUrl}
+                custom3DFileType={selectedProduct.custom3DFileType}
                 selectedColor={selectedColor?.hex || selectedColor || '#FAEEEB'}
                 materialType="PLA_SILK"
                 customText={`${celebrantNames}`}
